@@ -1,11 +1,11 @@
-import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { generateObject } from "ai";
 import {
-  AnalysisResultSchema,
-  UnblockResponseSchema,
   type AnalysisResult,
+  AnalysisResultSchema,
   type UnblockRequest,
-  type UnblockResponse
+  type UnblockResponse,
+  UnblockResponseSchema,
 } from "~/lib/messaging";
 
 let googleProvider: ReturnType<typeof createGoogleGenerativeAI> | null = null;
@@ -21,10 +21,10 @@ export const analyzePageContent = async (
   apiKey: string,
   userTask: string,
   pageContent: string,
-  url: string
+  url: string,
 ): Promise<AnalysisResult> => {
   const google = getGoogleProvider(apiKey);
-  
+
   const prompt = `You are an AI assistant that helps users stay focused on their tasks. 
 
 User's current task: "${userTask}"
@@ -48,10 +48,11 @@ If removing elements, provide CSS selectors for the distracting elements.`;
 
   try {
     const { object } = await generateObject({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       schema: AnalysisResultSchema,
       prompt,
       temperature: 0.1,
+      mode: "json",
     });
 
     return object;
@@ -68,10 +69,10 @@ If removing elements, provide CSS selectors for the distracting elements.`;
 export const processUnblockRequest = async (
   apiKey: string,
   userTask: string,
-  request: UnblockRequest
+  request: UnblockRequest,
 ): Promise<UnblockResponse> => {
   const google = getGoogleProvider(apiKey);
-  
+
   const prompt = `User is requesting access to a blocked page. Evaluate if their justification is valid.
 
 User's current task: "${userTask}"
@@ -87,10 +88,11 @@ Decide whether to ALLOW or DENY access and provide a brief reason.`;
 
   try {
     const { object } = await generateObject({
-      model: google("gemini-1.5-flash"),
+      model: google("gemini-2.5-flash-lite"),
       schema: UnblockResponseSchema,
       prompt,
       temperature: 0.2,
+      mode: "json",
     });
 
     return object;

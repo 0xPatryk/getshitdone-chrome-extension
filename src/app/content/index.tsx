@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { useMutation } from "@tanstack/react-query";
 import ReactDOM from "react-dom/client";
 import { createShadowRootUi, defineContentScript } from "#imports";
 import { BlockOverlay } from "~/components/content/block-overlay";
-import { Message, type AnalysisResult } from "~/lib/messaging";
+import { Message, sendMessage, type AnalysisResult } from "~/lib/messaging";
 
 import "~/assets/styles/globals.css";
 
@@ -10,9 +11,33 @@ const ContentScriptUI = () => {
   const [blockResult, setBlockResult] = useState<AnalysisResult | null>(null);
   const [isBlocked, setIsBlocked] = useState(false);
 
+  // Mutation for unblock requests
+  const unblockMutation = useMutation({
+    mutationFn: async (justification: string) => {
+      if (!blockResult) throw new Error("No block result available");
+      
+      return await sendMessage(Message.UNBLOCK_REQUEST, {
+        justification: justification.trim(),
+        originalReason: blockResult.reason,
+        taskId: Date.now(),
+      });
+    },
+    onSuccess: (response) => {
+      if (response.decision === "ALLOW") {
+        handleUnblock();
+      } else {
+        alert(`Access denied: ${response.reason}`);
+      }
+    },
+    onError: (error) => {
+      console.error("Unblock request failed:", error);
+      alert("Failed to process request. Please try again.");
+    },
+  });
+
   useEffect(() => {
     // Listen for messages from background script
-    const messageListener = (message: any) => {
+    const messageListener = (message: { type: string; data: AnalysisResult }) => {
       if (message.type === Message.BLOCK_RESULT && message.data) {
         handleBlockResult(message.data);
       }
@@ -42,16 +67,16 @@ const ContentScriptUI = () => {
   };
 
   const removeElements = (selectors: string[]) => {
-    selectors.forEach((selector) => {
+    for (const selector of selectors) {
       try {
         const elements = document.querySelectorAll(selector);
-        elements.forEach((element) => {
+        for (const element of elements) {
           element.remove();
-        });
+        }
       } catch (error) {
         console.warn(`Failed to remove elements with selector: ${selector}`, error);
       }
-    });
+    }
   };
 
   const handleUnblock = () => {
@@ -59,12 +84,23 @@ const ContentScriptUI = () => {
     setBlockResult(null);
   };
 
+  const handleRequestAccess = (justification: string) => {
+    unblockMutation.mutate(justification);
+  };
+
   // If not blocked, don't render anything
   if (!isBlocked || !blockResult) {
     return null;
   }
 
-  return <BlockOverlay reason={blockResult.reason} onUnblock={handleUnblock} />;
+  return (
+    <BlockOverlay
+      reason={blockResult.reason}
+      onUnblock={handleUnblock}
+      onRequestAccess={handleRequestAccess}
+      isSubmitting={unblockMutation.isPending}
+    />
+  );
 };
 
 export default defineContentScript({

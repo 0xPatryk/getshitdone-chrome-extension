@@ -2,41 +2,22 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Message, sendMessage } from "~/lib/messaging";
 
 interface BlockOverlayProps {
   readonly reason: string;
   readonly onUnblock: () => void;
+  readonly onRequestAccess: (justification: string) => void;
+  readonly isSubmitting: boolean;
 }
 
-export const BlockOverlay = ({ reason, onUnblock }: BlockOverlayProps) => {
+export const BlockOverlay = ({ reason, onUnblock, onRequestAccess, isSubmitting }: BlockOverlayProps) => {
   const [justification, setJustification] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleRequestAccess = async () => {
+  const handleRequestAccess = () => {
     if (!justification.trim()) {
       return;
     }
-
-    setIsSubmitting(true);
-    try {
-      const response = await sendMessage(Message.UNBLOCK_REQUEST, {
-        justification: justification.trim(),
-        originalReason: reason,
-        taskId: Date.now(),
-      });
-
-      if (response.decision === "ALLOW") {
-        onUnblock();
-      } else {
-        alert(`Access denied: ${response.reason}`);
-      }
-    } catch (error) {
-      console.error("Unblock request failed:", error);
-      alert("Failed to process request. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    onRequestAccess(justification);
   };
 
   return (
