@@ -1,0 +1,130 @@
+import { StorageKey, getStorage } from "@/lib/storage";
+import { Message, onMessage } from "~/lib/messaging";
+import { analyzePageContent, processUnblockRequest, extractMainContent } from "~/lib/ai-service";
+import { defineBackground } from "#imports";
+
+const main = () => {
+  console.log(
+    "Background service worker is running! Edit `src/app/background` and save to reload.",
+  );
+
+  // Listen for tab updates to trigger analysis
+  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+    // Only run when page is completely loaded
+    if (changeInfo.status !== "complete" || !tab.url || !tab.id) {
+      return;
+    }
+
+    // Skip chrome:// pages and other special URLs
+    if (tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")) {
+      return;
+    }
+
+    try {
+      const extensionEnabledStorage = getStorage(StorageKey.EXTENSION_ENABLED);
+      const isEnabled = await extensionEnabledStorage.getValue();
+      
+      if (!isEnabled) {
+        return;
+      }
+
+      const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+      const apiKey = await apiKeyStorage.getValue();
+      
+      if (!apiKey) {
+        console.log("No API key configured");
+        return;
+      }
+
+      const taskStorage = getStorage(StorageKey.CURRENT_TASK);
+      const currentTask = await taskStorage.getValue();
+      
+      if (!currentTask) {
+        return;
+      }
+
+      // Get page content
+      const results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => document.documentElement.outerHTML,
+      });
+
+      if (results[0]?.result) {
+        const pageContent = extractMainContent(results[0].result);
+        const analysisResult = await analyzePageContent(
+          apiKey,
+          currentTask,
+          pageContent,
+          tab.url
+        );
+
+        // Send result to content script
+        await chrome.tabs.sendMessage(tabId, {
+          type: Message.BLOCK_RESULT,
+          data: analysisResult,
+        });
+      }
+    } catch (error) {
+      console.error("Error in tab analysis:", error);
+    }
+  });
+};
+
+// Handle existing user message
+onMessage(Message.USER, () => {
+  const storage = getStorage(StorageKey.USER);
+  return storage.getValue();
+});
+
+// Handle page analysis requests
+onMessage(Message.ANALYZE_PAGE, async (message) => {
+  try {
+    const { url, content } = message.data;
+    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const apiKey = await apiKeyStorage.getValue();
+    
+    if (!apiKey) {
+      throw new Error("No API key configured");
+    }
+
+    const taskStorage = getStorage(StorageKey.CURRENT_TASK);
+    const currentTask = await taskStorage.getValue();
+    
+    if (!currentTask) {
+      throw new Error("No task configured");
+    }
+
+    const pageContent = extractMainContent(content);
+    return await analyzePageContent(apiKey, currentTask, pageContent, url);
+  } catch (error) {
+    console.error("Analysis failed:", error);
+    throw error;
+  }
+});
+
+// Handle unblock requests
+onMessage(Message.UNBLOCK_REQUEST, async (message) => {
+  try {
+    const request = message.data;
+    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const apiKey = await apiKeyStorage.getValue();
+    
+    if (!apiKey) {
+      throw new Error("No API key configured");
+    }
+
+    const taskStorage = getStorage(StorageKey.CURRENT_TASK);
+    const currentTask = await taskStorage.getValue();
+    
+    if (!currentTask) {
+      throw new Error("No task configured");
+    }
+
+    return await processUnblockRequest(apiKey, currentTask, request);
+  } catch (error) {
+    console.error("Unblock request failed:", error);
+    throw error;
+  }
+});
+
+export default defineBackground(main);
