@@ -1,16 +1,28 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 
 export const ExtensionToggle = () => {
   const { data: isEnabled, set: setEnabled } = useStorage(StorageKey.EXTENSION_ENABLED);
+  const queryClient = useQueryClient();
 
-  const handleToggle = async (enabled: boolean) => {
-    try {
+  // Mutation for toggling extension state
+  const toggleMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
       await setEnabled(enabled);
-    } catch (error) {
+      return enabled;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.EXTENSION_ENABLED] });
+    },
+    onError: (error) => {
       console.error("Error toggling extension:", error);
-    }
+    },
+  });
+
+  const handleToggle = (enabled: boolean) => {
+    toggleMutation.mutate(enabled);
   };
 
   return (
@@ -20,7 +32,7 @@ export const ExtensionToggle = () => {
           Enable Focus Mode
         </Label>
         <p className="text-xs text-muted-foreground">
-          {isEnabled 
+          {isEnabled
             ? "AI analysis is active and will block distractions"
             : "Extension is paused - no content analysis"
           }
@@ -30,6 +42,7 @@ export const ExtensionToggle = () => {
         id="extension-toggle"
         checked={isEnabled}
         onCheckedChange={handleToggle}
+        disabled={toggleMutation.isPending}
       />
     </div>
   );

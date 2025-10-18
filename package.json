@@ -32,7 +32,7 @@
     "@supabase/supabase-js": "^2.50.0",
     "@tanstack/react-query": "^5.80.7",
     "@webext-core/messaging": "^2.3.0",
-    "ai": "^4.3.16",
+    "ai": "^5.0.75",
     "chrome-ai": "^1.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -8,39 +9,54 @@ import { toast } from "sonner";
 export const TaskInput = () => {
   const { data: currentTask, set: setTask } = useStorage(StorageKey.CURRENT_TASK);
   const [inputValue, setInputValue] = useState(currentTask || "");
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleSetTask = async () => {
+  // Mutation for setting/updating task
+  const setTaskMutation = useMutation({
+    mutationFn: async (task: string) => {
+      await setTask(task.trim());
+      return task;
+    },
+    onSuccess: () => {
+      toast.success("Task updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.CURRENT_TASK] });
+    },
+    onError: (error) => {
+      toast.error("Failed to update task");
+      console.error("Error updating task:", error);
+    },
+  });
+
+  // Mutation for clearing task
+  const clearTaskMutation = useMutation({
+    mutationFn: async () => {
+      await setTask(null);
+      return null;
+    },
+    onSuccess: () => {
+      setInputValue("");
+      toast.success("Task cleared successfully!");
+      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.CURRENT_TASK] });
+    },
+    onError: (error) => {
+      toast.error("Failed to clear task");
+      console.error("Error clearing task:", error);
+    },
+  });
+
+  const handleSetTask = () => {
     if (!inputValue.trim()) {
       toast.error("Please enter a task description");
       return;
     }
-
-    setIsSaving(true);
-    try {
-      await setTask(inputValue.trim());
-      toast.success("Task updated successfully!");
-    } catch (error) {
-      toast.error("Failed to update task");
-      console.error("Error updating task:", error);
-    } finally {
-      setIsSaving(false);
-    }
+    setTaskMutation.mutate(inputValue);
   };
 
-  const handleClearTask = async () => {
-    setIsSaving(true);
-    try {
-      await setTask(null);
-      setInputValue("");
-      toast.success("Task cleared successfully!");
-    } catch (error) {
-      toast.error("Failed to clear task");
-      console.error("Error clearing task:", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleClearTask = () => {
+    clearTaskMutation.mutate();
   };
+
+  const isSaving = setTaskMutation.isPending || clearTaskMutation.isPending;
 
   return (
     <div className="space-y-4">

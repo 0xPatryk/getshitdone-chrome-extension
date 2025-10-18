@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,39 +9,54 @@ import { toast } from "sonner";
 export const ApiKeySettings = () => {
   const { data: apiKey, set: setApiKey } = useStorage(StorageKey.GEMINI_API_KEY);
   const [inputValue, setInputValue] = useState(apiKey || "");
-  const [isSaving, setIsSaving] = useState(false);
+  const queryClient = useQueryClient();
 
-  const handleSave = async () => {
+  // Mutation for saving API key
+  const saveApiKeyMutation = useMutation({
+    mutationFn: async (key: string) => {
+      await setApiKey(key.trim());
+      return key;
+    },
+    onSuccess: () => {
+      toast.success("API key saved successfully!");
+      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.GEMINI_API_KEY] });
+    },
+    onError: (error) => {
+      toast.error("Failed to save API key");
+      console.error("Error saving API key:", error);
+    },
+  });
+
+  // Mutation for clearing API key
+  const clearApiKeyMutation = useMutation({
+    mutationFn: async () => {
+      await setApiKey(null);
+      return null;
+    },
+    onSuccess: () => {
+      setInputValue("");
+      toast.success("API key cleared successfully!");
+      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.GEMINI_API_KEY] });
+    },
+    onError: (error) => {
+      toast.error("Failed to clear API key");
+      console.error("Error clearing API key:", error);
+    },
+  });
+
+  const handleSave = () => {
     if (!inputValue.trim()) {
       toast.error("Please enter a valid API key");
       return;
     }
-
-    setIsSaving(true);
-    try {
-      await setApiKey(inputValue.trim());
-      toast.success("API key saved successfully!");
-    } catch (error) {
-      toast.error("Failed to save API key");
-      console.error("Error saving API key:", error);
-    } finally {
-      setIsSaving(false);
-    }
+    saveApiKeyMutation.mutate(inputValue);
   };
 
-  const handleClear = async () => {
-    setIsSaving(true);
-    try {
-      await setApiKey(null);
-      setInputValue("");
-      toast.success("API key cleared successfully!");
-    } catch (error) {
-      toast.error("Failed to clear API key");
-      console.error("Error clearing API key:", error);
-    } finally {
-      setIsSaving(false);
-    }
+  const handleClear = () => {
+    clearApiKeyMutation.mutate();
   };
+
+  const isSaving = saveApiKeyMutation.isPending || clearApiKeyMutation.isPending;
 
   return (
     <div className="space-y-6">
