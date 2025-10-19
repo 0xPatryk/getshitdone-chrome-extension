@@ -1,6 +1,16 @@
 import { StorageKey, getStorage } from "@/lib/storage";
-import { Message, onMessage } from "~/lib/messaging";
-import { analyzePageContent, processUnblockRequest, extractMainContent } from "~/lib/ai-service";
+import {
+  analyzePageContent,
+  extractMainContent,
+  processChatMessage,
+  processUnblockRequest,
+} from "~/lib/ai-service";
+import {
+  type ChatMessage,
+  type ChatSession,
+  Message,
+  onMessage,
+} from "~/lib/messaging";
 import { defineBackground } from "#imports";
 
 const main = () => {
@@ -16,21 +26,24 @@ const main = () => {
     }
 
     // Skip chrome:// pages and other special URLs
-    if (tab.url.startsWith("chrome://") || tab.url.startsWith("chrome-extension://")) {
+    if (
+      tab.url.startsWith("chrome://") ||
+      tab.url.startsWith("chrome-extension://")
+    ) {
       return;
     }
 
     try {
       const extensionEnabledStorage = getStorage(StorageKey.EXTENSION_ENABLED);
       const isEnabled = await extensionEnabledStorage.getValue();
-      
+
       if (!isEnabled) {
         return;
       }
 
       const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
       const apiKey = await apiKeyStorage.getValue();
-      
+
       if (!apiKey) {
         console.log("No API key configured");
         return;
@@ -38,7 +51,7 @@ const main = () => {
 
       const taskStorage = getStorage(StorageKey.CURRENT_TASK);
       const currentTask = await taskStorage.getValue();
-      
+
       if (!currentTask) {
         return;
       }
@@ -55,7 +68,7 @@ const main = () => {
           apiKey,
           currentTask,
           pageContent,
-          tab.url
+          tab.url,
         );
 
         // Send result to content script
@@ -82,14 +95,14 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     const { url, content } = message.data;
     const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
     const apiKey = await apiKeyStorage.getValue();
-    
+
     if (!apiKey) {
       throw new Error("No API key configured");
     }
 
     const taskStorage = getStorage(StorageKey.CURRENT_TASK);
     const currentTask = await taskStorage.getValue();
-    
+
     if (!currentTask) {
       throw new Error("No task configured");
     }
@@ -108,14 +121,14 @@ onMessage(Message.UNBLOCK_REQUEST, async (message) => {
     const request = message.data;
     const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
     const apiKey = await apiKeyStorage.getValue();
-    
+
     if (!apiKey) {
       throw new Error("No API key configured");
     }
 
     const taskStorage = getStorage(StorageKey.CURRENT_TASK);
     const currentTask = await taskStorage.getValue();
-    
+
     if (!currentTask) {
       throw new Error("No task configured");
     }
@@ -123,6 +136,49 @@ onMessage(Message.UNBLOCK_REQUEST, async (message) => {
     return await processUnblockRequest(apiKey, currentTask, request);
   } catch (error) {
     console.error("Unblock request failed:", error);
+    throw error;
+  }
+});
+
+// Handle chat messages
+onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
+  try {
+    const { sessionId, message: userMessage } = message.data;
+    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const apiKey = await apiKeyStorage.getValue();
+
+    if (!apiKey) {
+      throw new Error("No API key configured");
+    }
+
+    const taskStorage = getStorage(StorageKey.CURRENT_TASK);
+    const currentTask = await taskStorage.getValue();
+
+    if (!currentTask) {
+      throw new Error("No task configured");
+    }
+
+    // Get chat history from storage
+    const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS);
+    const chatSessions = (await chatSessionsStorage.getValue()) as Record<
+      string,
+      ChatSession
+    >;
+    const chatHistory: ChatMessage[] = chatSessions[sessionId]?.messages || [];
+
+    const aiResponse = await processChatMessage(
+      apiKey,
+      currentTask,
+      userMessage,
+      chatHistory,
+    );
+
+    return {
+      sessionId,
+      message: aiResponse,
+    };
+  } catch (error) {
+    console.error("Chat message processing failed:", error);
     throw error;
   }
 });

@@ -1,5 +1,5 @@
-import { StorageKey, useStorage } from "@/lib/storage";
 import { Badge } from "@/components/ui/badge";
+import { StorageKey, useStorage } from "@/lib/storage";
 
 export const StatusDisplay = () => {
   const { data: isEnabled } = useStorage(StorageKey.EXTENSION_ENABLED);

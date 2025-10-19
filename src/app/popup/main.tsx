@@ -16,16 +16,16 @@ const Popup = () => {
             AI-powered distraction blocking for better productivity
           </p>
         </div>
-        
+
         <Separator />
-        
+
         <div className="space-y-4">
           <StatusDisplay />
           <ExtensionToggle />
         </div>
-        
+
         <Separator />
-        
+
         <TaskInput />
       </div>
     </div>

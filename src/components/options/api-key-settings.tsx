@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StorageKey, useStorage } from "@/lib/storage";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export const ApiKeySettings = () => {
-  const { data: apiKey, set: setApiKey } = useStorage(StorageKey.GEMINI_API_KEY);
+  const { data: apiKey, set: setApiKey } = useStorage(
+    StorageKey.GEMINI_API_KEY,
+  );
   const [inputValue, setInputValue] = useState(apiKey || "");
   const queryClient = useQueryClient();
 
@@ -19,7 +21,9 @@ export const ApiKeySettings = () => {
     },
     onSuccess: () => {
       toast.success("API key saved successfully!");
-      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.GEMINI_API_KEY] });
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.GEMINI_API_KEY],
+      });
     },
     onError: (error) => {
       toast.error("Failed to save API key");
@@ -36,7 +40,9 @@ export const ApiKeySettings = () => {
     onSuccess: () => {
       setInputValue("");
       toast.success("API key cleared successfully!");
-      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.GEMINI_API_KEY] });
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.GEMINI_API_KEY],
+      });
     },
     onError: (error) => {
       toast.error("Failed to clear API key");
@@ -56,7 +62,8 @@ export const ApiKeySettings = () => {
     clearApiKeyMutation.mutate();
   };
 
-  const isSaving = saveApiKeyMutation.isPending || clearApiKeyMutation.isPending;
+  const isSaving =
+    saveApiKeyMutation.isPending || clearApiKeyMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -79,20 +86,20 @@ export const ApiKeySettings = () => {
             className="font-mono"
           />
           <p className="text-sm text-muted-foreground">
-            Your API key is stored securely locally and never shared with third parties.
+            Your API key is stored securely locally and never shared with third
+            parties.
           </p>
         </div>
 
         <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={isSaving || !inputValue.trim()}>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !inputValue.trim()}
+          >
             {isSaving ? "Saving..." : "Save API Key"}
           </Button>
           {apiKey && (
-            <Button
-              variant="outline"
-              onClick={handleClear}
-              disabled={isSaving}
-            >
+            <Button variant="outline" onClick={handleClear} disabled={isSaving}>
               Clear Key
             </Button>
           )}

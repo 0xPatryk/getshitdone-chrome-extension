@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { ChatSession } from "~/lib/messaging";
 import { Theme, type User } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 
@@ -8,6 +9,8 @@ export const StorageKey = {
   GEMINI_API_KEY: "local:geminiApiKey",
   CURRENT_TASK: "local:currentTask",
   EXTENSION_ENABLED: "local:extensionEnabled",
+  CHAT_SESSIONS: "local:chatSessions",
+  ACTIVE_CHAT_SESSION: "local:activeChatSession",
 } as const;
 
 export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
@@ -37,14 +40,21 @@ const storage = {
       fallback: false,
     },
   ),
+  [StorageKey.CHAT_SESSIONS]: browserStorage.defineItem<
+    Record<string, ChatSession>
+  >(StorageKey.CHAT_SESSIONS, {
+    fallback: {},
+  }),
+  [StorageKey.ACTIVE_CHAT_SESSION]: browserStorage.defineItem<string | null>(
+    StorageKey.ACTIVE_CHAT_SESSION,
+    {
+      fallback: null,
+    },
+  ),
 } as const;
 
-type Value<T extends StorageKey> = (typeof storage)[T] extends WxtStorageItem<
-  infer V,
-  infer _
->
-  ? V
-  : never;
+export type Value<T extends StorageKey> =
+  (typeof storage)[T] extends WxtStorageItem<infer V, infer _> ? V : never;
 
 export const getStorage = <K extends StorageKey>(key: K) => {
   return storage[key];

@@ -1,9 +1,14 @@
-import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
+import { useCallback, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { createShadowRootUi, defineContentScript } from "#imports";
 import { BlockOverlay } from "~/components/content/block-overlay";
-import { Message, sendMessage, type AnalysisResult } from "~/lib/messaging";
+import {
+  type AnalysisResult,
+  type ChatResponse,
+  Message,
+  sendMessage,
+} from "~/lib/messaging";
+import { createShadowRootUi, defineContentScript } from "#imports";
 
 import "~/assets/styles/globals.css";
 
@@ -15,7 +20,7 @@ const ContentScriptUI = () => {
   const unblockMutation = useMutation({
     mutationFn: async (justification: string) => {
       if (!blockResult) throw new Error("No block result available");
-      
+
       return await sendMessage(Message.UNBLOCK_REQUEST, {
         justification: justification.trim(),
         originalReason: blockResult.reason,
@@ -37,9 +42,14 @@ const ContentScriptUI = () => {
 
   useEffect(() => {
     // Listen for messages from background script
-    const messageListener = (message: { type: string; data: AnalysisResult }) => {
+    const messageListener = (message: {
+      type: string;
+      data: AnalysisResult | ChatResponse;
+    }) => {
       if (message.type === Message.BLOCK_RESULT && message.data) {
-        handleBlockResult(message.data);
+        handleBlockResult(message.data as AnalysisResult);
+      } else if (message.type === Message.CHAT_RESPONSE && message.data) {
+        handleChatResponse(message.data as ChatResponse);
       }
     };
 
@@ -74,19 +84,57 @@ const ContentScriptUI = () => {
           element.remove();
         }
       } catch (error) {
-        console.warn(`Failed to remove elements with selector: ${selector}`, error);
+        console.warn(
+          `Failed to remove elements with selector: ${selector}`,
+          error,
+        );
       }
     }
   };
 
-  const handleUnblock = () => {
+  const handleUnblock = useCallback(() => {
     setIsBlocked(false);
     setBlockResult(null);
-  };
+  }, []);
 
   const handleRequestAccess = (justification: string) => {
     unblockMutation.mutate(justification);
   };
+
+  const handleChatResponse = useCallback((response: ChatResponse) => {
+    // This will be handled by the ChatInterface component
+    // We'll dispatch a custom event that the ChatInterface can listen for
+    window.dispatchEvent(new CustomEvent("chatResponse", { detail: response }));
+  }, []);
+
+  // Function to send chat messages to background script
+  const sendChatMessage = useCallback(
+    async (sessionId: string, message: string) => {
+      try {
+        const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
+          sessionId,
+          message,
+        });
+        return response;
+      } catch (error) {
+        console.error("Failed to send chat message:", error);
+        throw error;
+      }
+    },
+    [],
+  );
+
+  // Make the sendChatMessage function available globally for the ChatInterface component
+  useEffect(() => {
+    (
+      window as Window & { sendChatMessage?: typeof sendChatMessage }
+    ).sendChatMessage = sendChatMessage;
+    return () => {
+      (
+        window as Window & { sendChatMessage?: typeof sendChatMessage }
+      ).sendChatMessage = undefined;
+    };
+  }, [sendChatMessage]);
 
   // If not blocked, don't render anything
   if (!isBlocked || !blockResult) {

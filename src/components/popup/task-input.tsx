@@ -1,13 +1,15 @@
-import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { StorageKey, useStorage } from "@/lib/storage";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export const TaskInput = () => {
-  const { data: currentTask, set: setTask } = useStorage(StorageKey.CURRENT_TASK);
+  const { data: currentTask, set: setTask } = useStorage(
+    StorageKey.CURRENT_TASK,
+  );
   const [inputValue, setInputValue] = useState(currentTask || "");
   const queryClient = useQueryClient();
 
@@ -19,7 +21,9 @@ export const TaskInput = () => {
     },
     onSuccess: () => {
       toast.success("Task updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.CURRENT_TASK] });
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.CURRENT_TASK],
+      });
     },
     onError: (error) => {
       toast.error("Failed to update task");
@@ -36,7 +40,9 @@ export const TaskInput = () => {
     onSuccess: () => {
       setInputValue("");
       toast.success("Task cleared successfully!");
-      queryClient.invalidateQueries({ queryKey: ["storage", StorageKey.CURRENT_TASK] });
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.CURRENT_TASK],
+      });
     },
     onError: (error) => {
       toast.error("Failed to clear task");
@@ -70,7 +76,8 @@ export const TaskInput = () => {
           className="min-h-[100px] resize-none"
         />
         <p className="text-xs text-muted-foreground">
-          Be specific about your current task to help the AI identify distractions.
+          Be specific about your current task to help the AI identify
+          distractions.
         </p>
       </div>
 

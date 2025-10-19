@@ -1,8 +1,9 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import {
   type AnalysisResult,
   AnalysisResultSchema,
+  type ChatMessage,
   type UnblockRequest,
   type UnblockResponse,
   UnblockResponseSchema,
@@ -102,6 +103,66 @@ Decide whether to ALLOW or DENY access and provide a brief reason.`;
     return {
       decision: "DENY",
       reason: "Unable to process request - please try again",
+    };
+  }
+};
+
+export const processChatMessage = async (
+  apiKey: string,
+  userTask: string,
+  message: string,
+  chatHistory: ChatMessage[],
+): Promise<ChatMessage> => {
+  const google = getGoogleProvider(apiKey);
+
+  // Build conversation history for context
+  const historyContext = chatHistory
+    .slice(-5) // Keep last 5 messages for context
+    .map((msg) => `${msg.role}: ${msg.content}`)
+    .join("\n");
+
+  const prompt = `You are a focused, professional AI assistant that helps users stay on task and maintain productivity. Your role is to:
+
+1. Understand the user's current task: "${userTask}"
+2. Evaluate whether their request aligns with their task
+3. Be professional, focused, and encouraging
+4. Grant access if they provide a good justification
+5. Deny access if the request is clearly not related to their task or is a distraction
+6. Suggest alternatives if access isn't appropriate
+7. Keep responses concise and actionable
+
+Previous conversation:
+${historyContext}
+
+User's new message: "${message}"
+
+Respond in a professional, focused manner.
+- If you decide to grant access, include "ACCESS_GRANTED" in your response.
+- If you decide to deny access, include "ACCESS_DENIED: [reason]" in your response, where [reason] is a brief explanation.
+- If you want to suggest alternatives, be specific about what they should do instead.`;
+
+  try {
+    const { text } = await generateText({
+      model: google("gemini-2.5-flash-lite"),
+      prompt,
+      temperature: 0.3,
+    });
+
+    return {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      content: text.trim(),
+      role: "assistant",
+      timestamp: Date.now(),
+    };
+  } catch (error) {
+    console.error("Chat message processing failed:", error);
+    // Fallback response
+    return {
+      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      content:
+        "I'm having trouble processing your request right now. Please try again.",
+      role: "assistant",
+      timestamp: Date.now(),
     };
   }
 };
