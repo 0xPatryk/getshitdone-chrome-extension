@@ -7,6 +7,8 @@ export const StorageKey = {
   THEME: "local:theme",
   USER: "local:user",
   GEMINI_API_KEY: "local:geminiApiKey",
+  OPENAI_API_KEY: "local:openaiApiKey",
+  AI_PROVIDER: "local:aiProvider",
   CURRENT_TASK: "local:currentTask",
   EXTENSION_ENABLED: "local:extensionEnabled",
   CHAT_SESSIONS: "local:chatSessions",
@@ -26,6 +28,18 @@ const storage = {
     StorageKey.GEMINI_API_KEY,
     {
       fallback: null,
+    },
+  ),
+  [StorageKey.OPENAI_API_KEY]: browserStorage.defineItem<string | null>(
+    StorageKey.OPENAI_API_KEY,
+    {
+      fallback: null,
+    },
+  ),
+  [StorageKey.AI_PROVIDER]: browserStorage.defineItem<"gemini" | "openai">(
+    StorageKey.AI_PROVIDER,
+    {
+      fallback: "gemini",
     },
   ),
   [StorageKey.CURRENT_TASK]: browserStorage.defineItem<string | null>(

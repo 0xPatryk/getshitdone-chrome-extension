@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { Layout } from "~/components/layout/layout";
 import { ExtensionToggle } from "~/components/popup/extension-toggle";
 import { StatusDisplay } from "~/components/popup/status-display";
 import { TaskInput } from "~/components/popup/task-input";
@@ -34,6 +35,8 @@ const Popup = () => {
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <Popup />
+    <Layout>
+      <Popup />
+    </Layout>
   </React.StrictMode>,
 );

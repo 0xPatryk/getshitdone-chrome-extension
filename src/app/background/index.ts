@@ -41,11 +41,17 @@ const main = () => {
         return;
       }
 
-      const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+      const providerStorage = getStorage(StorageKey.AI_PROVIDER);
+      const provider = await providerStorage.getValue();
+
+      const apiKeyStorage =
+        provider === "openai"
+          ? getStorage(StorageKey.OPENAI_API_KEY)
+          : getStorage(StorageKey.GEMINI_API_KEY);
       const apiKey = await apiKeyStorage.getValue();
 
       if (!apiKey) {
-        console.log("No API key configured");
+        console.log(`No ${provider} API key configured`);
         return;
       }
 
@@ -69,6 +75,7 @@ const main = () => {
           currentTask,
           pageContent,
           tab.url,
+          provider,
         );
 
         // Send result to content script
@@ -93,11 +100,17 @@ onMessage(Message.USER, () => {
 onMessage(Message.ANALYZE_PAGE, async (message) => {
   try {
     const { url, content } = message.data;
-    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const providerStorage = getStorage(StorageKey.AI_PROVIDER);
+    const provider = await providerStorage.getValue();
+
+    const apiKeyStorage =
+      provider === "openai"
+        ? getStorage(StorageKey.OPENAI_API_KEY)
+        : getStorage(StorageKey.GEMINI_API_KEY);
     const apiKey = await apiKeyStorage.getValue();
 
     if (!apiKey) {
-      throw new Error("No API key configured");
+      throw new Error(`No ${provider} API key configured`);
     }
 
     const taskStorage = getStorage(StorageKey.CURRENT_TASK);
@@ -108,7 +121,7 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     }
 
     const pageContent = extractMainContent(content);
-    return await analyzePageContent(apiKey, currentTask, pageContent, url);
+    return await analyzePageContent(apiKey, currentTask, pageContent, url, provider);
   } catch (error) {
     console.error("Analysis failed:", error);
     throw error;
@@ -119,11 +132,17 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 onMessage(Message.UNBLOCK_REQUEST, async (message) => {
   try {
     const request = message.data;
-    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const providerStorage = getStorage(StorageKey.AI_PROVIDER);
+    const provider = await providerStorage.getValue();
+
+    const apiKeyStorage =
+      provider === "openai"
+        ? getStorage(StorageKey.OPENAI_API_KEY)
+        : getStorage(StorageKey.GEMINI_API_KEY);
     const apiKey = await apiKeyStorage.getValue();
 
     if (!apiKey) {
-      throw new Error("No API key configured");
+      throw new Error(`No ${provider} API key configured`);
     }
 
     const taskStorage = getStorage(StorageKey.CURRENT_TASK);
@@ -133,7 +152,7 @@ onMessage(Message.UNBLOCK_REQUEST, async (message) => {
       throw new Error("No task configured");
     }
 
-    return await processUnblockRequest(apiKey, currentTask, request);
+    return await processUnblockRequest(apiKey, currentTask, request, provider);
   } catch (error) {
     console.error("Unblock request failed:", error);
     throw error;
@@ -144,11 +163,17 @@ onMessage(Message.UNBLOCK_REQUEST, async (message) => {
 onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
   try {
     const { sessionId, message: userMessage } = message.data;
-    const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+    const providerStorage = getStorage(StorageKey.AI_PROVIDER);
+    const provider = await providerStorage.getValue();
+
+    const apiKeyStorage =
+      provider === "openai"
+        ? getStorage(StorageKey.OPENAI_API_KEY)
+        : getStorage(StorageKey.GEMINI_API_KEY);
     const apiKey = await apiKeyStorage.getValue();
 
     if (!apiKey) {
-      throw new Error("No API key configured");
+      throw new Error(`No ${provider} API key configured`);
     }
 
     const taskStorage = getStorage(StorageKey.CURRENT_TASK);
@@ -171,6 +196,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       currentTask,
       userMessage,
       chatHistory,
+      provider,
     );
 
     return {

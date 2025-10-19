@@ -1,28 +1,63 @@
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const ApiKeySettings = () => {
-  const { data: apiKey, set: setApiKey } = useStorage(
+  const { data: selectedProvider, set: setProvider } = useStorage(
+    StorageKey.AI_PROVIDER,
+  );
+  const { data: geminiApiKey, set: setGeminiApiKey } = useStorage(
     StorageKey.GEMINI_API_KEY,
   );
-  const [inputValue, setInputValue] = useState(apiKey || "");
+  const { data: openaiApiKey, set: setOpenaiApiKey } = useStorage(
+    StorageKey.OPENAI_API_KEY,
+  );
+
+  const [inputValue, setInputValue] = useState(
+    selectedProvider === "openai" ? openaiApiKey || "" : geminiApiKey || "",
+  );
   const queryClient = useQueryClient();
+
+  // Update input value when provider changes
+  const handleProviderChange = (provider: string) => {
+    if (provider === "gemini" || provider === "openai") {
+      setProvider(provider);
+      const currentKey = provider === "openai" ? openaiApiKey : geminiApiKey;
+      setInputValue(currentKey || "");
+    }
+  };
 
   // Mutation for saving API key
   const saveApiKeyMutation = useMutation({
     mutationFn: async (key: string) => {
-      await setApiKey(key.trim());
+      if (selectedProvider === "openai") {
+        await setOpenaiApiKey(key.trim());
+      } else {
+        await setGeminiApiKey(key.trim());
+      }
       return key;
     },
     onSuccess: () => {
       toast.success("API key saved successfully!");
       queryClient.invalidateQueries({
-        queryKey: ["storage", StorageKey.GEMINI_API_KEY],
+        queryKey: [
+          "storage",
+          selectedProvider === "openai"
+            ? StorageKey.OPENAI_API_KEY
+            : StorageKey.GEMINI_API_KEY,
+        ],
       });
     },
     onError: (error) => {
@@ -34,14 +69,23 @@ export const ApiKeySettings = () => {
   // Mutation for clearing API key
   const clearApiKeyMutation = useMutation({
     mutationFn: async () => {
-      await setApiKey(null);
+      if (selectedProvider === "openai") {
+        await setOpenaiApiKey(null);
+      } else {
+        await setGeminiApiKey(null);
+      }
       return null;
     },
     onSuccess: () => {
       setInputValue("");
       toast.success("API key cleared successfully!");
       queryClient.invalidateQueries({
-        queryKey: ["storage", StorageKey.GEMINI_API_KEY],
+        queryKey: [
+          "storage",
+          selectedProvider === "openai"
+            ? StorageKey.OPENAI_API_KEY
+            : StorageKey.GEMINI_API_KEY,
+        ],
       });
     },
     onError: (error) => {
@@ -55,6 +99,18 @@ export const ApiKeySettings = () => {
       toast.error("Please enter a valid API key");
       return;
     }
+
+    // Basic validation for API keys
+    if (selectedProvider === "openai" && !inputValue.startsWith("sk-")) {
+      toast.error("Invalid OpenAI API key format");
+      return;
+    }
+
+    if (selectedProvider === "gemini" && inputValue.length < 20) {
+      toast.error("Invalid Gemini API key format");
+      return;
+    }
+
     saveApiKeyMutation.mutate(inputValue);
   };
 
@@ -65,22 +121,56 @@ export const ApiKeySettings = () => {
   const isSaving =
     saveApiKeyMutation.isPending || clearApiKeyMutation.isPending;
 
+  const currentApiKey =
+    selectedProvider === "openai" ? openaiApiKey : geminiApiKey;
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold">Gemini API Settings</h2>
+        <h2 className="text-2xl font-bold">AI Provider Settings</h2>
         <p className="text-muted-foreground">
-          Configure your Gemini API key to enable AI-powered content analysis.
+          Configure your AI provider and API key to enable AI-powered content
+          analysis.
         </p>
       </div>
 
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="api-key">Gemini API Key</Label>
+          <Label htmlFor="provider">AI Provider</Label>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {selectedProvider === "openai" ? "OpenAI" : "Gemini"}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-full">
+              <DropdownMenuRadioGroup
+                value={selectedProvider}
+                onValueChange={handleProviderChange}
+              >
+                <DropdownMenuRadioItem value="gemini">
+                  Gemini (Google)
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="openai">
+                  OpenAI
+                </DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <p className="text-sm text-muted-foreground">
+            Select your preferred AI provider for content analysis.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="api-key">
+            {selectedProvider === "openai" ? "OpenAI" : "Gemini"} API Key
+          </Label>
           <Input
             id="api-key"
             type="password"
-            placeholder="Enter your Gemini API key"
+            placeholder={`Enter your ${selectedProvider === "openai" ? "OpenAI" : "Gemini"} API key`}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             className="font-mono"
@@ -98,17 +188,18 @@ export const ApiKeySettings = () => {
           >
             {isSaving ? "Saving..." : "Save API Key"}
           </Button>
-          {apiKey && (
+          {currentApiKey && (
             <Button variant="outline" onClick={handleClear} disabled={isSaving}>
               Clear Key
             </Button>
           )}
         </div>
 
-        {apiKey && (
+        {currentApiKey && (
           <div className="rounded-md bg-green-50 p-4 dark:bg-green-900/20">
             <p className="text-sm text-green-800 dark:text-green-200">
-              ✓ API key is configured and ready to use
+              ✓ {selectedProvider === "openai" ? "OpenAI" : "Gemini"} API key is
+              configured and ready to use
             </p>
           </div>
         )}
@@ -117,12 +208,21 @@ export const ApiKeySettings = () => {
           <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
             How to get your API key:
           </h3>
-          <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
-            <li>Go to Google AI Studio</li>
-            <li>Sign in with your Google account</li>
-            <li>Create a new API key or use an existing one</li>
-            <li>Copy the key and paste it above</li>
-          </ol>
+          {selectedProvider === "gemini" ? (
+            <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+              <li>Go to Google AI Studio</li>
+              <li>Sign in with your Google account</li>
+              <li>Create a new API key or use an existing one</li>
+              <li>Copy the key and paste it above</li>
+            </ol>
+          ) : (
+            <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+              <li>Go to OpenAI Platform</li>
+              <li>Sign in with your OpenAI account</li>
+              <li>Navigate to API Keys section</li>
+              <li>Create a new API key and copy it</li>
+            </ol>
+          )}
         </div>
       </div>
     </div>

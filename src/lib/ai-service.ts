@@ -1,4 +1,5 @@
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import {
   type AnalysisResult,
@@ -9,7 +10,10 @@ import {
   UnblockResponseSchema,
 } from "~/lib/messaging";
 
+type AIProvider = "gemini" | "openai";
+
 let googleProvider: ReturnType<typeof createGoogleGenerativeAI> | null = null;
+let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
 
 const getGoogleProvider = (apiKey: string) => {
   if (!googleProvider) {
@@ -18,15 +22,34 @@ const getGoogleProvider = (apiKey: string) => {
   return googleProvider;
 };
 
+const getOpenAIProvider = (apiKey: string) => {
+  if (!openaiProvider) {
+    openaiProvider = createOpenAI({ apiKey });
+  }
+  return openaiProvider;
+};
+
+const getModel = (provider: AIProvider, apiKey: string) => {
+  switch (provider) {
+    case "gemini":
+      return getGoogleProvider(apiKey)("gemini-2.5-flash-lite");
+    case "openai":
+      return getOpenAIProvider(apiKey)("gpt-4o-mini");
+    default:
+      throw new Error(`Unsupported provider: ${provider}`);
+  }
+};
+
 export const analyzePageContent = async (
   apiKey: string,
   userTask: string,
   pageContent: string,
   url: string,
+  provider: AIProvider = "gemini",
 ): Promise<AnalysisResult> => {
-  const google = getGoogleProvider(apiKey);
+  const model = getModel(provider, apiKey);
 
-  const prompt = `You are an AI assistant that helps users stay focused on their tasks. 
+  const prompt = `You are an AI assistant that helps users stay focused on their tasks.
 
 User's current task: "${userTask}"
 
@@ -49,7 +72,7 @@ If removing elements, provide CSS selectors for the distracting elements.`;
 
   try {
     const { object } = await generateObject({
-      model: google("gemini-2.5-flash-lite"),
+      model,
       schema: AnalysisResultSchema,
       prompt,
       temperature: 0.1,
@@ -71,8 +94,9 @@ export const processUnblockRequest = async (
   apiKey: string,
   userTask: string,
   request: UnblockRequest,
+  provider: AIProvider = "gemini",
 ): Promise<UnblockResponse> => {
-  const google = getGoogleProvider(apiKey);
+  const model = getModel(provider, apiKey);
 
   const prompt = `User is requesting access to a blocked page. Evaluate if their justification is valid.
 
@@ -89,7 +113,7 @@ Decide whether to ALLOW or DENY access and provide a brief reason.`;
 
   try {
     const { object } = await generateObject({
-      model: google("gemini-2.5-flash-lite"),
+      model,
       schema: UnblockResponseSchema,
       prompt,
       temperature: 0.2,
@@ -112,8 +136,9 @@ export const processChatMessage = async (
   userTask: string,
   message: string,
   chatHistory: ChatMessage[],
+  provider: AIProvider = "gemini",
 ): Promise<ChatMessage> => {
-  const google = getGoogleProvider(apiKey);
+  const model = getModel(provider, apiKey);
 
   // Build conversation history for context
   const historyContext = chatHistory
@@ -143,7 +168,7 @@ Respond in a professional, focused manner.
 
   try {
     const { text } = await generateText({
-      model: google("gemini-2.5-flash-lite"),
+      model,
       prompt,
       temperature: 0.3,
     });

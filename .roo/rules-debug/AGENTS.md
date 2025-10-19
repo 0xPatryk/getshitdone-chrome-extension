@@ -12,3 +12,4 @@ This file provides debugging-specific guidance for agents working in debug mode.
 - Extension reloads don't always clear storage - manually clear for clean debugging state
 - TypeScript `noUncheckedIndexedAccess` causes runtime errors that need explicit type guards
 - Content script injection timing varies by page load - add delays for reliable debugging
+- Always wrap extension entry points (popup, options, etc.) with the existing Layout component instead of creating new QueryClientProvider instances
