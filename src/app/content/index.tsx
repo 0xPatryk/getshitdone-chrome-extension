@@ -16,17 +16,22 @@ import "~/assets/styles/globals.css";
 const queryClient = new QueryClient();
 
 const ContentScriptUI = () => {
-  const [blockResult, setBlockResult] = useState<AnalysisResult | null>(null);
-  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockState, setBlockState] = useState<{
+    blockResult: AnalysisResult | null;
+    isBlocked: boolean;
+  }>({
+    blockResult: null,
+    isBlocked: false,
+  });
 
   // Mutation for unblock requests
   const unblockMutation = useMutation({
     mutationFn: async (justification: string) => {
-      if (!blockResult) throw new Error("No block result available");
+      if (!blockState.blockResult) throw new Error("No block result available");
 
       return await sendMessage(Message.UNBLOCK_REQUEST, {
         justification: justification.trim(),
-        originalReason: blockResult.reason,
+        originalReason: blockState.blockResult.reason,
         taskId: Date.now(),
       });
     },
@@ -64,11 +69,11 @@ const ContentScriptUI = () => {
   }, []);
 
   const handleBlockResult = (result: AnalysisResult) => {
-    setBlockResult(result);
+    setBlockState(prev => ({ ...prev, blockResult: result }));
 
     switch (result.decision) {
       case "BLOCK_ALL":
-        setIsBlocked(true);
+        setBlockState(prev => ({ ...prev, isBlocked: true }));
         break;
       case "REMOVE_ELEMENTS":
         removeElements(result.selectors || []);
@@ -96,13 +101,12 @@ const ContentScriptUI = () => {
   };
 
   const handleUnblock = useCallback(() => {
-    setIsBlocked(false);
-    setBlockResult(null);
+    setBlockState(prev => ({ ...prev, isBlocked: false, blockResult: null }));
   }, []);
 
-  const handleRequestAccess = (justification: string) => {
+  const handleRequestAccess = useCallback((justification: string) => {
     unblockMutation.mutate(justification);
-  };
+  }, [unblockMutation]);
 
   const handleChatResponse = useCallback((response: ChatResponse) => {
     // This will be handled by the ChatInterface component
@@ -140,13 +144,13 @@ const ContentScriptUI = () => {
   }, [sendChatMessage]);
 
   // If not blocked, don't render anything
-  if (!isBlocked || !blockResult) {
+  if (!blockState.isBlocked || !blockState.blockResult) {
     return null;
   }
 
   return (
     <BlockOverlay
-      reason={blockResult.reason}
+      reason={blockState.blockResult.reason}
       onUnblock={handleUnblock}
       onRequestAccess={handleRequestAccess}
       isSubmitting={unblockMutation.isPending}
