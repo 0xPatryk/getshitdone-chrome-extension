@@ -1,9 +1,7 @@
 import { defineExtensionMessaging } from "@webext-core/messaging";
 import { z } from "zod";
-import type { User } from "~/types";
 
 export const Message = {
-  USER: "user",
   ANALYZE_PAGE: "analyzePage",
   BLOCK_RESULT: "blockResult",
   UNBLOCK_REQUEST: "unblockRequest",
@@ -65,7 +63,6 @@ export type SendChatMessage = z.infer<typeof SendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof ChatResponseSchema>;
 
 interface Messages {
-  [Message.USER]: () => User | null;
   [Message.ANALYZE_PAGE]: (data: {
     url: string;
     content: string;

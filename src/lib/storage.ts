@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import type { ChatSession } from "~/lib/messaging";
-import { Theme, type User } from "~/types";
+import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 
 export const StorageKey = {
   THEME: "local:theme",
-  USER: "local:user",
   GEMINI_API_KEY: "local:geminiApiKey",
   OPENAI_API_KEY: "local:openaiApiKey",
   AI_PROVIDER: "local:aiProvider",
@@ -20,9 +19,6 @@ export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
 const storage = {
   [StorageKey.THEME]: browserStorage.defineItem<Theme>(StorageKey.THEME, {
     fallback: Theme.SYSTEM,
-  }),
-  [StorageKey.USER]: browserStorage.defineItem<User | null>(StorageKey.USER, {
-    fallback: null,
   }),
   [StorageKey.GEMINI_API_KEY]: browserStorage.defineItem<string | null>(
     StorageKey.GEMINI_API_KEY,

@@ -47,7 +47,6 @@ Extro ships with the following extension pages preconfigured:
 - `background` - [background service worker](https://wxt.dev/guide/essentials/entrypoints.html#background)
 - `content` - [content scripts](https://wxt.dev/guide/essentials/content-scripts.html) that run in the context of web pages
 - `devtools` - [devtools](https://wxt.dev/guide/essentials/entrypoints.html#devtools) page with custom panels
-- `newtab` - [new tab](https://wxt.dev/guide/essentials/entrypoints.html#newtab) page
 - `options` - [options](https://wxt.dev/guide/essentials/entrypoints.html#options) page
 - `popup` - [popup](https://wxt.dev/guide/essentials/entrypoints.html#popup) window
 - `sidepanel` - [side panel](https://wxt.dev/guide/essentials/entrypoints.html#side-panel)

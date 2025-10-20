@@ -1,5 +1,4 @@
-import { Bot } from "lucide-react";
-import { User } from "~/components/auth/user";
+import { Settings } from "lucide-react";
 import { ThemeSwitch } from "~/components/common/theme";
 import { buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
@@ -8,7 +7,7 @@ export const Header = () => {
   return (
     <header className="flex items-center justify-center gap-2">
       <a
-        href="/tabs.html#ai"
+        href="/tabs.html#settings"
         target="_blank"
         rel="noreferrer"
         className={cn(
@@ -19,11 +18,10 @@ export const Header = () => {
           "rounded-full",
         )}
       >
-        <Bot className="size-5" />
-        <span className="sr-only">AI Demo</span>
+        <Settings className="size-5" />
+        <span className="sr-only">Settings</span>
       </a>
       <ThemeSwitch />
-      <User />
     </header>
   );
 };

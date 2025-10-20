@@ -1,16 +1,8 @@
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -137,27 +129,15 @@ export const ApiKeySettings = () => {
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="provider">AI Provider</Label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                {selectedProvider === "openai" ? "OpenAI" : "Gemini"}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-full">
-              <DropdownMenuRadioGroup
-                value={selectedProvider}
-                onValueChange={handleProviderChange}
-              >
-                <DropdownMenuRadioItem value="gemini">
-                  Gemini (Google)
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="openai">
-                  OpenAI
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <select
+            id="provider"
+            value={selectedProvider}
+            onChange={(e) => handleProviderChange(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
+          >
+            <option value="gemini">Gemini (Google)</option>
+            <option value="openai">OpenAI</option>
+          </select>
           <p className="text-sm text-muted-foreground">
             Select your preferred AI provider for content analysis.
           </p>

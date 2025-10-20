@@ -1,14 +1,11 @@
 import { StorageKey, useStorage } from "@/lib/storage";
-import { supabase } from "@/lib/supabase";
 import { Theme } from "@/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
 import { ErrorBoundary } from "~/components/common/error-boundary";
 import { Suspense } from "~/components/common/suspense";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import { Toaster } from "~/components/ui/sonner";
-import { Message } from "~/lib/messaging";
 import { cn } from "~/lib/utils";
 import "~/assets/styles/globals.css";
 
@@ -43,18 +40,6 @@ const LayoutContent = ({
   className,
 }: { readonly children: React.ReactNode; readonly className?: string }) => {
   const { data: theme } = useStorage(StorageKey.THEME);
-  const { set: setUser } = useStorage(StorageKey.USER);
-
-  useEffect(() => {
-    const { data } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user ?? null);
-      queryClient.invalidateQueries({ queryKey: [Message.USER] });
-    });
-
-    return () => {
-      data.subscription.unsubscribe();
-    };
-  }, [setUser]);
 
   return (
     <div

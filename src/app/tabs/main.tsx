@@ -1,23 +1,13 @@
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createHashRouter } from "react-router-dom";
-import { AI } from "./ai";
-import { Login } from "./login";
-import { Register } from "./register";
+import { SettingsTab } from "./settings";
 
 const router = createHashRouter([
   {
     children: [
       {
-        path: "ai",
-        element: <AI />,
-      },
-      {
-        path: "login",
-        element: <Login />,
-      },
-      {
-        path: "register",
-        element: <Register />,
+        path: "settings",
+        element: <SettingsTab />,
       },
     ],
   },

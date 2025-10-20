@@ -90,12 +90,6 @@ const main = () => {
   });
 };
 
-// Handle existing user message
-onMessage(Message.USER, () => {
-  const storage = getStorage(StorageKey.USER);
-  return storage.getValue();
-});
-
 // Handle page analysis requests
 onMessage(Message.ANALYZE_PAGE, async (message) => {
   try {

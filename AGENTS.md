@@ -5,7 +5,7 @@ This file provides guidance to agents when working with code in this repository.
 ## Build and Development Commands
 
 - Use `bun dev` for Chrome development, `bun dev:firefox` for Firefox
-- Run `bun build` for production builds (creates both Chrome and Firefox packages)
+- Run `bun build:chrome` for production builds (creates both Chrome and Firefox packages)
 - Use `bun lint` for Biome linting and `bun lint:fix` to auto-fix issues
 - Run `bun typecheck` for TypeScript validation without emitting files
 - Tests use Bun test framework (`bun:test`) rather than Vitest despite Vitest being in dependencies
@@ -51,3 +51,5 @@ This file provides guidance to agents when working with code in this repository.
 - React Query for server state management
 - Supabase for backend services and authentication
 - Radix UI primitives with shadcn/ui patterns for components
+- Use `context7` mcp for package/service documentations
+- Use `sequentional thinking` for reasoning of complex tasks

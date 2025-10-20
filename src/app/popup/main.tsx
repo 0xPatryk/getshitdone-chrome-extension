@@ -6,6 +6,8 @@ import { ExtensionToggle } from "~/components/popup/extension-toggle";
 import { StatusDisplay } from "~/components/popup/status-display";
 import { TaskInput } from "~/components/popup/task-input";
 import { Separator } from "~/components/ui/separator";
+import { Button } from "~/components/ui/button";
+import { Settings } from "lucide-react";
 
 const Popup = () => {
   return (
@@ -28,6 +30,22 @@ const Popup = () => {
         <Separator />
 
         <TaskInput />
+
+        <Separator />
+
+        <div className="flex justify-center">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              chrome.tabs.create({ url: `${chrome.runtime.getURL("tabs.html")}#settings` });
+            }}
+            className="gap-2"
+          >
+            <Settings className="size-4" />
+            Settings
+          </Button>
+        </div>
       </div>
     </div>
   );
