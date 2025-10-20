@@ -18,6 +18,32 @@ const main = () => {
     "Background service worker is running! Edit `src/app/background` and save to reload.",
   );
 
+  // Initialize storage with environment variables on extension install
+  chrome.runtime.onInstalled.addListener(async (details) => {
+    if (details.reason === "install") {
+      console.log("Extension installed, initializing storage with environment variables");
+      
+      // Trigger storage initialization by accessing each storage item
+      // This will invoke the init functions defined in storage.ts
+      const geminiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
+      await geminiKeyStorage.getValue();
+      
+      const openaiKeyStorage = getStorage(StorageKey.OPENAI_API_KEY);
+      await openaiKeyStorage.getValue();
+      
+      const aiProviderStorage = getStorage(StorageKey.AI_PROVIDER);
+      await aiProviderStorage.getValue();
+      
+      const currentTaskStorage = getStorage(StorageKey.CURRENT_TASK);
+      await currentTaskStorage.getValue();
+      
+      const extensionEnabledStorage = getStorage(StorageKey.EXTENSION_ENABLED);
+      await extensionEnabledStorage.getValue();
+      
+      console.log("Storage initialization completed");
+    }
+  });
+
   // Listen for tab updates to trigger analysis
   chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // Only run when page is completely loaded

@@ -1,5 +1,4 @@
 import { Settings } from "lucide-react";
-import { Layout } from "~/components/layout/layout";
 import {
   Card,
   CardContent,
@@ -33,94 +32,34 @@ export const SettingsTab = () => {
   );
 
   return (
-    <Layout>
-      <div className="w-full max-w-4xl mx-auto space-y-8">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Settings className="size-6" />
-            <h1 className="text-2xl font-bold">Settings</h1>
-          </div>
-          <p className="text-muted-foreground">
-            Configure your extension preferences and API settings
-          </p>
+    <div className="w-full max-w-4xl mx-auto space-y-8">
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <Settings className="size-6" />
+          <h1 className="text-2xl font-bold">Settings</h1>
         </div>
+        <p className="text-muted-foreground">
+          Configure your extension preferences and API settings
+        </p>
+      </div>
 
-        <Separator />
+      <Separator />
 
-        <div className="grid gap-8 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Extension Status</CardTitle>
-              <CardDescription>
-                Enable or disable the focus mode extension
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="extension-enabled">Focus Mode</Label>
-                <Switch
-                  id="extension-enabled"
-                  checked={extensionEnabled}
-                  onCheckedChange={setExtensionEnabled}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Provider</CardTitle>
-              <CardDescription>
-                Choose your preferred AI provider
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="ai-provider">Use OpenAI</Label>
-                <Switch
-                  id="ai-provider"
-                  checked={aiProvider === "openai"}
-                  onCheckedChange={(checked) =>
-                    setAiProvider(checked ? "openai" : "gemini")
-                  }
-                />
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Current provider:{" "}
-                <span className="font-medium">
-                  {aiProvider === "openai" ? "OpenAI" : "Google Gemini"}
-                </span>
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>API Keys</CardTitle>
+            <CardTitle>Extension Status</CardTitle>
             <CardDescription>
-              Configure your API keys for AI services
+              Enable or disable the focus mode extension
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="gemini-key">Google Gemini API Key</Label>
-              <Input
-                id="gemini-key"
-                type="password"
-                placeholder="Enter your Gemini API key"
-                value={geminiApiKey || ""}
-                onChange={(e) => setGeminiApiKey(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="openai-key">OpenAI API Key</Label>
-              <Input
-                id="openai-key"
-                type="password"
-                placeholder="Enter your OpenAI API key"
-                value={openaiApiKey || ""}
-                onChange={(e) => setOpenaiApiKey(e.target.value)}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="extension-enabled">Focus Mode</Label>
+              <Switch
+                id="extension-enabled"
+                checked={extensionEnabled}
+                onCheckedChange={setExtensionEnabled}
               />
             </div>
           </CardContent>
@@ -128,23 +67,79 @@ export const SettingsTab = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Focus Task</CardTitle>
-            <CardDescription>Define what you want to focus on</CardDescription>
+            <CardTitle>AI Provider</CardTitle>
+            <CardDescription>Choose your preferred AI provider</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="current-task">Current Task</Label>
-              <Textarea
-                id="current-task"
-                placeholder="Describe what you're working on..."
-                value={currentTask || ""}
-                onChange={(e) => setCurrentTask(e.target.value)}
-                rows={3}
+            <div className="flex items-center justify-between">
+              <Label htmlFor="ai-provider">Use OpenAI</Label>
+              <Switch
+                id="ai-provider"
+                checked={aiProvider === "openai"}
+                onCheckedChange={(checked) =>
+                  setAiProvider(checked ? "openai" : "gemini")
+                }
               />
             </div>
+            <p className="text-sm text-muted-foreground">
+              Current provider:{" "}
+              <span className="font-medium">
+                {aiProvider === "openai" ? "OpenAI" : "Google Gemini"}
+              </span>
+            </p>
           </CardContent>
         </Card>
       </div>
-    </Layout>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>API Keys</CardTitle>
+          <CardDescription>
+            Configure your API keys for AI services
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="gemini-key">Google Gemini API Key</Label>
+            <Input
+              id="gemini-key"
+              type="password"
+              placeholder="Enter your Gemini API key"
+              value={geminiApiKey || ""}
+              onChange={(e) => setGeminiApiKey(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="openai-key">OpenAI API Key</Label>
+            <Input
+              id="openai-key"
+              type="password"
+              placeholder="Enter your OpenAI API key"
+              value={openaiApiKey || ""}
+              onChange={(e) => setOpenaiApiKey(e.target.value)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Focus Task</CardTitle>
+          <CardDescription>Define what you want to focus on</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="current-task">Current Task</Label>
+            <Textarea
+              id="current-task"
+              placeholder="Describe what you're working on..."
+              value={currentTask || ""}
+              onChange={(e) => setCurrentTask(e.target.value)}
+              rows={3}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

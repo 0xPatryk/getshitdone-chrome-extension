@@ -24,30 +24,65 @@ const storage = {
     StorageKey.GEMINI_API_KEY,
     {
       fallback: null,
+      init: () => {
+        const envValue = import.meta.env.VITE_GEMINI_API_KEY;
+        if (envValue && envValue !== "" && envValue !== "your-gemini-key") {
+          return envValue;
+        }
+        return null;
+      },
     },
   ),
   [StorageKey.OPENAI_API_KEY]: browserStorage.defineItem<string | null>(
     StorageKey.OPENAI_API_KEY,
     {
       fallback: null,
+      init: () => {
+        const envValue = import.meta.env.VITE_OPENAI_API_KEY;
+        if (envValue && envValue !== "" && envValue !== "your-openai-key") {
+          return envValue;
+        }
+        return null;
+      },
     },
   ),
   [StorageKey.AI_PROVIDER]: browserStorage.defineItem<"gemini" | "openai">(
     StorageKey.AI_PROVIDER,
     {
       fallback: "gemini",
+      init: () => {
+        const envValue = import.meta.env.VITE_AI_PROVIDER;
+        if (envValue && (envValue === "gemini" || envValue === "openai")) {
+          return envValue;
+        }
+        return "gemini";
+      },
     },
   ),
   [StorageKey.CURRENT_TASK]: browserStorage.defineItem<string | null>(
     StorageKey.CURRENT_TASK,
     {
       fallback: null,
+      init: () => {
+        const envValue = import.meta.env.VITE_CURRENT_TASK;
+        if (envValue && envValue !== "") {
+          return envValue;
+        }
+        return null;
+      },
     },
   ),
   [StorageKey.EXTENSION_ENABLED]: browserStorage.defineItem<boolean>(
     StorageKey.EXTENSION_ENABLED,
     {
       fallback: false,
+      init: () => {
+        const envValue = import.meta.env.VITE_EXTENSION_ENABLED;
+        if (envValue === "true") {
+          return true;
+        }
+        return false;
+      },
     },
   ),
   [StorageKey.CHAT_SESSIONS]: browserStorage.defineItem<
