@@ -1,3 +1,4 @@
+import { Layout } from "@/components/layout/layout";
 import ReactDOM from "react-dom/client";
 import { RouterProvider, createHashRouter } from "react-router-dom";
 import { SettingsTab } from "./settings";
@@ -14,5 +15,7 @@ const router = createHashRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
-  <RouterProvider router={router} />,
+  <Layout>
+    <RouterProvider router={router} />,
+  </Layout>,
 );

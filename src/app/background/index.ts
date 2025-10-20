@@ -115,7 +115,13 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     }
 
     const pageContent = extractMainContent(content);
-    return await analyzePageContent(apiKey, currentTask, pageContent, url, provider);
+    return await analyzePageContent(
+      apiKey,
+      currentTask,
+      pageContent,
+      url,
+      provider,
+    );
   } catch (error) {
     console.error("Analysis failed:", error);
     throw error;

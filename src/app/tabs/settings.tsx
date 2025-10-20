@@ -1,7 +1,12 @@
 import { Settings } from "lucide-react";
 import { Layout } from "~/components/layout/layout";
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
@@ -9,27 +14,23 @@ import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
 import { useStorage } from "~/lib/storage";
 import { StorageKey } from "~/lib/storage";
-import { useState } from "react";
 
 export const SettingsTab = () => {
-  const { data: geminiApiKey, set: setGeminiApiKey } = useStorage(StorageKey.GEMINI_API_KEY);
-  const { data: openaiApiKey, set: setOpenaiApiKey } = useStorage(StorageKey.OPENAI_API_KEY);
-  const { data: aiProvider, set: setAiProvider } = useStorage(StorageKey.AI_PROVIDER);
-  const { data: currentTask, set: setCurrentTask } = useStorage(StorageKey.CURRENT_TASK);
-  const { data: extensionEnabled, set: setExtensionEnabled } = useStorage(StorageKey.EXTENSION_ENABLED);
-  
-  const [tempGeminiKey, setTempGeminiKey] = useState(geminiApiKey || "");
-  const [tempOpenaiKey, setTempOpenaiKey] = useState(openaiApiKey || "");
-  const [tempTask, setTempTask] = useState(currentTask || "");
-
-  const handleSaveApiKeys = () => {
-    setGeminiApiKey(tempGeminiKey);
-    setOpenaiApiKey(tempOpenaiKey);
-  };
-
-  const handleSaveTask = () => {
-    setCurrentTask(tempTask);
-  };
+  const { data: geminiApiKey, set: setGeminiApiKey } = useStorage(
+    StorageKey.GEMINI_API_KEY,
+  );
+  const { data: openaiApiKey, set: setOpenaiApiKey } = useStorage(
+    StorageKey.OPENAI_API_KEY,
+  );
+  const { data: aiProvider, set: setAiProvider } = useStorage(
+    StorageKey.AI_PROVIDER,
+  );
+  const { data: currentTask, set: setCurrentTask } = useStorage(
+    StorageKey.CURRENT_TASK,
+  );
+  const { data: extensionEnabled, set: setExtensionEnabled } = useStorage(
+    StorageKey.EXTENSION_ENABLED,
+  );
 
   return (
     <Layout>
@@ -79,11 +80,16 @@ export const SettingsTab = () => {
                 <Switch
                   id="ai-provider"
                   checked={aiProvider === "openai"}
-                  onCheckedChange={(checked) => setAiProvider(checked ? "openai" : "gemini")}
+                  onCheckedChange={(checked) =>
+                    setAiProvider(checked ? "openai" : "gemini")
+                  }
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                Current provider: <span className="font-medium">{aiProvider === "openai" ? "OpenAI" : "Google Gemini"}</span>
+                Current provider:{" "}
+                <span className="font-medium">
+                  {aiProvider === "openai" ? "OpenAI" : "Google Gemini"}
+                </span>
               </p>
             </CardContent>
           </Card>
@@ -103,8 +109,8 @@ export const SettingsTab = () => {
                 id="gemini-key"
                 type="password"
                 placeholder="Enter your Gemini API key"
-                value={tempGeminiKey}
-                onChange={(e) => setTempGeminiKey(e.target.value)}
+                value={geminiApiKey || ""}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -113,20 +119,17 @@ export const SettingsTab = () => {
                 id="openai-key"
                 type="password"
                 placeholder="Enter your OpenAI API key"
-                value={tempOpenaiKey}
-                onChange={(e) => setTempOpenaiKey(e.target.value)}
+                value={openaiApiKey || ""}
+                onChange={(e) => setOpenaiApiKey(e.target.value)}
               />
             </div>
-            <Button onClick={handleSaveApiKeys}>Save API Keys</Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
             <CardTitle>Focus Task</CardTitle>
-            <CardDescription>
-              Define what you want to focus on
-            </CardDescription>
+            <CardDescription>Define what you want to focus on</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -134,12 +137,11 @@ export const SettingsTab = () => {
               <Textarea
                 id="current-task"
                 placeholder="Describe what you're working on..."
-                value={tempTask}
-                onChange={(e) => setTempTask(e.target.value)}
+                value={currentTask || ""}
+                onChange={(e) => setCurrentTask(e.target.value)}
                 rows={3}
               />
             </div>
-            <Button onClick={handleSaveTask}>Save Task</Button>
           </CardContent>
         </Card>
       </div>

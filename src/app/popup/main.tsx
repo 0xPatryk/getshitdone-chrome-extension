@@ -1,13 +1,13 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 
+import { Settings } from "lucide-react";
 import { Layout } from "~/components/layout/layout";
 import { ExtensionToggle } from "~/components/popup/extension-toggle";
 import { StatusDisplay } from "~/components/popup/status-display";
 import { TaskInput } from "~/components/popup/task-input";
-import { Separator } from "~/components/ui/separator";
 import { Button } from "~/components/ui/button";
-import { Settings } from "lucide-react";
+import { Separator } from "~/components/ui/separator";
 
 const Popup = () => {
   return (
@@ -38,7 +38,9 @@ const Popup = () => {
             variant="outline"
             size="sm"
             onClick={() => {
-              chrome.tabs.create({ url: `${chrome.runtime.getURL("tabs.html")}#settings` });
+              chrome.tabs.create({
+                url: `${chrome.runtime.getURL("tabs.html")}#settings`,
+              });
             }}
             className="gap-2"
           >

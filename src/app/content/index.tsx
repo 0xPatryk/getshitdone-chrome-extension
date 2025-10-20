@@ -9,8 +9,11 @@ import {
   sendMessage,
 } from "~/lib/messaging";
 import { createShadowRootUi, defineContentScript } from "#imports";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "~/assets/styles/globals.css";
+
+const queryClient = new QueryClient();
 
 const ContentScriptUI = () => {
   const [blockResult, setBlockResult] = useState<AnalysisResult | null>(null);
@@ -169,7 +172,11 @@ export default defineContentScript({
         container.append(app);
 
         const root = ReactDOM.createRoot(app);
-        root.render(<ContentScriptUI />);
+        root.render(
+          <QueryClientProvider client={queryClient}>
+            <ContentScriptUI />
+          </QueryClientProvider>
+        );
         return root;
       },
       onRemove: (root) => {
