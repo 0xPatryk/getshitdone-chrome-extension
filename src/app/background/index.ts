@@ -10,6 +10,7 @@ import {
   type ChatSession,
   Message,
   onMessage,
+  sendMessage,
 } from "~/lib/messaging";
 import { defineBackground } from "#imports";
 
@@ -105,10 +106,7 @@ const main = () => {
         );
 
         // Send result to content script
-        await chrome.tabs.sendMessage(tabId, {
-          type: Message.BLOCK_RESULT,
-          data: analysisResult,
-        });
+        await sendMessage(Message.BLOCK_RESULT, analysisResult, { tabId });
       }
     } catch (error) {
       console.error("Error in tab analysis:", error);

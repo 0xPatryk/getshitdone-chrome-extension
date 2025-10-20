@@ -7,6 +7,7 @@ import {
   type ChatResponse,
   Message,
   sendMessage,
+  onMessage,
 } from "~/lib/messaging";
 import { createShadowRootUi, defineContentScript } from "#imports";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -49,22 +50,19 @@ const ContentScriptUI = () => {
   });
 
   useEffect(() => {
-    // Listen for messages from background script
-    const messageListener = (message: {
-      type: string;
-      data: AnalysisResult | ChatResponse;
-    }) => {
-      if (message.type === Message.BLOCK_RESULT && message.data) {
-        handleBlockResult(message.data as AnalysisResult);
-      } else if (message.type === Message.CHAT_RESPONSE && message.data) {
-        handleChatResponse(message.data as ChatResponse);
-      }
-    };
+    // Listen for block results from background script
+    const blockResultListener = onMessage(Message.BLOCK_RESULT, (message) => {
+      handleBlockResult(message.data);
+    });
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    // Listen for chat responses from background script
+    const chatResponseListener = onMessage(Message.CHAT_RESPONSE, (message) => {
+      handleChatResponse(message.data);
+    });
 
     return () => {
-      chrome.runtime.onMessage.removeListener(messageListener);
+      blockResultListener();
+      chatResponseListener();
     };
   }, []);
 
