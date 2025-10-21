@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { browser } from "wxt/browser";
 
 import { Settings } from "lucide-react";
 import { Layout } from "~/components/layout/layout";
@@ -38,8 +39,8 @@ const Popup = () => {
             variant="outline"
             size="sm"
             onClick={() => {
-              chrome.tabs.create({
-                url: `${chrome.runtime.getURL("tabs.html")}#settings`,
+              browser.tabs.create({
+                url: `${browser.runtime.getURL("/tabs.html")}#settings`,
               });
             }}
             className="gap-2"

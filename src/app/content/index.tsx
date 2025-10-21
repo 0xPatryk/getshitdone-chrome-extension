@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
@@ -6,11 +7,10 @@ import {
   type AnalysisResult,
   type ChatResponse,
   Message,
-  sendMessage,
   onMessage,
+  sendMessage,
 } from "~/lib/messaging";
 import { createShadowRootUi, defineContentScript } from "#imports";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import "~/assets/styles/globals.css";
 
@@ -67,11 +67,11 @@ const ContentScriptUI = () => {
   }, []);
 
   const handleBlockResult = (result: AnalysisResult) => {
-    setBlockState(prev => ({ ...prev, blockResult: result }));
+    setBlockState((prev) => ({ ...prev, blockResult: result }));
 
     switch (result.decision) {
       case "BLOCK_ALL":
-        setBlockState(prev => ({ ...prev, isBlocked: true }));
+        setBlockState((prev) => ({ ...prev, isBlocked: true }));
         break;
       case "REMOVE_ELEMENTS":
         removeElements(result.selectors || []);
@@ -99,12 +99,15 @@ const ContentScriptUI = () => {
   };
 
   const handleUnblock = useCallback(() => {
-    setBlockState(prev => ({ ...prev, isBlocked: false, blockResult: null }));
+    setBlockState((prev) => ({ ...prev, isBlocked: false, blockResult: null }));
   }, []);
 
-  const handleRequestAccess = useCallback((justification: string) => {
-    unblockMutation.mutate(justification);
-  }, [unblockMutation]);
+  const handleRequestAccess = useCallback(
+    (justification: string) => {
+      unblockMutation.mutate(justification);
+    },
+    [unblockMutation],
+  );
 
   const handleChatResponse = useCallback((response: ChatResponse) => {
     // This will be handled by the ChatInterface component
@@ -177,7 +180,7 @@ export default defineContentScript({
         root.render(
           <QueryClientProvider client={queryClient}>
             <ContentScriptUI />
-          </QueryClientProvider>
+          </QueryClientProvider>,
         );
         return root;
       },

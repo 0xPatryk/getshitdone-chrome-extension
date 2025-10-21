@@ -1,4 +1,5 @@
 import { StorageKey, getStorage } from "@/lib/storage";
+import { browser } from "wxt/browser";
 import {
   analyzePageContent,
   extractMainContent,
@@ -20,41 +21,44 @@ const main = () => {
   );
 
   // Initialize storage with environment variables on extension install
-  chrome.runtime.onInstalled.addListener(async (details) => {
+  browser.runtime.onInstalled.addListener(async (details) => {
     if (details.reason === "install") {
-      console.log("Extension installed, initializing storage with environment variables");
-      
+      console.log(
+        "Extension installed, initializing storage with environment variables",
+      );
+
       // Trigger storage initialization by accessing each storage item
       // This will invoke the init functions defined in storage.ts
       const geminiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
       await geminiKeyStorage.getValue();
-      
+
       const openaiKeyStorage = getStorage(StorageKey.OPENAI_API_KEY);
       await openaiKeyStorage.getValue();
-      
+
       const aiProviderStorage = getStorage(StorageKey.AI_PROVIDER);
       await aiProviderStorage.getValue();
-      
+
       const currentTaskStorage = getStorage(StorageKey.CURRENT_TASK);
       await currentTaskStorage.getValue();
-      
+
       const extensionEnabledStorage = getStorage(StorageKey.EXTENSION_ENABLED);
       await extensionEnabledStorage.getValue();
-      
+
       console.log("Storage initialization completed");
     }
   });
 
   // Listen for tab updates to trigger analysis
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // Only run when page is completely loaded
     if (changeInfo.status !== "complete" || !tab.url || !tab.id) {
       return;
     }
 
-    // Skip chrome:// pages and other special URLs
+    // Skip chrome:// pages and other special URLs (both Chrome and Firefox)
     if (
       tab.url.startsWith("chrome://") ||
+      tab.url.startsWith("moz-extension://") ||
       tab.url.startsWith("chrome-extension://")
     ) {
       return;
@@ -90,7 +94,7 @@ const main = () => {
       }
 
       // Get page content
-      const results = await chrome.scripting.executeScript({
+      const results = await browser.scripting.executeScript({
         target: { tabId },
         func: () => document.documentElement.outerHTML,
       });
