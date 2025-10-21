@@ -168,6 +168,42 @@ export default defineContentScript({
       "Content script is running! Edit `src/app/content` and save to reload.",
     );
 
+    // Function to analyze the current page
+    const analyzeCurrentPage = async () => {
+      try {
+        // Skip chrome:// pages and other special URLs
+        if (
+          window.location.href.startsWith("chrome://") ||
+          window.location.href.startsWith("moz-extension://") ||
+          window.location.href.startsWith("chrome-extension://")
+        ) {
+          return;
+        }
+
+        console.log("Analyzing page:", window.location.href);
+        console.log("Messaging system available:", typeof sendMessage !== 'undefined');
+        
+        // Send page content to background script for analysis
+        console.log("Sending ANALYZE_PAGE message...");
+        const response = await sendMessage(Message.ANALYZE_PAGE, {
+          url: window.location.href,
+          content: document.documentElement.outerHTML,
+        });
+        console.log("ANALYZE_PAGE response:", response);
+      } catch (error) {
+        console.error("Error analyzing page:", error);
+      }
+    };
+
+    // Analyze the page when the content script loads
+    analyzeCurrentPage();
+
+    // Listen for location changes (for SPAs)
+    ctx.addEventListener(window, "wxt:locationchange", () => {
+      console.log("Location changed, analyzing new page");
+      analyzeCurrentPage();
+    });
+
     const ui = await createShadowRootUi(ctx, {
       name: "focus-block-ui",
       position: "overlay",
