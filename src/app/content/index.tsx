@@ -181,8 +181,11 @@ export default defineContentScript({
         }
 
         console.log("Analyzing page:", window.location.href);
-        console.log("Messaging system available:", typeof sendMessage !== 'undefined');
-        
+        console.log(
+          "Messaging system available:",
+          typeof sendMessage !== "undefined",
+        );
+
         // Send page content to background script for analysis
         console.log("Sending ANALYZE_PAGE message...");
         const response = await sendMessage(Message.ANALYZE_PAGE, {
@@ -200,7 +203,10 @@ export default defineContentScript({
 
     // Listen for location changes (for SPAs)
     ctx.addEventListener(window, "wxt:locationchange", () => {
-      console.log("[DEBUG] Location changed, analyzing new page at:", new Date().toISOString());
+      console.log(
+        "[DEBUG] Location changed, analyzing new page at:",
+        new Date().toISOString(),
+      );
       console.log("[DEBUG] Current URL:", window.location.href);
       analyzeCurrentPage();
     });

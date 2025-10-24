@@ -22,7 +22,7 @@ export const ChatInterface = ({
   const [isAccessGranted, setIsAccessGranted] = useState(false);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
-  
+
   // Local state for chat messages - avoids storage watcher issues
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [sessionId] = useState(() => `session_${Date.now()}`);
@@ -53,7 +53,7 @@ export const ChatInterface = ({
     },
     onSuccess: (response) => {
       // Add AI response to local state
-      setMessages(prev => [...prev, response.message]);
+      setMessages((prev) => [...prev, response.message]);
 
       // Check if AI granted access
       if (response.message.content.includes("ACCESS_GRANTED") && onUnblock) {
@@ -81,13 +81,16 @@ export const ChatInterface = ({
     },
     onError: (error, variables) => {
       console.error("Failed to send message:", error);
-      setMessages(prev => [...prev, {
-        content:
-          "Sorry, I'm having trouble responding right now. Please try again.",
-        role: "assistant",
-        id: `error_${Date.now()}`,
-        timestamp: Date.now(),
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          content:
+            "Sorry, I'm having trouble responding right now. Please try again.",
+          role: "assistant",
+          id: `error_${Date.now()}`,
+          timestamp: Date.now(),
+        },
+      ]);
     },
   });
 
@@ -147,7 +150,7 @@ export const ChatInterface = ({
       role: "user",
       timestamp: Date.now(),
     };
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
 
     // Send to AI
     sendRealMessage(sessionId, message);
