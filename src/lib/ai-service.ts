@@ -80,12 +80,10 @@ If removing elements, provide CSS selectors for the distracting elements.`;
     });
 
     return object;
-  } catch (error) {
-    console.error("AI analysis failed:", error);
-    // Fallback to allow if AI fails
+  } catch (error: unknown) {
     return {
       decision: "ALLOW",
-      reason: "AI analysis failed - allowing access",
+      reason: `AI analysis failed. Reason: ${error}`,
     };
   }
 };

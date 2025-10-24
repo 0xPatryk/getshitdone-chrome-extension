@@ -93,7 +93,7 @@ export const useChatSession = () => {
 
 // Re-export useStorage for internal use
 const useStorage = <K extends StorageKey>(key: K) => {
-  const item = storage[key] as WxtStorageItem<
+  const item = storage[key as keyof typeof storage] as WxtStorageItem<
     K extends typeof StorageKey.CHAT_SESSIONS
       ? Record<string, ChatSession>
       : K extends typeof StorageKey.ACTIVE_CHAT_SESSION
@@ -124,7 +124,7 @@ const useStorage = <K extends StorageKey>(key: K) => {
     void item.removeValue();
   };
 
-  const set = (newValue: unknown) => {
+  const set = (newValue: Parameters<typeof item.setValue>[0]) => {
     void item.setValue(newValue);
   };
 

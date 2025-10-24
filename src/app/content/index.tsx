@@ -200,7 +200,8 @@ export default defineContentScript({
 
     // Listen for location changes (for SPAs)
     ctx.addEventListener(window, "wxt:locationchange", () => {
-      console.log("Location changed, analyzing new page");
+      console.log("[DEBUG] Location changed, analyzing new page at:", new Date().toISOString());
+      console.log("[DEBUG] Current URL:", window.location.href);
       analyzeCurrentPage();
     });
 

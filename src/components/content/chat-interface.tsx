@@ -3,7 +3,6 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useChatSession } from "~/lib/chat-session";
 import type { ChatMessage, ChatResponse } from "~/lib/messaging";
 
 interface ChatInterfaceProps {
@@ -23,9 +22,11 @@ export const ChatInterface = ({
   const [isAccessGranted, setIsAccessGranted] = useState(false);
   const [isAccessDenied, setIsAccessDenied] = useState(false);
   const [accessMessage, setAccessMessage] = useState("");
-
-  const { activeSession, createSession, addMessage, endSession } =
-    useChatSession();
+  
+  // Local state for chat messages - avoids storage watcher issues
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [sessionId] = useState(() => `session_${Date.now()}`);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Mutation for sending chat messages
   const chatMutation = useMutation<
@@ -51,14 +52,14 @@ export const ChatInterface = ({
       return await windowWithChat.sendChatMessage(sessionId, message);
     },
     onSuccess: (response) => {
-      addMessage(response.sessionId, response.message);
+      // Add AI response to local state
+      setMessages(prev => [...prev, response.message]);
 
       // Check if AI granted access
       if (response.message.content.includes("ACCESS_GRANTED") && onUnblock) {
         setIsAccessGranted(true);
         setAccessMessage("Access granted! Redirecting you to the page...");
         setTimeout(() => {
-          endSession(response.sessionId);
           onUnblock();
         }, 2000);
       } else if (
@@ -74,18 +75,19 @@ export const ChatInterface = ({
           reasonMatch?.[1]?.trim() || "Access denied by AI assistant";
         setAccessMessage(reason);
         setTimeout(() => {
-          endSession(response.sessionId);
           onAccessDenied(reason);
         }, 2000);
       }
     },
     onError: (error, variables) => {
       console.error("Failed to send message:", error);
-      addMessage(variables.sessionId, {
+      setMessages(prev => [...prev, {
         content:
           "Sorry, I'm having trouble responding right now. Please try again.",
         role: "assistant",
-      });
+        id: `error_${Date.now()}`,
+        timestamp: Date.now(),
+      }]);
     },
   });
 
@@ -97,26 +99,21 @@ export const ChatInterface = ({
     [chatMutation],
   );
 
-  // Initialize session if needed
+  // Initialize with initial message if provided
   useEffect(() => {
-    if (!activeSession) {
-      const newSession = createSession();
-      if (initialMessage) {
-        addMessage(newSession.id, {
-          content: initialMessage,
-          role: "user",
-        });
-        // Send to AI for real response
-        sendRealMessage(newSession.id, initialMessage);
-      }
+    if (!isInitialized && initialMessage) {
+      const userMessage: ChatMessage = {
+        id: `user_${Date.now()}`,
+        content: initialMessage,
+        role: "user",
+        timestamp: Date.now(),
+      };
+      setMessages([userMessage]);
+      setIsInitialized(true);
+      // Send to AI for real response
+      sendRealMessage(sessionId, initialMessage);
     }
-  }, [
-    activeSession,
-    createSession,
-    addMessage,
-    initialMessage,
-    sendRealMessage,
-  ]);
+  }, [initialMessage, isInitialized, sessionId, sendRealMessage]);
 
   // Auto-scroll to bottom when new messages arrive
   // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -129,12 +126,11 @@ export const ChatInterface = ({
         scrollElement.scrollTop = scrollElement.scrollHeight;
       }
     }
-  }, [activeSession?.messages, chatMutation.isPending]);
+  }, [messages, chatMutation.isPending]);
 
   const handleSendMessage = () => {
     if (
       !inputMessage.trim() ||
-      !activeSession ||
       chatMutation.isPending ||
       isAccessGranted ||
       isAccessDenied
@@ -144,14 +140,17 @@ export const ChatInterface = ({
     const message = inputMessage.trim();
     setInputMessage("");
 
-    // Add user message
-    addMessage(activeSession.id, {
+    // Add user message to local state
+    const userMessage: ChatMessage = {
+      id: `user_${Date.now()}`,
       content: message,
       role: "user",
-    });
+      timestamp: Date.now(),
+    };
+    setMessages(prev => [...prev, userMessage]);
 
     // Send to AI
-    sendRealMessage(activeSession.id, message);
+    sendRealMessage(sessionId, message);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -172,7 +171,7 @@ export const ChatInterface = ({
     <div className="flex flex-col h-full space-y-4">
       <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
         <div className="space-y-4">
-          {activeSession?.messages.map((message: ChatMessage) => (
+          {messages.map((message: ChatMessage) => (
             <div
               key={message.id}
               className={`flex ${
