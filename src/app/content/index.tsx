@@ -213,10 +213,12 @@ export default defineContentScript({
 
     const ui = await createShadowRootUi(ctx, {
       name: "focus-block-ui",
-      position: "overlay",
+      position: "inline",
       anchor: "body",
+      append: "replace",
       onMount: (container) => {
         const app = document.createElement("div");
+        app.className = "w-full h-full";
         container.append(app);
 
         const root = ReactDOM.createRoot(app);

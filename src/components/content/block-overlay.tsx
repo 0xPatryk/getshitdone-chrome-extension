@@ -15,42 +15,46 @@ export const BlockOverlay = ({
   isSubmitting,
 }: BlockOverlayProps) => {
   return (
-    <div className="fixed inset-0 z-[999999] bg-black/90 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col p-6">
-        <div className="space-y-4 mb-4">
-          <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-red-600 dark:text-red-400">
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+          <div className="text-center space-y-4">
+            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
               🚫 Access Blocked
-            </h2>
-            <p className="text-gray-700 dark:text-gray-300">
-              This page has been identified as a distraction from your current
-              task.
+            </h1>
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              This page has been identified as a distraction from your current task.
             </p>
           </div>
 
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-4">
-            <p className="text-sm font-medium text-red-800 dark:text-red-200">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
+            <p className="text-lg font-medium text-red-800 dark:text-red-200">
               Reason: {reason}
             </p>
           </div>
-        </div>
 
-        <div className="flex-1 min-h-0">
-          <ChatInterface
-            initialMessage="I need access to this page. Can you help me understand why it's blocked?"
-            onUnblock={onUnblock}
-            onAccessDenied={(deniedReason) => {
-              console.log("Access denied:", deniedReason);
-            }}
-          />
+          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 min-h-[400px]">
+            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+              Chat with Assistant
+            </h2>
+            <ChatInterface
+              initialMessage="I need access to this page. Can you help me understand why it's blocked?"
+              onUnblock={onUnblock}
+              onAccessDenied={(deniedReason) => {
+                console.log("Access denied:", deniedReason);
+              }}
+            />
+          </div>
         </div>
+      </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
+        <div className="max-w-4xl mx-auto flex gap-4">
           <Button
             variant="outline"
             onClick={() => window.history.back()}
             disabled={isSubmitting}
-            className="w-full"
+            className="flex-1"
           >
             Go Back
           </Button>
