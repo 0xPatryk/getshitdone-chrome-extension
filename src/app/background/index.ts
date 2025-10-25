@@ -1,175 +1,166 @@
-import { StorageKey, getStorageValue } from "@/lib/storage";
-import { browser } from "wxt/browser";
-import {
-  analyzePageContent,
-  extractMainContent,
-  processChatMessage,
-  processUnblockRequest,
-} from "~/lib/ai-service";
-import {
-  type ChatMessage,
-  type ChatSession,
-  Message,
-  onMessage,
-  sendMessage,
-} from "~/lib/messaging";
+import { onMessage, Message } from "~/lib/messaging";
+import { AnalysisResultSchema } from "~/lib/messaging";
+import { getStorageValue } from "~/lib/storage";
+import { StorageKey } from "~/lib/storage";
+import { analyzePageContent, processUnblockRequest, processChatMessage } from "~/lib/ai-service";
+import type { ChatMessage } from "~/lib/messaging";
 import { defineBackground } from "#imports";
 
-const main = () => {
-  console.log(
-    "Background service worker is running! Edit `src/app/background` and save to reload.",
-  );
+// Set up message handlers
+onMessage(Message.ANALYZE_PAGE, async (message) => {
+  console.log("Background received ANALYZE_PAGE message:", message);
+  const data = message.data;
+  
+  try {
+    // Get the AI provider, API key, and current task from storage
+    const [aiProvider, geminiApiKey, openaiApiKey, currentTask] = await Promise.all([
+      getStorageValue(StorageKey.AI_PROVIDER),
+      getStorageValue(StorageKey.GEMINI_API_KEY),
+      getStorageValue(StorageKey.OPENAI_API_KEY),
+      getStorageValue(StorageKey.CURRENT_TASK),
+    ]);
 
-  // Initialize storage with environment variables on extension install
-  browser.runtime.onInstalled.addListener(async (details) => {
-    if (details.reason === "install") {
-      console.log(
-        "Extension installed, initializing storage with environment variables",
-      );
+    console.log("AI Provider:", aiProvider);
+    console.log("Gemini API Key available:", !!geminiApiKey);
+    console.log("OpenAI API Key available:", !!openaiApiKey);
+    console.log("Current Task:", currentTask);
 
-      // Trigger storage initialization by accessing each storage item
-      // This will invoke the init functions defined in storage.ts
-      await getStorageValue(StorageKey.GEMINI_API_KEY);
-      await getStorageValue(StorageKey.OPENAI_API_KEY);
-      await getStorageValue(StorageKey.AI_PROVIDER);
-      await getStorageValue(StorageKey.CURRENT_TASK);
-      await getStorageValue(StorageKey.EXTENSION_ENABLED);
-
-      console.log("Storage initialization completed");
-    }
-  });
-
-  // Handle page analysis requests
-  onMessage(Message.ANALYZE_PAGE, async (message) => {
-    console.log("Background: Received ANALYZE_PAGE message:", message);
-    try {
-      const { url, content, alwaysRemove } = message.data;
-      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
-
-      const apiKey = await getStorageValue(
-        provider === "openai"
-          ? StorageKey.OPENAI_API_KEY
-          : StorageKey.GEMINI_API_KEY,
-      );
-
-      if (!apiKey) {
-        throw new Error(`No ${provider} API key configured`);
-      }
-
-      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
-
-      if (!currentTask) {
-        throw new Error("No task configured");
-      }
-
-      const pageContent = extractMainContent(content);
-      const analysisResult = await analyzePageContent(
-        apiKey,
-        currentTask,
-        pageContent,
-        url,
-        provider,
-        alwaysRemove,
-      );
-
-      // Send result to content script
-      const tabs = await browser.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      if (tabs[0]?.id) {
-        await sendMessage(Message.BLOCK_RESULT, analysisResult, {
-          tabId: tabs[0].id,
-        });
-      }
-
-      return analysisResult;
-    } catch (error) {
-      console.error("Analysis failed:", error);
-      throw error;
-    }
-  });
-
-  // Handle unblock requests
-  onMessage(Message.UNBLOCK_REQUEST, async (message) => {
-    try {
-      const request = message.data;
-      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
-
-      const apiKey = await getStorageValue(
-        provider === "openai"
-          ? StorageKey.OPENAI_API_KEY
-          : StorageKey.GEMINI_API_KEY,
-      );
-
-      if (!apiKey) {
-        throw new Error(`No ${provider} API key configured`);
-      }
-
-      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
-
-      if (!currentTask) {
-        throw new Error("No task configured");
-      }
-
-      return await processUnblockRequest(
-        apiKey,
-        currentTask,
-        request,
-        provider,
-      );
-    } catch (error) {
-      console.error("Unblock request failed:", error);
-      throw error;
-    }
-  });
-
-  // Handle chat messages
-  onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
-    try {
-      const { sessionId, message: userMessage } = message.data;
-      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
-
-      const apiKey = await getStorageValue(
-        provider === "openai"
-          ? StorageKey.OPENAI_API_KEY
-          : StorageKey.GEMINI_API_KEY,
-      );
-
-      if (!apiKey) {
-        throw new Error(`No ${provider} API key configured`);
-      }
-
-      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
-
-      if (!currentTask) {
-        throw new Error("No task configured");
-      }
-
-      // Get chat history from storage
-      const chatSessions = (await getStorageValue(
-        StorageKey.CHAT_SESSIONS,
-      )) as Record<string, ChatSession>;
-      const chatHistory: ChatMessage[] =
-        chatSessions[sessionId]?.messages || [];
-
-      const aiResponse = await processChatMessage(
-        apiKey,
-        currentTask,
-        userMessage,
-        chatHistory,
-        provider,
-      );
-
+    // Check if we have the necessary API key
+    const apiKey = aiProvider === "openai" ? openaiApiKey : geminiApiKey;
+    if (!apiKey) {
+      console.error("No API key available for AI provider:", aiProvider);
       return {
-        sessionId,
-        message: aiResponse,
+        decision: "ALLOW",
+        reason: `No API key configured for ${aiProvider}. Please configure your API key in the extension settings.`,
       };
-    } catch (error) {
-      console.error("Chat message processing failed:", error);
-      throw error;
     }
-  });
-};
 
-export default defineBackground(main);
+    // Check if we have a current task
+    if (!currentTask) {
+      console.warn("No current task set, allowing page by default");
+      return {
+        decision: "ALLOW",
+        reason: "No current task set. Please set a task in the extension to enable content analysis.",
+      };
+    }
+
+    // Analyze the page content using the AI service
+    console.log("Analyzing page content...");
+    const analysisResult = await analyzePageContent(
+      apiKey,
+      currentTask,
+      data.content,
+      data.url,
+      aiProvider,
+      data.alwaysRemove
+    );
+
+    console.log("Analysis result:", analysisResult);
+
+    // Validate and return the result
+    const validatedResult = AnalysisResultSchema.parse(analysisResult);
+    return validatedResult;
+  } catch (error) {
+    console.error("Error analyzing page:", error);
+    return {
+      decision: "ALLOW",
+      reason: `Error analyzing page: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+});
+
+onMessage(Message.UNBLOCK_REQUEST, async (message) => {
+  console.log("Background received UNBLOCK_REQUEST message:", message);
+  const data = message.data;
+  
+  try {
+    // Get the AI provider, API key, and current task from storage
+    const [aiProvider, geminiApiKey, openaiApiKey, currentTask] = await Promise.all([
+      getStorageValue(StorageKey.AI_PROVIDER),
+      getStorageValue(StorageKey.GEMINI_API_KEY),
+      getStorageValue(StorageKey.OPENAI_API_KEY),
+      getStorageValue(StorageKey.CURRENT_TASK),
+    ]);
+
+    // Check if we have the necessary API key
+    const apiKey = aiProvider === "openai" ? openaiApiKey : geminiApiKey;
+    if (!apiKey) {
+      console.error("No API key available for AI provider:", aiProvider);
+      return {
+        decision: "DENY",
+        reason: `No API key configured for ${aiProvider}. Please configure your API key in the extension settings.`,
+      };
+    }
+
+    // Process the unblock request using the AI service
+    const response = await processUnblockRequest(
+      apiKey,
+      currentTask || "No task set",
+      {
+        justification: data.justification,
+        originalReason: data.originalReason,
+        taskId: data.taskId,
+      },
+      aiProvider
+    );
+
+    console.log("Unblock response:", response);
+    return response;
+  } catch (error) {
+    console.error("Error processing unblock request:", error);
+    return {
+      decision: "DENY",
+      reason: `Error processing unblock request: ${error instanceof Error ? error.message : "Unknown error"}`,
+    };
+  }
+});
+
+onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
+  console.log("Background received SEND_CHAT_MESSAGE message:", message);
+  const data = message.data;
+  
+  try {
+    // Get the AI provider, API key, and current task from storage
+    const [aiProvider, geminiApiKey, openaiApiKey, currentTask] = await Promise.all([
+      getStorageValue(StorageKey.AI_PROVIDER),
+      getStorageValue(StorageKey.GEMINI_API_KEY),
+      getStorageValue(StorageKey.OPENAI_API_KEY),
+      getStorageValue(StorageKey.CURRENT_TASK),
+    ]);
+
+    // Check if we have the necessary API key
+    const apiKey = aiProvider === "openai" ? openaiApiKey : geminiApiKey;
+    if (!apiKey) {
+      console.error("No API key available for AI provider:", aiProvider);
+      throw new Error(`No API key configured for ${aiProvider}. Please configure your API key in the extension settings.`);
+    }
+
+    // Get chat history for context (this would need to be implemented)
+    const chatHistory: ChatMessage[] = []; // Placeholder - would need to fetch from storage
+
+    // Process the chat message using the AI service
+    const response = await processChatMessage(
+      apiKey,
+      currentTask || "No task set",
+      data.message,
+      chatHistory,
+      aiProvider
+    );
+
+    console.log("Chat response:", response);
+    return {
+      sessionId: data.sessionId,
+      message: response,
+    };
+  } catch (error) {
+    console.error("Error processing chat message:", error);
+    throw error;
+  }
+});
+
+// Initialize the background script
+console.log("Background script initialized");
+
+export default defineBackground(() => {
+  console.log("Background script entry point");
+});
