@@ -5,9 +5,6 @@ import {
   type AnalysisResult,
   AnalysisResultSchema,
   type ChatMessage,
-  type UnblockRequest,
-  type UnblockResponse,
-  UnblockResponseSchema,
 } from "~/lib/messaging";
 
 type AIProvider = "gemini" | "openai";
@@ -133,54 +130,17 @@ IMPORTANT: When in doubt, ALLOW the page. It's better to let a distraction throu
   }
 };
 
-export const processUnblockRequest = async (
-  apiKey: string,
-  userTask: string,
-  request: UnblockRequest,
-  provider: AIProvider = "gemini",
-): Promise<UnblockResponse> => {
-  const model = getModel(provider, apiKey);
-
-  const prompt = `User is requesting access to a blocked page. Evaluate if their justification is valid.
-
-User's current task: "${userTask}"
-Original reason for blocking: "${request.originalReason}"
-User's justification for access: "${request.justification}"
-
-Consider:
-1. Does the justification show legitimate need related to their task?
-2. Is this a reasonable exception or just procrastination?
-3. Would allowing access support or hinder their productivity?
-
-Decide whether to ALLOW or DENY access and provide a brief reason.`;
-
-  try {
-    const { object } = await generateObject({
-      model,
-      schema: UnblockResponseSchema,
-      prompt,
-      temperature: 0.2,
-      mode: "json",
-    });
-
-    return object;
-  } catch (error) {
-    console.error("Unblock request processing failed:", error);
-    // Fallback to deny if AI fails
-    return {
-      decision: "DENY",
-      reason: "Unable to process request - please try again",
-    };
-  }
-};
-
 export const processChatMessage = async (
   apiKey: string,
   userTask: string,
   message: string,
   chatHistory: ChatMessage[],
   provider: AIProvider = "gemini",
-): Promise<ChatMessage> => {
+): Promise<{
+  message: ChatMessage;
+  accessGranted: boolean;
+  durationMinutes?: number;
+}> => {
   const model = getModel(provider, apiKey);
 
   // Build conversation history for context
@@ -205,9 +165,12 @@ ${historyContext}
 User's new message: "${message}"
 
 Respond in a professional, focused manner.
-- If you decide to grant access, include "ACCESS_GRANTED" in your response.
+- If you decide to grant access, you MUST specify the duration in minutes. Use the format: "ACCESS_GRANTED: [duration]" where [duration] is the number of minutes (e.g., "ACCESS_GRANTED: 15" for 15 minutes, "ACCESS_GRANTED: 30" for 30 minutes, "ACCESS_GRANTED: 60" for 1 hour).
+- The duration should be reasonable based on their justification (typically 5-60 minutes).
 - If you decide to deny access, include "ACCESS_DENIED: [reason]" in your response, where [reason] is a brief explanation.
-- If you want to suggest alternatives, be specific about what they should do instead.`;
+- If you want to suggest alternatives, be specific about what they should do instead.
+
+IMPORTANT: When granting access, you MUST include the duration number after "ACCESS_GRANTED:" (e.g., "ACCESS_GRANTED: 20").`;
 
   try {
     const { text } = await generateText({
@@ -216,21 +179,37 @@ Respond in a professional, focused manner.
       temperature: 0.3,
     });
 
+    const content = text.trim();
+
+    // Parse ACCESS_GRANTED with duration
+    const grantedMatch = content.match(/ACCESS_GRANTED:\s*(\d+)/);
+    const accessGranted = grantedMatch !== null;
+    const durationMinutes = grantedMatch?.[1]
+      ? Number.parseInt(grantedMatch[1], 10)
+      : undefined;
+
     return {
-      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      content: text.trim(),
-      role: "assistant",
-      timestamp: Date.now(),
+      message: {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        content,
+        role: "assistant",
+        timestamp: Date.now(),
+      },
+      accessGranted,
+      durationMinutes,
     };
   } catch (error) {
     console.error("Chat message processing failed:", error);
     // Fallback response
     return {
-      id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      content:
-        "I'm having trouble processing your request right now. Please try again.",
-      role: "assistant",
-      timestamp: Date.now(),
+      message: {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        content:
+          "I'm having trouble processing your request right now. Please try again.",
+        role: "assistant",
+        timestamp: Date.now(),
+      },
+      accessGranted: false,
     };
   }
 };

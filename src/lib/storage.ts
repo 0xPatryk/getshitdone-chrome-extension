@@ -3,6 +3,14 @@ import type { ChatSession } from "~/lib/messaging";
 import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 
+// AccessGrant interface for type safety
+interface AccessGrant {
+  url: string;
+  expiresAt: number;
+  grantedAt: number;
+  durationMinutes: number;
+}
+
 export const StorageKey = {
   THEME: "local:theme",
   GEMINI_API_KEY: "local:geminiApiKey",
@@ -13,6 +21,7 @@ export const StorageKey = {
   CHAT_SESSIONS: "local:chatSessions",
   ACTIVE_CHAT_SESSION: "local:activeChatSession",
   ALWAYS_REMOVE: "local:alwaysRemove",
+  ACCESS_GRANTS: "local:accessGrants",
 } as const;
 
 export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
@@ -110,6 +119,11 @@ const storage = {
       },
     },
   ),
+  [StorageKey.ACCESS_GRANTS]: browserStorage.defineItem<
+    Record<string, AccessGrant>
+  >(StorageKey.ACCESS_GRANTS, {
+    fallback: {},
+  }),
 } as const;
 
 export type Value<T extends StorageKey> =
@@ -159,4 +173,59 @@ export const useStorage = <K extends StorageKey>(key: K) => {
   };
 
   return { data: value ?? item.fallback, remove, set };
+};
+
+// Access grant helper functions
+export const getActiveAccessGrant = async (
+  url: string,
+): Promise<AccessGrant | null> => {
+  const grants = await getStorageValue(StorageKey.ACCESS_GRANTS);
+  const grant = grants[url];
+
+  if (!grant) {
+    return null;
+  }
+
+  // Check if grant has expired
+  if (Date.now() >= grant.expiresAt) {
+    // Remove expired grant
+    await removeAccessGrant(url);
+    return null;
+  }
+
+  return grant;
+};
+
+export const setAccessGrant = async (grant: AccessGrant): Promise<void> => {
+  const grantsStorage = getStorage(StorageKey.ACCESS_GRANTS);
+  const grants = await grantsStorage.getValue();
+  await grantsStorage.setValue({
+    ...grants,
+    [grant.url]: grant,
+  });
+};
+
+export const removeAccessGrant = async (url: string): Promise<void> => {
+  const grantsStorage = getStorage(StorageKey.ACCESS_GRANTS);
+  const grants = await grantsStorage.getValue();
+  const { [url]: _, ...remainingGrants } = grants;
+  await grantsStorage.setValue(remainingGrants);
+};
+
+export const cleanupExpiredGrants = async (): Promise<void> => {
+  const grantsStorage = getStorage(StorageKey.ACCESS_GRANTS);
+  const grants = await grantsStorage.getValue();
+  const now = Date.now();
+
+  const validGrants = Object.entries(grants).reduce(
+    (acc, [url, grant]) => {
+      if (now < grant.expiresAt) {
+        acc[url] = grant;
+      }
+      return acc;
+    },
+    {} as Record<string, AccessGrant>,
+  );
+
+  await grantsStorage.setValue(validGrants);
 };

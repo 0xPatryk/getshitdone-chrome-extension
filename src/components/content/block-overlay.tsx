@@ -1,18 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { ChatInterface } from "./chat-interface";
+import { TimerDisplay } from "./timer-display";
 
 interface BlockOverlayProps {
   readonly reason: string;
-  readonly onUnblock: () => void;
-  readonly onRequestAccess: (justification: string) => void;
-  readonly isSubmitting: boolean;
+  readonly onUnblock: (durationMinutes: number) => void;
+  readonly accessExpiresAt?: number;
+  readonly durationMinutes?: number;
+  readonly onTimerExpire?: () => void;
 }
 
 export const BlockOverlay = ({
   reason,
   onUnblock,
-  onRequestAccess,
-  isSubmitting,
+  accessExpiresAt,
+  durationMinutes,
+  onTimerExpire,
 }: BlockOverlayProps) => {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
@@ -34,6 +37,14 @@ export const BlockOverlay = ({
             </p>
           </div>
 
+          {accessExpiresAt && durationMinutes && onTimerExpire && (
+            <TimerDisplay
+              expiresAt={accessExpiresAt}
+              durationMinutes={durationMinutes}
+              onExpire={onTimerExpire}
+            />
+          )}
+
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 min-h-[400px]">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
               Chat with Assistant
@@ -54,7 +65,6 @@ export const BlockOverlay = ({
           <Button
             variant="outline"
             onClick={() => window.history.back()}
-            disabled={isSubmitting}
             className="flex-1"
           >
             Go Back

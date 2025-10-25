@@ -4,8 +4,6 @@ import { z } from "zod";
 export const Message = {
   ANALYZE_PAGE: "analyzePage",
   BLOCK_RESULT: "blockResult",
-  UNBLOCK_REQUEST: "unblockRequest",
-  UNBLOCK_RESPONSE: "unblockResponse",
   SEND_CHAT_MESSAGE: "sendChatMessage",
   CHAT_RESPONSE: "chatResponse",
 } as const;
@@ -17,17 +15,6 @@ export const AnalysisResultSchema = z.object({
   decision: z.enum(["BLOCK_ALL", "REMOVE_ELEMENTS", "ALLOW"]),
   reason: z.string(),
   selectors: z.array(z.string()).optional(),
-});
-
-export const UnblockRequestSchema = z.object({
-  justification: z.string(),
-  originalReason: z.string(),
-  taskId: z.number(),
-});
-
-export const UnblockResponseSchema = z.object({
-  decision: z.enum(["ALLOW", "DENY"]),
-  reason: z.string(),
 });
 
 export const ChatMessageSchema = z.object({
@@ -52,15 +39,23 @@ export const SendChatMessageSchema = z.object({
 export const ChatResponseSchema = z.object({
   sessionId: z.string(),
   message: ChatMessageSchema,
+  accessGranted: z.boolean().optional(),
+  durationMinutes: z.number().optional(),
+});
+
+export const AccessGrantSchema = z.object({
+  url: z.string(),
+  expiresAt: z.number(),
+  grantedAt: z.number(),
+  durationMinutes: z.number(),
 });
 
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
-export type UnblockRequest = z.infer<typeof UnblockRequestSchema>;
-export type UnblockResponse = z.infer<typeof UnblockResponseSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type ChatSession = z.infer<typeof ChatSessionSchema>;
 export type SendChatMessage = z.infer<typeof SendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof ChatResponseSchema>;
+export type AccessGrant = z.infer<typeof AccessGrantSchema>;
 
 interface Messages {
   [Message.ANALYZE_PAGE]: (data: {
@@ -69,8 +64,6 @@ interface Messages {
     alwaysRemove?: string | null;
   }) => AnalysisResult;
   [Message.BLOCK_RESULT]: (data: AnalysisResult) => void;
-  [Message.UNBLOCK_REQUEST]: (data: UnblockRequest) => UnblockResponse;
-  [Message.UNBLOCK_RESPONSE]: (data: UnblockResponse) => void;
   [Message.SEND_CHAT_MESSAGE]: (data: SendChatMessage) => ChatResponse;
   [Message.CHAT_RESPONSE]: (data: ChatResponse) => void;
 }

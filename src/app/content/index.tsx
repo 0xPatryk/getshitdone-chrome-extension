@@ -1,6 +1,5 @@
-import { useMutation } from "@tanstack/react-query";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
 import {
@@ -10,7 +9,13 @@ import {
   onMessage,
   sendMessage,
 } from "~/lib/messaging";
-import { StorageKey, getStorageValue } from "~/lib/storage";
+import {
+  StorageKey,
+  getActiveAccessGrant,
+  getStorageValue,
+  removeAccessGrant,
+  setAccessGrant,
+} from "~/lib/storage";
 import { createShadowRootUi, defineContentScript } from "#imports";
 
 import "~/assets/styles/globals.css";
@@ -48,40 +53,41 @@ const removeElements = (selectors: string[]) => {
   }
 };
 
-const ContentScriptUI = () => {
+const ContentScriptUI = ({
+  initialBlockResult,
+}: {
+  initialBlockResult?: AnalysisResult | null;
+}) => {
+  const timerExpiredRef = useRef(false);
+  const timeoutRef = useRef<number | undefined>(undefined);
   const [blockState, setBlockState] = useState<{
     blockResult: AnalysisResult | null;
     isBlocked: boolean;
+    accessExpiresAt?: number;
+    durationMinutes?: number;
   }>({
-    blockResult: null,
-    isBlocked: false,
-  });
-
-  // Mutation for unblock requests
-  const unblockMutation = useMutation({
-    mutationFn: async (justification: string) => {
-      if (!blockState.blockResult) throw new Error("No block result available");
-
-      return await sendMessage(Message.UNBLOCK_REQUEST, {
-        justification: justification.trim(),
-        originalReason: blockState.blockResult.reason,
-        taskId: Date.now(),
-      });
-    },
-    onSuccess: (response) => {
-      if (response.decision === "ALLOW") {
-        handleUnblock();
-      } else {
-        alert(`Access denied: ${response.reason}`);
-      }
-    },
-    onError: (error) => {
-      console.error("Unblock request failed:", error);
-      alert("Failed to process request. Please try again.");
-    },
+    blockResult: initialBlockResult || null,
+    isBlocked: initialBlockResult?.decision === "BLOCK_ALL" || false,
+    accessExpiresAt: undefined,
+    durationMinutes: undefined,
   });
 
   useEffect(() => {
+    // Check for active access grant on mount
+    const checkActiveGrant = async () => {
+      const activeGrant = await getActiveAccessGrant(window.location.href);
+      if (activeGrant) {
+        console.log("[DEBUG] Found active access grant:", activeGrant);
+        setBlockState((prev) => ({
+          ...prev,
+          isBlocked: false,
+          accessExpiresAt: activeGrant.expiresAt,
+          durationMinutes: activeGrant.durationMinutes,
+        }));
+      }
+    };
+    checkActiveGrant();
+
     // Listen for block results from background script
     const blockResultListener = onMessage(Message.BLOCK_RESULT, (message) => {
       handleBlockResult(message.data);
@@ -95,11 +101,18 @@ const ContentScriptUI = () => {
     return () => {
       blockResultListener();
       chatResponseListener();
+      // Clear timeout on unmount
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
     };
   }, []);
 
   const handleBlockResult = (result: AnalysisResult) => {
-    console.log("[DEBUG] handleBlockResult called with decision:", result.decision);
+    console.log(
+      "[DEBUG] handleBlockResult called with decision:",
+      result.decision,
+    );
     setBlockState((prev) => ({ ...prev, blockResult: result }));
 
     switch (result.decision) {
@@ -115,7 +128,9 @@ const ContentScriptUI = () => {
         removeElements(result.selectors || []);
         break;
       case "ALLOW":
-        console.log("[DEBUG] Page is ALLOWED, removing always-remove elements if any");
+        console.log(
+          "[DEBUG] Page is ALLOWED, removing always-remove elements if any",
+        );
         // Even if the page is allowed, we still need to remove any always-remove elements
         if (result.selectors && result.selectors.length > 0) {
           console.log(
@@ -128,17 +143,75 @@ const ContentScriptUI = () => {
     }
   };
 
+  const handleUnblock = useCallback(async (durationMinutes: number) => {
+    const now = Date.now();
+    const expiresAt = now + durationMinutes * 60 * 1000;
 
-  const handleUnblock = useCallback(() => {
-    setBlockState((prev) => ({ ...prev, isBlocked: false, blockResult: null }));
+    // Save access grant to storage
+    await setAccessGrant({
+      url: window.location.href,
+      expiresAt,
+      grantedAt: now,
+      durationMinutes,
+    });
+
+    console.log("[DEBUG] Access grant saved to storage");
+
+    setBlockState((prev) => ({
+      ...prev,
+      isBlocked: false,
+      blockResult: null,
+      accessExpiresAt: expiresAt,
+      durationMinutes,
+    }));
+
+    // Reset the expired flag
+    timerExpiredRef.current = false;
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set a timeout to re-block when timer expires (backup mechanism)
+    timeoutRef.current = window.setTimeout(
+      () => {
+        handleTimerExpire();
+      },
+      durationMinutes * 60 * 1000,
+    );
   }, []);
 
-  const handleRequestAccess = useCallback(
-    (justification: string) => {
-      unblockMutation.mutate(justification);
-    },
-    [unblockMutation],
-  );
+  const handleTimerExpire = useCallback(async () => {
+    // Prevent multiple calls
+    if (timerExpiredRef.current) {
+      return;
+    }
+    timerExpiredRef.current = true;
+
+    // Clear timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+
+    // Remove access grant from storage
+    await removeAccessGrant(window.location.href);
+
+    // Re-analyze the page when timer expires
+    console.log("[DEBUG] Timer expired, re-blocking page");
+    setBlockState((prev) => ({
+      ...prev,
+      isBlocked: true,
+      accessExpiresAt: undefined,
+      durationMinutes: undefined,
+      blockResult: {
+        decision: "BLOCK_ALL",
+        reason:
+          "Your temporary access has expired. Request access again if needed.",
+      },
+    }));
+  }, []);
 
   const handleChatResponse = useCallback((response: ChatResponse) => {
     // This will be handled by the ChatInterface component
@@ -177,7 +250,12 @@ const ContentScriptUI = () => {
 
   // If not blocked, don't render anything
   if (!blockState.isBlocked || !blockState.blockResult) {
-    console.log("[DEBUG] ContentScriptUI returning null - isBlocked:", blockState.isBlocked, "blockResult:", !!blockState.blockResult);
+    console.log(
+      "[DEBUG] ContentScriptUI returning null - isBlocked:",
+      blockState.isBlocked,
+      "blockResult:",
+      !!blockState.blockResult,
+    );
     return null;
   }
 
@@ -185,8 +263,9 @@ const ContentScriptUI = () => {
     <BlockOverlay
       reason={blockState.blockResult.reason}
       onUnblock={handleUnblock}
-      onRequestAccess={handleRequestAccess}
-      isSubmitting={unblockMutation.isPending}
+      accessExpiresAt={blockState.accessExpiresAt}
+      durationMinutes={blockState.durationMinutes}
+      onTimerExpire={handleTimerExpire}
     />
   );
 };
@@ -201,7 +280,7 @@ export default defineContentScript({
     );
 
     // Function to create and mount the ShadowRoot UI
-    const createBlockUI = async () => {
+    const createBlockUI = async (blockResult: AnalysisResult) => {
       console.log("[DEBUG] Creating ShadowRoot UI for blocking");
       const ui = await createShadowRootUi(ctx, {
         name: "focus-block-ui",
@@ -209,7 +288,10 @@ export default defineContentScript({
         anchor: "body",
         append: "replace",
         onMount: (container) => {
-          console.log("[DEBUG] ShadowRoot UI mounted");
+          console.log(
+            "[DEBUG] ShadowRoot UI mounted with blockResult:",
+            blockResult,
+          );
           const app = document.createElement("div");
           app.className = "w-full h-full";
           container.append(app);
@@ -217,7 +299,7 @@ export default defineContentScript({
           const root = ReactDOM.createRoot(app);
           root.render(
             <QueryClientProvider client={queryClient}>
-              <ContentScriptUI />
+              <ContentScriptUI initialBlockResult={blockResult} />
             </QueryClientProvider>,
           );
           return root;
@@ -268,20 +350,30 @@ export default defineContentScript({
           alwaysRemove,
         });
         console.log("[DEBUG] ANALYZE_PAGE response:", response);
-        
+
         // Only create UI if we need to block the page
         if (response.decision === "BLOCK_ALL") {
-          console.log("[DEBUG] Page needs to be blocked, creating UI");
-          await createBlockUI();
+          console.log(
+            "[DEBUG] Page needs to be blocked, creating UI with response",
+          );
+          await createBlockUI(response);
         } else {
-          console.log("[DEBUG] Page is allowed or needs element removal, not creating blocking UI");
+          console.log(
+            "[DEBUG] Page is allowed or needs element removal, not creating blocking UI",
+          );
           // For REMOVE_ELEMENTS and ALLOW, we don't need to create a UI that replaces the body
           // Just handle the element removal directly without creating a ShadowRoot
           if (response.decision === "REMOVE_ELEMENTS" && response.selectors) {
-            console.log("[DEBUG] Removing elements directly:", response.selectors);
+            console.log(
+              "[DEBUG] Removing elements directly:",
+              response.selectors,
+            );
             removeElements(response.selectors);
           } else if (response.decision === "ALLOW" && response.selectors) {
-            console.log("[DEBUG] Page allowed but removing always-remove elements:", response.selectors);
+            console.log(
+              "[DEBUG] Page allowed but removing always-remove elements:",
+              response.selectors,
+            );
             removeElements(response.selectors);
           }
         }

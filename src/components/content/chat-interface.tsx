@@ -7,7 +7,7 @@ import type { ChatMessage, ChatResponse } from "~/lib/messaging";
 
 interface ChatInterfaceProps {
   readonly initialMessage?: string;
-  readonly onUnblock?: () => void;
+  readonly onUnblock?: (durationMinutes: number) => void;
   readonly onAccessDenied?: (reason: string) => void;
 }
 
@@ -55,12 +55,18 @@ export const ChatInterface = ({
       // Add AI response to local state
       setMessages((prev) => [...prev, response.message]);
 
-      // Check if AI granted access
-      if (response.message.content.includes("ACCESS_GRANTED") && onUnblock) {
+      // Check if AI granted access with duration
+      if (
+        response.accessGranted &&
+        response.durationMinutes !== undefined &&
+        onUnblock
+      ) {
         setIsAccessGranted(true);
-        setAccessMessage("Access granted! Redirecting you to the page...");
+        setAccessMessage(
+          `Access granted for ${response.durationMinutes} minutes! Unblocking page...`,
+        );
         setTimeout(() => {
-          onUnblock();
+          onUnblock(response.durationMinutes as number);
         }, 2000);
       } else if (
         response.message.content.includes("ACCESS_DENIED") &&
