@@ -70,18 +70,37 @@ PRIMARY ASSESSMENT:
 3. Is this entertainment, social media, news, or other potential distractions?
 4. Does the content contain elements that could break focus?
 
-SPECIAL CONSIDERATIONS (These should typically be ALLOWED):
-5. Authentication pages: Login, register, or sign-in forms that are required to access task-relevant content
-6. Verification pages: CAPTCHA, 2FA, security checks, or other verification mechanisms
-7. Gateway pages: Minimal content pages that serve as necessary intermediaries (loading screens, "click to continue", etc.)
-8. Account management: Password reset, profile settings, or other account utilities needed for task completion
+CRITICAL PAGES THAT MUST ALWAYS BE ALLOWED:
+5. Authentication pages: Login, register, sign-in forms, password reset, or any authentication mechanism
+6. Verification pages: CAPTCHA (reCAPTCHA, hCaptcha, Turnstile), 2FA, security checks, email verification, phone verification
+7. Gateway pages: Loading screens, "click to continue", age verification, cookie consent, or any required intermediate step
+8. Account management: Profile settings, account recovery, subscription management, billing pages
 
-For special considerations:
-- ALLOW authentication pages even if they don't directly mention the user's task
-- ALLOW verification pages (CAPTCHA, 2FA) as they are security requirements
-- ALLOW minimal content gateway pages that are clearly stepping stones to the actual content
-- Consider the URL and context - authentication for a relevant service should be allowed
-- Look for indicators that the page is a prerequisite for accessing task-relevant content
+URL PATTERNS TO ALWAYS ALLOW:
+- Contains: captcha, recaptcha, hcaptcha, verify, verification, auth, authenticate, login, signin, register, signup, 2fa, mfa, otp, password, reset, recovery
+- Contains: confirm, validation, security, check, challenge, prove, human, robot, bot
+- Contains: consent, cookie, terms, privacy, age, gate, access, allow
+- Contains: billing, payment, subscription, account, profile, settings
+
+CONTENT INDICATORS TO ALWAYS ALLOW:
+- CAPTCHA challenges: "I'm not a robot", "select all images with", "verify you are human"
+- Authentication forms: Email/password fields, "sign in", "log in", "create account"
+- Verification codes: "enter code", "verification code", "one-time password", "OTP"
+- Security prompts: "two-factor authentication", "security check", "verify identity"
+- Required steps: "continue to site", "proceed", "accept terms", "enable cookies"
+
+DECISION RULES:
+- If the page contains ANY authentication or verification elements, ALWAYS ALLOW regardless of task relevance
+- If the URL contains authentication/verification patterns, ALWAYS ALLOW
+- If the page is a required intermediate step to access content, ALWAYS ALLOW
+- If you're UNCERTAIN about the page's purpose, DEFAULT TO ALLOW
+- Only block if you're CERTAIN the page is a distraction with no legitimate purpose
+
+For critical pages:
+- ALLOW immediately without requiring task relevance
+- Do not remove elements from authentication/verification pages
+- Consider these pages as prerequisites for accessing task-relevant content
+- Even minimal content pages with security features should be allowed
 
 Respond with a decision and appropriate action:
 - BLOCK_ALL: The entire page should be blocked (e.g., social media, entertainment, news)
@@ -92,7 +111,9 @@ If removing elements, provide CSS selectors for BOTH:
 1. Any distracting elements you identify based on the task analysis
 2. Any elements that match the "always remove" criteria specified above
 
-The always remove elements should be included in your selectors list regardless of the main decision.`;
+The always remove elements should be included in your selectors list regardless of the main decision.
+
+IMPORTANT: When in doubt, ALLOW the page. It's better to let a distraction through than to block a legitimate authentication or verification page.`;
 
   try {
     const { object } = await generateObject({
@@ -107,7 +128,7 @@ The always remove elements should be included in your selectors list regardless 
   } catch (error: unknown) {
     return {
       decision: "ALLOW",
-      reason: `AI analysis failed. Reason: ${error}`,
+      reason: `AI analysis failed. Page allowed as fallback. Reason: ${error}`,
     };
   }
 };

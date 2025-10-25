@@ -17,6 +17,37 @@ import "~/assets/styles/globals.css";
 
 const queryClient = new QueryClient();
 
+// Function to remove elements from the page
+const removeElements = (selectors: string[]) => {
+  console.log(
+    `[DEBUG] removeElements called with ${selectors.length} selectors`,
+  );
+
+  for (const selector of selectors) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      console.log(
+        `[DEBUG] Found ${elements.length} elements for selector: ${selector}`,
+      );
+
+      for (const element of elements) {
+        element.remove();
+      }
+
+      if (elements.length > 0) {
+        console.log(
+          `[DEBUG] Successfully removed ${elements.length} elements with selector: ${selector}`,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        `Failed to remove elements with selector: ${selector}`,
+        error,
+      );
+    }
+  }
+};
+
 const ContentScriptUI = () => {
   const [blockState, setBlockState] = useState<{
     blockResult: AnalysisResult | null;
@@ -68,10 +99,12 @@ const ContentScriptUI = () => {
   }, []);
 
   const handleBlockResult = (result: AnalysisResult) => {
+    console.log("[DEBUG] handleBlockResult called with decision:", result.decision);
     setBlockState((prev) => ({ ...prev, blockResult: result }));
 
     switch (result.decision) {
       case "BLOCK_ALL":
+        console.log("[DEBUG] Setting isBlocked to true");
         setBlockState((prev) => ({ ...prev, isBlocked: true }));
         break;
       case "REMOVE_ELEMENTS":
@@ -82,6 +115,7 @@ const ContentScriptUI = () => {
         removeElements(result.selectors || []);
         break;
       case "ALLOW":
+        console.log("[DEBUG] Page is ALLOWED, removing always-remove elements if any");
         // Even if the page is allowed, we still need to remove any always-remove elements
         if (result.selectors && result.selectors.length > 0) {
           console.log(
@@ -94,35 +128,6 @@ const ContentScriptUI = () => {
     }
   };
 
-  const removeElements = (selectors: string[]) => {
-    console.log(
-      `[DEBUG] removeElements called with ${selectors.length} selectors`,
-    );
-
-    for (const selector of selectors) {
-      try {
-        const elements = document.querySelectorAll(selector);
-        console.log(
-          `[DEBUG] Found ${elements.length} elements for selector: ${selector}`,
-        );
-
-        for (const element of elements) {
-          element.remove();
-        }
-
-        if (elements.length > 0) {
-          console.log(
-            `[DEBUG] Successfully removed ${elements.length} elements with selector: ${selector}`,
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `Failed to remove elements with selector: ${selector}`,
-          error,
-        );
-      }
-    }
-  };
 
   const handleUnblock = useCallback(() => {
     setBlockState((prev) => ({ ...prev, isBlocked: false, blockResult: null }));
@@ -172,6 +177,7 @@ const ContentScriptUI = () => {
 
   // If not blocked, don't render anything
   if (!blockState.isBlocked || !blockState.blockResult) {
+    console.log("[DEBUG] ContentScriptUI returning null - isBlocked:", blockState.isBlocked, "blockResult:", !!blockState.blockResult);
     return null;
   }
 
@@ -193,6 +199,38 @@ export default defineContentScript({
     console.log(
       "Content script is running! Edit `src/app/content` and save to reload.",
     );
+
+    // Function to create and mount the ShadowRoot UI
+    const createBlockUI = async () => {
+      console.log("[DEBUG] Creating ShadowRoot UI for blocking");
+      const ui = await createShadowRootUi(ctx, {
+        name: "focus-block-ui",
+        position: "inline",
+        anchor: "body",
+        append: "replace",
+        onMount: (container) => {
+          console.log("[DEBUG] ShadowRoot UI mounted");
+          const app = document.createElement("div");
+          app.className = "w-full h-full";
+          container.append(app);
+
+          const root = ReactDOM.createRoot(app);
+          root.render(
+            <QueryClientProvider client={queryClient}>
+              <ContentScriptUI />
+            </QueryClientProvider>,
+          );
+          return root;
+        },
+        onRemove: (root) => {
+          console.log("[DEBUG] ShadowRoot UI removed");
+          root?.unmount();
+        },
+      });
+
+      ui.mount();
+      return ui;
+    };
 
     // Function to analyze the current page
     const analyzeCurrentPage = async () => {
@@ -230,6 +268,23 @@ export default defineContentScript({
           alwaysRemove,
         });
         console.log("[DEBUG] ANALYZE_PAGE response:", response);
+        
+        // Only create UI if we need to block the page
+        if (response.decision === "BLOCK_ALL") {
+          console.log("[DEBUG] Page needs to be blocked, creating UI");
+          await createBlockUI();
+        } else {
+          console.log("[DEBUG] Page is allowed or needs element removal, not creating blocking UI");
+          // For REMOVE_ELEMENTS and ALLOW, we don't need to create a UI that replaces the body
+          // Just handle the element removal directly without creating a ShadowRoot
+          if (response.decision === "REMOVE_ELEMENTS" && response.selectors) {
+            console.log("[DEBUG] Removing elements directly:", response.selectors);
+            removeElements(response.selectors);
+          } else if (response.decision === "ALLOW" && response.selectors) {
+            console.log("[DEBUG] Page allowed but removing always-remove elements:", response.selectors);
+            removeElements(response.selectors);
+          }
+        }
       } catch (error) {
         console.error("Error analyzing page:", error);
       }
@@ -247,30 +302,5 @@ export default defineContentScript({
       console.log("[DEBUG] Current URL:", window.location.href);
       analyzeCurrentPage();
     });
-
-    const ui = await createShadowRootUi(ctx, {
-      name: "focus-block-ui",
-      position: "inline",
-      anchor: "body",
-      append: "replace",
-      onMount: (container) => {
-        const app = document.createElement("div");
-        app.className = "w-full h-full";
-        container.append(app);
-
-        const root = ReactDOM.createRoot(app);
-        root.render(
-          <QueryClientProvider client={queryClient}>
-            <ContentScriptUI />
-          </QueryClientProvider>,
-        );
-        return root;
-      },
-      onRemove: (root) => {
-        root?.unmount();
-      },
-    });
-
-    ui.mount();
   },
 });
