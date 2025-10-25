@@ -10,6 +10,7 @@ import {
   onMessage,
   sendMessage,
 } from "~/lib/messaging";
+import { StorageKey, getStorageValue } from "~/lib/storage";
 import { createShadowRootUi, defineContentScript } from "#imports";
 
 import "~/assets/styles/globals.css";
@@ -74,20 +75,45 @@ const ContentScriptUI = () => {
         setBlockState((prev) => ({ ...prev, isBlocked: true }));
         break;
       case "REMOVE_ELEMENTS":
+        console.log(
+          "[DEBUG] Removing elements with selectors:",
+          result.selectors,
+        );
         removeElements(result.selectors || []);
         break;
       case "ALLOW":
-        // Do nothing
+        // Even if the page is allowed, we still need to remove any always-remove elements
+        if (result.selectors && result.selectors.length > 0) {
+          console.log(
+            "[DEBUG] Page allowed but removing always-remove elements with selectors:",
+            result.selectors,
+          );
+          removeElements(result.selectors);
+        }
         break;
     }
   };
 
   const removeElements = (selectors: string[]) => {
+    console.log(
+      `[DEBUG] removeElements called with ${selectors.length} selectors`,
+    );
+
     for (const selector of selectors) {
       try {
         const elements = document.querySelectorAll(selector);
+        console.log(
+          `[DEBUG] Found ${elements.length} elements for selector: ${selector}`,
+        );
+
         for (const element of elements) {
           element.remove();
+        }
+
+        if (elements.length > 0) {
+          console.log(
+            `[DEBUG] Successfully removed ${elements.length} elements with selector: ${selector}`,
+          );
         }
       } catch (error) {
         console.warn(
@@ -186,13 +212,24 @@ export default defineContentScript({
           typeof sendMessage !== "undefined",
         );
 
+        // Get always remove list from storage
+        const alwaysRemove = await getStorageValue(StorageKey.ALWAYS_REMOVE);
+
+        console.log(
+          "[DEBUG] Retrieved always-remove list from storage:",
+          alwaysRemove,
+        );
+
         // Send page content to background script for analysis
-        console.log("Sending ANALYZE_PAGE message...");
+        console.log(
+          "[DEBUG] Sending ANALYZE_PAGE message with always-remove data...",
+        );
         const response = await sendMessage(Message.ANALYZE_PAGE, {
           url: window.location.href,
           content: document.documentElement.outerHTML,
+          alwaysRemove,
         });
-        console.log("ANALYZE_PAGE response:", response);
+        console.log("[DEBUG] ANALYZE_PAGE response:", response);
       } catch (error) {
         console.error("Error analyzing page:", error);
       }

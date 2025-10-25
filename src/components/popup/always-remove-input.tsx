@@ -1,0 +1,115 @@
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { StorageKey, useStorage } from "@/lib/storage";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { toast } from "sonner";
+
+export const AlwaysRemoveInput = () => {
+  const { data: alwaysRemove, set: setAlwaysRemove } = useStorage(
+    StorageKey.ALWAYS_REMOVE,
+  );
+  const [inputValue, setInputValue] = useState(alwaysRemove || "");
+  const queryClient = useQueryClient();
+
+  // Mutation for setting/updating always remove list
+  const setAlwaysRemoveMutation = useMutation({
+    mutationFn: async (items: string) => {
+      await setAlwaysRemove(items.trim());
+      return items;
+    },
+    onSuccess: () => {
+      toast.success("Always remove list updated successfully!");
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.ALWAYS_REMOVE],
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to update always remove list");
+      console.error("Error updating always remove list:", error);
+    },
+  });
+
+  // Mutation for clearing always remove list
+  const clearAlwaysRemoveMutation = useMutation({
+    mutationFn: async () => {
+      await setAlwaysRemove(null);
+      return null;
+    },
+    onSuccess: () => {
+      setInputValue("");
+      toast.success("Always remove list cleared successfully!");
+      queryClient.invalidateQueries({
+        queryKey: ["storage", StorageKey.ALWAYS_REMOVE],
+      });
+    },
+    onError: (error) => {
+      toast.error("Failed to clear always remove list");
+      console.error("Error clearing always remove list:", error);
+    },
+  });
+
+  const handleSetAlwaysRemove = () => {
+    if (!inputValue.trim()) {
+      toast.error("Please enter elements to always remove");
+      return;
+    }
+    setAlwaysRemoveMutation.mutate(inputValue);
+  };
+
+  const handleClearAlwaysRemove = () => {
+    clearAlwaysRemoveMutation.mutate();
+  };
+
+  const isSaving =
+    setAlwaysRemoveMutation.isPending || clearAlwaysRemoveMutation.isPending;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="always-remove">Always Remove Elements</Label>
+        <Textarea
+          id="always-remove"
+          placeholder="Describe elements to always remove in natural language (e.g., 'Remove all sidebar navigation menus', 'Hide social media share buttons', 'Remove newsletter signup forms')"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          className="min-h-[100px] resize-none"
+        />
+        <p className="text-xs text-muted-foreground">
+          These elements will be automatically removed from all pages,
+          regardless of your current task.
+        </p>
+      </div>
+
+      <div className="flex gap-2">
+        <Button
+          onClick={handleSetAlwaysRemove}
+          disabled={isSaving || !inputValue.trim()}
+          size="sm"
+          className="flex-1"
+        >
+          {isSaving ? "Saving..." : "Save List"}
+        </Button>
+        {alwaysRemove && (
+          <Button
+            variant="outline"
+            onClick={handleClearAlwaysRemove}
+            disabled={isSaving}
+            size="sm"
+          >
+            Clear
+          </Button>
+        )}
+      </div>
+
+      {alwaysRemove && (
+        <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
+          <p className="text-xs text-blue-800 dark:text-blue-200">
+            ✓ Always remove list is active
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};

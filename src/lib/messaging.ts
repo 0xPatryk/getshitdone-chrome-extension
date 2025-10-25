@@ -66,6 +66,7 @@ interface Messages {
   [Message.ANALYZE_PAGE]: (data: {
     url: string;
     content: string;
+    alwaysRemove?: string | null;
   }) => AnalysisResult;
   [Message.BLOCK_RESULT]: (data: AnalysisResult) => void;
   [Message.UNBLOCK_REQUEST]: (data: UnblockRequest) => UnblockResponse;

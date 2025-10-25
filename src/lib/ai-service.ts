@@ -46,8 +46,13 @@ export const analyzePageContent = async (
   pageContent: string,
   url: string,
   provider: AIProvider = "gemini",
+  alwaysRemove?: string | null,
 ): Promise<AnalysisResult> => {
   const model = getModel(provider, apiKey);
+
+  const alwaysRemoveSection = alwaysRemove
+    ? `\n\nALWAYS REMOVE ELEMENTS:\nThe user has specified these elements that should ALWAYS be removed regardless of task relevance:\n"${alwaysRemove}"\n\nYou MUST include CSS selectors for these always remove elements in your response if they exist on the page, even if the page is otherwise relevant to the task.`
+    : "";
 
   const prompt = `You are an AI assistant that helps users stay focused on their tasks.
 
@@ -55,20 +60,39 @@ User's current task: "${userTask}"
 
 Current page content: "${pageContent.substring(0, 8000)}"
 
-Page URL: "${url}"
+Page URL: "${url}"${alwaysRemoveSection}
 
 Analyze whether this page content is relevant to the user's task or if it's likely to be a distraction. Consider:
+
+PRIMARY ASSESSMENT:
 1. Is the content directly related to completing the task?
 2. Is this a productivity tool or resource that supports the task?
 3. Is this entertainment, social media, news, or other potential distractions?
 4. Does the content contain elements that could break focus?
 
+SPECIAL CONSIDERATIONS (These should typically be ALLOWED):
+5. Authentication pages: Login, register, or sign-in forms that are required to access task-relevant content
+6. Verification pages: CAPTCHA, 2FA, security checks, or other verification mechanisms
+7. Gateway pages: Minimal content pages that serve as necessary intermediaries (loading screens, "click to continue", etc.)
+8. Account management: Password reset, profile settings, or other account utilities needed for task completion
+
+For special considerations:
+- ALLOW authentication pages even if they don't directly mention the user's task
+- ALLOW verification pages (CAPTCHA, 2FA) as they are security requirements
+- ALLOW minimal content gateway pages that are clearly stepping stones to the actual content
+- Consider the URL and context - authentication for a relevant service should be allowed
+- Look for indicators that the page is a prerequisite for accessing task-relevant content
+
 Respond with a decision and appropriate action:
 - BLOCK_ALL: The entire page should be blocked (e.g., social media, entertainment, news)
 - REMOVE_ELEMENTS: Remove specific distracting elements (e.g., ads, recommendations, sidebars)
-- ALLOW: The page is relevant to the task
+- ALLOW: The page is relevant to the task or is a necessary intermediate step
 
-If removing elements, provide CSS selectors for the distracting elements.`;
+If removing elements, provide CSS selectors for BOTH:
+1. Any distracting elements you identify based on the task analysis
+2. Any elements that match the "always remove" criteria specified above
+
+The always remove elements should be included in your selectors list regardless of the main decision.`;
 
   try {
     const { object } = await generateObject({

@@ -4,6 +4,7 @@ import { browser } from "wxt/browser";
 
 import { Settings } from "lucide-react";
 import { Layout } from "~/components/layout/layout";
+import { AlwaysRemoveInput } from "~/components/popup/always-remove-input";
 import { ExtensionToggle } from "~/components/popup/extension-toggle";
 import { StatusDisplay } from "~/components/popup/status-display";
 import { TaskInput } from "~/components/popup/task-input";
@@ -31,6 +32,10 @@ const Popup = () => {
         <Separator />
 
         <TaskInput />
+
+        <Separator />
+
+        <AlwaysRemoveInput />
 
         <Separator />
 

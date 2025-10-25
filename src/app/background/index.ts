@@ -1,4 +1,4 @@
-import { StorageKey, getStorage } from "@/lib/storage";
+import { StorageKey, getStorageValue } from "@/lib/storage";
 import { browser } from "wxt/browser";
 import {
   analyzePageContent,
@@ -29,20 +29,11 @@ const main = () => {
 
       // Trigger storage initialization by accessing each storage item
       // This will invoke the init functions defined in storage.ts
-      const geminiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY);
-      await geminiKeyStorage.getValue();
-
-      const openaiKeyStorage = getStorage(StorageKey.OPENAI_API_KEY);
-      await openaiKeyStorage.getValue();
-
-      const aiProviderStorage = getStorage(StorageKey.AI_PROVIDER);
-      await aiProviderStorage.getValue();
-
-      const currentTaskStorage = getStorage(StorageKey.CURRENT_TASK);
-      await currentTaskStorage.getValue();
-
-      const extensionEnabledStorage = getStorage(StorageKey.EXTENSION_ENABLED);
-      await extensionEnabledStorage.getValue();
+      await getStorageValue(StorageKey.GEMINI_API_KEY);
+      await getStorageValue(StorageKey.OPENAI_API_KEY);
+      await getStorageValue(StorageKey.AI_PROVIDER);
+      await getStorageValue(StorageKey.CURRENT_TASK);
+      await getStorageValue(StorageKey.EXTENSION_ENABLED);
 
       console.log("Storage initialization completed");
     }
@@ -52,22 +43,20 @@ const main = () => {
   onMessage(Message.ANALYZE_PAGE, async (message) => {
     console.log("Background: Received ANALYZE_PAGE message:", message);
     try {
-      const { url, content } = message.data;
-      const providerStorage = getStorage(StorageKey.AI_PROVIDER);
-      const provider = await providerStorage.getValue();
+      const { url, content, alwaysRemove } = message.data;
+      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
 
-      const apiKeyStorage =
+      const apiKey = await getStorageValue(
         provider === "openai"
-          ? getStorage(StorageKey.OPENAI_API_KEY)
-          : getStorage(StorageKey.GEMINI_API_KEY);
-      const apiKey = await apiKeyStorage.getValue();
+          ? StorageKey.OPENAI_API_KEY
+          : StorageKey.GEMINI_API_KEY,
+      );
 
       if (!apiKey) {
         throw new Error(`No ${provider} API key configured`);
       }
 
-      const taskStorage = getStorage(StorageKey.CURRENT_TASK);
-      const currentTask = await taskStorage.getValue();
+      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
 
       if (!currentTask) {
         throw new Error("No task configured");
@@ -80,6 +69,7 @@ const main = () => {
         pageContent,
         url,
         provider,
+        alwaysRemove,
       );
 
       // Send result to content script
@@ -104,21 +94,19 @@ const main = () => {
   onMessage(Message.UNBLOCK_REQUEST, async (message) => {
     try {
       const request = message.data;
-      const providerStorage = getStorage(StorageKey.AI_PROVIDER);
-      const provider = await providerStorage.getValue();
+      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
 
-      const apiKeyStorage =
+      const apiKey = await getStorageValue(
         provider === "openai"
-          ? getStorage(StorageKey.OPENAI_API_KEY)
-          : getStorage(StorageKey.GEMINI_API_KEY);
-      const apiKey = await apiKeyStorage.getValue();
+          ? StorageKey.OPENAI_API_KEY
+          : StorageKey.GEMINI_API_KEY,
+      );
 
       if (!apiKey) {
         throw new Error(`No ${provider} API key configured`);
       }
 
-      const taskStorage = getStorage(StorageKey.CURRENT_TASK);
-      const currentTask = await taskStorage.getValue();
+      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
 
       if (!currentTask) {
         throw new Error("No task configured");
@@ -140,32 +128,28 @@ const main = () => {
   onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     try {
       const { sessionId, message: userMessage } = message.data;
-      const providerStorage = getStorage(StorageKey.AI_PROVIDER);
-      const provider = await providerStorage.getValue();
+      const provider = await getStorageValue(StorageKey.AI_PROVIDER);
 
-      const apiKeyStorage =
+      const apiKey = await getStorageValue(
         provider === "openai"
-          ? getStorage(StorageKey.OPENAI_API_KEY)
-          : getStorage(StorageKey.GEMINI_API_KEY);
-      const apiKey = await apiKeyStorage.getValue();
+          ? StorageKey.OPENAI_API_KEY
+          : StorageKey.GEMINI_API_KEY,
+      );
 
       if (!apiKey) {
         throw new Error(`No ${provider} API key configured`);
       }
 
-      const taskStorage = getStorage(StorageKey.CURRENT_TASK);
-      const currentTask = await taskStorage.getValue();
+      const currentTask = await getStorageValue(StorageKey.CURRENT_TASK);
 
       if (!currentTask) {
         throw new Error("No task configured");
       }
 
       // Get chat history from storage
-      const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS);
-      const chatSessions = (await chatSessionsStorage.getValue()) as Record<
-        string,
-        ChatSession
-      >;
+      const chatSessions = (await getStorageValue(
+        StorageKey.CHAT_SESSIONS,
+      )) as Record<string, ChatSession>;
       const chatHistory: ChatMessage[] =
         chatSessions[sessionId]?.messages || [];
 

@@ -12,6 +12,7 @@ export const StorageKey = {
   EXTENSION_ENABLED: "local:extensionEnabled",
   CHAT_SESSIONS: "local:chatSessions",
   ACTIVE_CHAT_SESSION: "local:activeChatSession",
+  ALWAYS_REMOVE: "local:alwaysRemove",
 } as const;
 
 export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
@@ -96,6 +97,19 @@ const storage = {
       fallback: null,
     },
   ),
+  [StorageKey.ALWAYS_REMOVE]: browserStorage.defineItem<string | null>(
+    StorageKey.ALWAYS_REMOVE,
+    {
+      fallback: null,
+      init: () => {
+        const envValue = import.meta.env.VITE_ALWAYS_REMOVE;
+        if (envValue && envValue !== "") {
+          return envValue;
+        }
+        return null;
+      },
+    },
+  ),
 } as const;
 
 export type Value<T extends StorageKey> =
@@ -103,6 +117,13 @@ export type Value<T extends StorageKey> =
 
 export const getStorage = <K extends StorageKey>(key: K) => {
   return storage[key];
+};
+
+export const getStorageValue = async <K extends StorageKey>(
+  key: K,
+): Promise<Value<K>> => {
+  const storageItem = storage[key];
+  return (await storageItem.getValue()) as Value<K>;
 };
 
 export const useStorage = <K extends StorageKey>(key: K) => {

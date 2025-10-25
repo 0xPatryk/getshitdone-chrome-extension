@@ -23,7 +23,8 @@ export const BlockOverlay = ({
               🚫 Access Blocked
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300">
-              This page has been identified as a distraction from your current task.
+              This page has been identified as a distraction from your current
+              task.
             </p>
           </div>
 
