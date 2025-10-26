@@ -1,3 +1,19 @@
+/**
+ * AI Service Module
+ * 
+ * This module provides AI-powered content analysis and chat functionality for the focus extension.
+ * It integrates with Google Gemini and OpenAI providers to analyze web pages and manage user
+ * requests for temporary access to blocked content.
+ * 
+ * Key features:
+ * - Page content analysis for distraction detection
+ * - Chat-based access request processing
+ * - Content extraction utilities
+ * - Support for multiple AI providers
+ * 
+ * @module ai-service
+ */
+
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
@@ -7,11 +23,29 @@ import {
   type ChatMessage,
 } from "~/lib/messaging";
 
+/**
+ * Supported AI providers for content analysis and chat functionality.
+ * @typedef {"gemini" | "openai"} AIProvider
+ */
 type AIProvider = "gemini" | "openai";
 
+// Singleton instances for AI providers to avoid repeated initialization
 let googleProvider: ReturnType<typeof createGoogleGenerativeAI> | null = null;
 let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
 
+/**
+ * Gets or creates a Google Generative AI provider instance.
+ * Implements singleton pattern to avoid multiple provider instances.
+ *
+ * @param apiKey - The API key for Google Generative AI
+ * @returns A Google Generative AI provider instance
+ *
+ * @example
+ * ```typescript
+ * const provider = getGoogleProvider("your-api-key");
+ * const model = provider("gemini-2.5-flash-lite");
+ * ```
+ */
 const getGoogleProvider = (apiKey: string) => {
   if (!googleProvider) {
     googleProvider = createGoogleGenerativeAI({ apiKey });
@@ -19,6 +53,19 @@ const getGoogleProvider = (apiKey: string) => {
   return googleProvider;
 };
 
+/**
+ * Gets or creates an OpenAI provider instance.
+ * Implements singleton pattern to avoid multiple provider instances.
+ *
+ * @param apiKey - The API key for OpenAI
+ * @returns An OpenAI provider instance
+ *
+ * @example
+ * ```typescript
+ * const provider = getOpenAIProvider("your-api-key");
+ * const model = provider("gpt-4o-mini");
+ * ```
+ */
 const getOpenAIProvider = (apiKey: string) => {
   if (!openaiProvider) {
     openaiProvider = createOpenAI({ apiKey });
@@ -26,6 +73,20 @@ const getOpenAIProvider = (apiKey: string) => {
   return openaiProvider;
 };
 
+/**
+ * Gets the appropriate AI model based on the specified provider.
+ *
+ * @param provider - The AI provider to use ("gemini" or "openai")
+ * @param apiKey - The API key for the specified provider
+ * @returns An AI model instance for the specified provider
+ * @throws {Error} When an unsupported provider is specified
+ *
+ * @example
+ * ```typescript
+ * const model = getModel("gemini", "your-api-key");
+ * // Returns a Gemini 2.5 Flash Lite model
+ * ```
+ */
 const getModel = (provider: AIProvider, apiKey: string) => {
   switch (provider) {
     case "gemini":
@@ -37,6 +98,33 @@ const getModel = (provider: AIProvider, apiKey: string) => {
   }
 };
 
+/**
+ * Analyzes web page content to determine if it's relevant to the user's task or a potential distraction.
+ * Uses AI to make decisions about blocking the entire page, removing specific elements, or allowing access.
+ *
+ * @param apiKey - The API key for the specified AI provider
+ * @param userTask - The current task the user is working on
+ * @param pageContent - The text content of the web page to analyze
+ * @param url - The URL of the page being analyzed
+ * @param provider - The AI provider to use for analysis (default: "gemini")
+ * @param alwaysRemove - Optional CSS selectors for elements that should always be removed
+ * @returns A promise that resolves to an AnalysisResult containing the decision and reasoning
+ *
+ * @example
+ * ```typescript
+ * const result = await analyzePageContent(
+ *   "api-key",
+ *   "Write a research paper on climate change",
+ *   "<html>Page content here</html>",
+ *   "https://example.com",
+ *   "gemini",
+ *   ".ads,.sidebar"
+ * );
+ * console.log(result.decision); // "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW"
+ * ```
+ *
+ * @see {@link AnalysisResult} for the structure of the returned object
+ */
 export const analyzePageContent = async (
   apiKey: string,
   userTask: string,
@@ -130,6 +218,31 @@ IMPORTANT: When in doubt, ALLOW the page. It's better to let a distraction throu
   }
 };
 
+/**
+ * Processes a chat message from the user and determines if access should be granted.
+ * The AI evaluates whether the user's request aligns with their current task and provides
+ * a response with either granted access (with duration) or a denial with reason.
+ *
+ * @param apiKey - The API key for the specified AI provider
+ * @param userTask - The current task the user is working on
+ * @param message - The user's chat message requesting access
+ * @param chatHistory - Previous messages in the chat session for context
+ * @param provider - The AI provider to use for processing (default: "gemini")
+ * @returns A promise that resolves to an object containing the AI response, access decision, and duration
+ *
+ * @example
+ * ```typescript
+ * const response = await processChatMessage(
+ *   "api-key",
+ *   "Write a research paper",
+ *   "I need to check social media for 5 minutes",
+ *   [{ id: "1", content: "Hello", role: "user", timestamp: Date.now() }],
+ *   "gemini"
+ * );
+ * console.log(response.accessGranted); // boolean
+ * console.log(response.durationMinutes); // number if granted
+ * ```
+ */
 export const processChatMessage = async (
   apiKey: string,
   userTask: string,

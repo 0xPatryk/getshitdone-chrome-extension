@@ -1,38 +1,145 @@
+/**
+ * Storage Module
+ *
+ * This module provides a comprehensive storage abstraction layer for the focus extension.
+ * It handles persistent storage of user preferences, cache data, chat sessions, and
+ * access grants using WXT's storage system with type safety and React hooks.
+ *
+ * Key features:
+ * - Type-safe storage keys and values
+ * - React hooks for reactive storage
+ * - Access grant management
+ * - Environment variable initialization
+ * - Storage utility functions
+ *
+ * @module storage
+ */
+
 import { useEffect, useState } from "react";
 import type { DecisionCacheEntry } from "~/lib/cache.types";
 import type { ChatSession } from "~/lib/messaging";
 import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 
-// AccessGrant interface for type safety
+/**
+ * Interface representing a temporary access grant for a specific URL.
+ * Stores information about when access was granted and when it expires.
+ *
+ * @interface AccessGrant
+ */
 interface AccessGrant {
+  /**
+   * The URL that access was granted for
+   */
   url: string;
+  
+  /**
+   * Unix timestamp when the grant expires (in milliseconds)
+   */
   expiresAt: number;
+  
+  /**
+   * Unix timestamp when the grant was issued (in milliseconds)
+   */
   grantedAt: number;
+  
+  /**
+   * Duration of the grant in minutes
+   */
   durationMinutes: number;
 }
 
+/**
+ * Storage key constants for all persistent data in the extension.
+ * Each key follows the "local:" prefix convention for WXT storage.
+ *
+ * @constant
+ */
 export const StorageKey = {
+  /**
+   * User's preferred theme (light, dark, or system)
+   */
   THEME: "local:theme",
+  
+  /**
+   * API key for Google Gemini AI service
+   */
   GEMINI_API_KEY: "local:geminiApiKey",
+  
+  /**
+   * API key for OpenAI service
+   */
   OPENAI_API_KEY: "local:openaiApiKey",
+  
+  /**
+   * Selected AI provider (gemini or openai)
+   */
   AI_PROVIDER: "local:aiProvider",
+  
+  /**
+   * Current task the user is working on
+   */
   CURRENT_TASK: "local:currentTask",
+  
+  /**
+   * Whether the extension is currently enabled
+   */
   EXTENSION_ENABLED: "local:extensionEnabled",
+  
+  /**
+   * All chat sessions with their message history
+   */
   CHAT_SESSIONS: "local:chatSessions",
+  
+  /**
+   * ID of the currently active chat session
+   */
   ACTIVE_CHAT_SESSION: "local:activeChatSession",
+  
+  /**
+   * CSS selectors for elements to always remove
+   */
   ALWAYS_REMOVE: "local:alwaysRemove",
+  
+  /**
+   * Temporary access grants for specific URLs
+   */
   ACCESS_GRANTS: "local:accessGrants",
+  
+  /**
+   * Cache of AI analysis decisions
+   */
   DECISION_CACHE: "local:decisionCache",
+  
+  /**
+   * Timestamp of last cache cleanup
+   */
   CACHE_LAST_CLEANUP: "local:cacheLastCleanup",
 } as const;
 
+/**
+ * Union type of all possible storage keys
+ */
 export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
 
+/**
+ * Storage configuration object defining all storage items with their types,
+ * fallback values, and initialization functions. Uses WXT's storage system
+ * for persistent browser extension storage.
+ *
+ * @constant
+ */
 const storage = {
+  /**
+   * User theme preference with system default
+   */
   [StorageKey.THEME]: browserStorage.defineItem<Theme>(StorageKey.THEME, {
     fallback: Theme.SYSTEM,
   }),
+  
+  /**
+   * Gemini API key with environment variable initialization
+   */
   [StorageKey.GEMINI_API_KEY]: browserStorage.defineItem<string | null>(
     StorageKey.GEMINI_API_KEY,
     {
@@ -46,6 +153,10 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * OpenAI API key with environment variable initialization
+   */
   [StorageKey.OPENAI_API_KEY]: browserStorage.defineItem<string | null>(
     StorageKey.OPENAI_API_KEY,
     {
@@ -59,6 +170,10 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * AI provider selection with environment variable initialization
+   */
   [StorageKey.AI_PROVIDER]: browserStorage.defineItem<"gemini" | "openai">(
     StorageKey.AI_PROVIDER,
     {
@@ -72,6 +187,10 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * Current task with environment variable initialization
+   */
   [StorageKey.CURRENT_TASK]: browserStorage.defineItem<string | null>(
     StorageKey.CURRENT_TASK,
     {
@@ -85,6 +204,10 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * Extension enabled state with environment variable initialization
+   */
   [StorageKey.EXTENSION_ENABLED]: browserStorage.defineItem<boolean>(
     StorageKey.EXTENSION_ENABLED,
     {
@@ -98,17 +221,29 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * Chat sessions storage
+   */
   [StorageKey.CHAT_SESSIONS]: browserStorage.defineItem<
     Record<string, ChatSession>
   >(StorageKey.CHAT_SESSIONS, {
     fallback: {},
   }),
+  
+  /**
+   * Active chat session ID
+   */
   [StorageKey.ACTIVE_CHAT_SESSION]: browserStorage.defineItem<string | null>(
     StorageKey.ACTIVE_CHAT_SESSION,
     {
       fallback: null,
     },
   ),
+  
+  /**
+   * Always remove CSS selectors with environment variable initialization
+   */
   [StorageKey.ALWAYS_REMOVE]: browserStorage.defineItem<string | null>(
     StorageKey.ALWAYS_REMOVE,
     {
@@ -122,16 +257,28 @@ const storage = {
       },
     },
   ),
+  
+  /**
+   * Access grants storage
+   */
   [StorageKey.ACCESS_GRANTS]: browserStorage.defineItem<
     Record<string, AccessGrant>
   >(StorageKey.ACCESS_GRANTS, {
     fallback: {},
   }),
+  
+  /**
+   * Decision cache storage
+   */
   [StorageKey.DECISION_CACHE]: browserStorage.defineItem<
     Record<string, DecisionCacheEntry>
   >(StorageKey.DECISION_CACHE, {
     fallback: {},
   }),
+  
+  /**
+   * Last cache cleanup timestamp
+   */
   [StorageKey.CACHE_LAST_CLEANUP]: browserStorage.defineItem<number>(
     StorageKey.CACHE_LAST_CLEANUP,
     {

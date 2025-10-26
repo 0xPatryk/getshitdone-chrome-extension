@@ -1,3 +1,20 @@
+/**
+ * Cache Module
+ *
+ * This module provides caching functionality for AI analysis results to improve performance
+ * and reduce API costs. It implements a secure, time-based cache with automatic cleanup
+ * and invalidation strategies.
+ *
+ * Key features:
+ * - Secure hash-based cache keys
+ * - Time-to-live (TTL) based expiration
+ * - Automatic cleanup of expired entries
+ * - Cache invalidation on task changes
+ * - Statistics and monitoring
+ *
+ * @module cache
+ */
+
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 import type { DecisionCacheEntry } from "~/lib/cache.types";
@@ -5,13 +22,42 @@ import { CACHE_TTL } from "~/lib/cache.types";
 import type { AnalysisResult } from "~/lib/messaging";
 import { StorageKey, getStorageValue, setStorageValue } from "~/lib/storage";
 
-// Secure hash function for cache keys using @noble/hashes
+/**
+ * Creates a secure hash for cache keys using SHA-256.
+ * Uses the first 16 characters of the hex-encoded hash for compactness.
+ *
+ * @param str - The input string to hash
+ * @returns A 16-character hexadecimal hash
+ *
+ * @example
+ * ```typescript
+ * const hash = createSecureHash("https://example.com:write report:null");
+ * console.log(hash); // "a1b2c3d4e5f6g7h8"
+ * ```
+ */
 const createSecureHash = (str: string): string => {
   const hash = sha256(new TextEncoder().encode(str));
   return bytesToHex(hash).substring(0, 16);
 };
 
-// Helper function to generate cache key
+/**
+ * Generates a unique cache key based on URL, task, and always-remove settings.
+ * Combines the parameters and creates a secure hash for consistent lookup.
+ *
+ * @param url - The URL of the page being cached
+ * @param task - The current user task
+ * @param alwaysRemove - The always-remove CSS selector configuration
+ * @returns A unique cache key for the combination of parameters
+ *
+ * @example
+ * ```typescript
+ * const key = generateCacheKey(
+ *   "https://example.com",
+ *   "Write research paper",
+ *   ".ads,.sidebar"
+ * );
+ * ```
+ */
 export const generateCacheKey = (
   url: string,
   task: string,
