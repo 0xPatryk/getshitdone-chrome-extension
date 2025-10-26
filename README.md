@@ -21,16 +21,30 @@
 <a href="https://discord.gg/KjpK2uk3JP" target="_blank"><img src="https://discord.com/api/guilds/1280456871693779006/widget.png"/></a>
 
 <!-- Product Hunt Launch Placeholder -->
-<a href="https://www.producthunt.com/posts/focus-ai-extension?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-focus-ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=000&theme=light" alt="Focus AI Extension - AI-powered distraction blocking that understands your work | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+<a href="https://www.producthunt.com/posts/getshitdone?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-getshitdone" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=000&theme=light" alt="GetShitDone - AI-powered distraction blocking that understands your work | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
 
 <!-- Kickstarter Campaign Placeholder -->
-<a href="https://www.kickstarter.com/projects/focusai/focus-ai-extension" target="_blank"><img src="https://ksr-ugc.imgix.net/assets/038/123/456/7890abc1234567890abcdef123456789-original.png?ixlib=rb-4.0.2&w=80&h=80&fit=crop&v=1664380163&auto=format&frame=1&q=92&s=1234567890abcdef" alt="Back us on Kickstarter" style="width: 80px; height: 80px;" width="80" height="80" /></a>
+<a href="https://www.kickstarter.com/projects/getshitdone/getshitdone-extension" target="_blank"><img src="https://ksr-ugc.imgix.net/assets/038/123/456/7890abc1234567890abcdef123456789-original.png?ixlib=rb-4.0.2&w=80&h=80&fit=crop&v=1664380163&auto=format&frame=1&q=92&s=1234567890abcdef" alt="Back us on Kickstarter" style="width: 80px; height: 80px;" width="80" height="80" /></a>
 
 </div>
 
-# AI-Powered Focus Extension
+# GetShitDone - Free AI-Powered Productivity Extension
 
-An intelligent browser extension that uses AI to help you stay focused by understanding the context of your work and making smart decisions about what content is relevant to your current task.
+### Motivation
+I'm ending my days frustrated with how easily I get distracted, not by the obvious time-wasters like TikTok and Instagram (those are easy to block), but by the "fake productivity" that tricks my brain into thinking I'm being productive when I'm actually procrastinating.
+
+For instance, I've been working on a Rust project and suddenly find myself deep diving into the next JS framework (nobody actually needs) or end up reading about database optimization techniques when your app has 0 users. These were moments where I convinced myself I was being productive, but I wasn't.
+
+Other example: There are also these weird tasks, like when you're doing market fit research on X.com and end up reading Peter Level's comment with some starting a new discussion, or some news about a new AI model that will replace humanity, or some 17-year-old flexing their Rolex while faking their MRR.
+
+**Here's how it works in 3 simple steps:**
+1. **Input your current task** (e.g., "I'm coding a Rust project for a client")
+2. **Set elements to always remove** (e.g., Instagram reels, YouTube recommendations)
+3. **Let the AI do the rest** - it analyzes content in real-time and blocks (or removes) what's irrelevant to your task. The extension can either block entire pages or selectively remove distracting elements while preserving useful content, like removing YouTube recommendations while keeping the tutorial video you're watching.
+
+### What is GetShitDone?
+
+GetShitDone is an intelligent browser extension that uses AI to help you stay focused by understanding the context of your work and making smart decisions about what content is relevant to your current task.
 
 > Unlike traditional focus apps that rely on static blocklists, this extension analyzes content in real-time and can even negotiate with you when you need access to distracting sites.
 >
@@ -68,7 +82,7 @@ An intelligent browser extension that uses AI to help you stay focused by unders
 1. Clone the repository
 ```bash
 git clone [repository-url]
-cd focus-app
+cd getshitdone
 ```
 
 2. Install dependencies
@@ -90,10 +104,51 @@ bun dev:chrome
 # For Firefox
 bun dev:firefox
 ```
-
-5. Load extension in browser:
+5. (Optional, Should not be necessary, since it's auto loaded )Load extension in browser:
    - **Chrome**: Go to `chrome://extensions`, enable Developer mode, click "Load unpacked", select `build/chrome-mv3`
    - **Firefox**: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", select `build/firefox-mv2/manifest.json`
+
+## ⚡ Speed Up Development with Environment Variables
+
+To speed up your development workflow, you can configure all extension settings directly in your `.env` file. This is particularly useful because:
+
+- Extension settings reset every time you restart with `bun dev:chrome`
+- No need to manually configure settings through the UI after each restart
+- Pre-configure your preferred AI provider, API keys, and focus task
+
+### Available Environment Variables
+
+| Variable | Description | Default | Example |
+|----------|-------------|---------|---------|
+| `VITE_OPEN_PANEL_KEY` | OpenPanel analytics key | - | `your-analytics-key` |
+| `VITE_GEMINI_API_KEY` | Google Gemini API key | - | `your-gemini-key` |
+| `VITE_OPENAI_API_KEY` | OpenAI API key | - | `your-openai-key` |
+| `VITE_AI_PROVIDER` | AI provider to use | `gemini` | `gemini` or `openai` |
+| `VITE_CURRENT_TASK` | Default focus task | - | `Working on React component` |
+| `VITE_EXTENSION_ENABLED` | Enable extension on startup | `false` | `true` or `false` |
+| `VITE_ALWAYS_REMOVE` | CSS selectors to always remove | - | `YT recommendations, Instagram reels` |
+
+### Example Development Configuration
+
+```bash
+# .env file for development
+# AI Configuration
+VITE_AI_PROVIDER="gemini"
+VITE_GEMINI_API_KEY="your-gemini-api-key"
+
+# Focus Settings
+VITE_CURRENT_TASK="Building a Chrome extension with WXT"
+VITE_EXTENSION_ENABLED="true"
+
+# Always Remove Elements
+VITE_ALWAYS_REMOVE="YT recommendations, Instagram reels"
+```
+
+With this configuration, every time you restart the development server, the extension will:
+1. Use Gemini as the AI provider
+2. Pre-fill your current task
+3. Enable the extension automatically
+4. Always remove distracting elements
 
 ## 📖 Usage
 
@@ -176,7 +231,6 @@ src/
 ### Testing
 
 - Use Bun test framework
-- Place tests in `src/lib/tests/`
 - Run with: `bun test`
 
 ## 📄 License
