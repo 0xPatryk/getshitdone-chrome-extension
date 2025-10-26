@@ -72,7 +72,7 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 });
 
 onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
-  console.log("Background received SEND_CHAT_MESSAGE message:", message);
+  console.log("[DEBUG] Background: Received SEND_CHAT_MESSAGE message:", message);
   const data = message.data;
 
   try {
@@ -127,6 +127,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     const chatHistory = session.messages;
 
     // Process the chat message using the AI service
+    console.log("[DEBUG] Background: Processing chat message with AI service");
     const aiResponse = await processChatMessage(
       apiKey,
       currentTask || "No task set",
@@ -135,7 +136,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       aiProvider,
     );
 
-    console.log("AI response:", aiResponse);
+    console.log("[DEBUG] Background: AI response:", aiResponse);
 
     // Add both user message and AI response to session
     const finalMessages = [...updatedMessages, aiResponse.message];

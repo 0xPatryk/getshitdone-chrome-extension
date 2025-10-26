@@ -38,6 +38,8 @@ export const ChatInterface = ({
       sessionId,
       message,
     }: { sessionId: string; message: string }) => {
+      console.log("[DEBUG] ChatInterface: Attempting to send message, sessionId:", sessionId);
+      
       const windowWithChat = window as Window & {
         sendChatMessage?: (
           sessionId: string,
@@ -45,44 +47,74 @@ export const ChatInterface = ({
         ) => Promise<ChatResponse>;
       };
 
+      console.log("[DEBUG] ChatInterface: window.sendChatMessage available:", !!windowWithChat.sendChatMessage);
+      console.log("[DEBUG] ChatInterface: Window object keys:", Object.keys(window).filter(key => key.includes('chat')));
+      
       if (!windowWithChat.sendChatMessage) {
+        console.error("[DEBUG] ChatInterface: Chat function not available - this might be the root cause");
+        console.error("[DEBUG] ChatInterface: Current window properties:", {
+          hasSendChatMessage: 'sendChatMessage' in window,
+          isInitialized,
+          hasInitialMessage: !!initialMessage
+        });
         throw new Error("Chat function not available");
       }
 
       return await windowWithChat.sendChatMessage(sessionId, message);
     },
+    onMutate: (variables) => {
+      console.log("[DEBUG] ChatInterface: Mutation starting with variables:", variables);
+    },
+    onSettled: (data, error, variables) => {
+      console.log("[DEBUG] ChatInterface: Mutation settled:", { data, error: error?.message, variables });
+    },
     onSuccess: (response) => {
+      console.log("[DEBUG] Chat response received:", response);
+      
       // Add AI response to local state
       setMessages((prev) => [...prev, response.message]);
 
       // Check if AI granted access with duration
-      if (
-        response.accessGranted &&
-        response.durationMinutes !== undefined &&
-        onUnblock
-      ) {
+      // Type assertion to handle optional properties
+      const chatResponse = response as ChatResponse & {
+        accessGranted?: boolean;
+        durationMinutes?: number;
+      };
+      
+      const accessGranted = chatResponse.accessGranted || false;
+      const durationMinutes = chatResponse.durationMinutes;
+      
+      console.log("[DEBUG] Access check:", { accessGranted, durationMinutes });
+      
+      if (accessGranted && durationMinutes !== undefined && onUnblock) {
         setIsAccessGranted(true);
         setAccessMessage(
-          `Access granted for ${response.durationMinutes} minutes! Unblocking page...`,
+          `Access granted for ${durationMinutes} minutes! Unblocking page...`,
         );
         setTimeout(() => {
-          onUnblock(response.durationMinutes as number);
+          onUnblock(durationMinutes);
         }, 2000);
       } else if (
         response.message.content.includes("ACCESS_DENIED") &&
         onAccessDenied
       ) {
-        setIsAccessDenied(true);
         // Extract the reason from the message (everything after "ACCESS_DENIED")
         const reasonMatch = response.message.content.match(
           /ACCESS_DENIED:? *(.*)/,
         );
         const reason =
           reasonMatch?.[1]?.trim() || "Access denied by AI assistant";
+        
+        // Show the access denied message temporarily but don't permanently disable the input
         setAccessMessage(reason);
+        setIsAccessDenied(true);
+        
+        // Reset the access denied state after showing the message
         setTimeout(() => {
+          setIsAccessDenied(false);
+          setAccessMessage("");
           onAccessDenied(reason);
-        }, 2000);
+        }, 3000);
       }
     },
     onError: (error, variables) => {
@@ -97,8 +129,26 @@ export const ChatInterface = ({
           timestamp: Date.now(),
         },
       ]);
+      // Reset access denied state on error to allow retry
+      setIsAccessDenied(false);
+      setAccessMessage("");
     },
   });
+
+  // Debug logging for disabled state
+  useEffect(() => {
+    console.log("[DEBUG] Input disabled state check:", {
+      chatMutationPending: chatMutation.isPending,
+      isAccessGranted,
+      isAccessDenied,
+      isDisabled: chatMutation.isPending || isAccessGranted,
+      isInitialized,
+      hasInitialMessage: !!initialMessage,
+      windowHasSendChatMessage: 'sendChatMessage' in window,
+      chatMutationError: chatMutation.error,
+      chatMutationFailureCount: chatMutation.failureCount
+    });
+  }, [chatMutation.isPending, isAccessGranted, isAccessDenied, isInitialized, initialMessage, chatMutation.error, chatMutation.failureCount]);
 
   // Function to send message to AI
   const sendRealMessage = useCallback(
@@ -110,7 +160,15 @@ export const ChatInterface = ({
 
   // Initialize with initial message if provided
   useEffect(() => {
+    console.log("[DEBUG] ChatInterface: Initialization effect running", {
+      isInitialized,
+      hasInitialMessage: !!initialMessage,
+      sessionId,
+      windowHasSendChatMessage: 'sendChatMessage' in window
+    });
+    
     if (!isInitialized && initialMessage) {
+      console.log("[DEBUG] ChatInterface: Initializing with initial message");
       const userMessage: ChatMessage = {
         id: `user_${Date.now()}`,
         content: initialMessage,
@@ -137,12 +195,35 @@ export const ChatInterface = ({
     }
   }, [messages, chatMutation.isPending]);
 
+  // Focus input when component mounts and when not disabled
+  useEffect(() => {
+    console.log("[DEBUG] ChatInterface: Focus effect running", {
+      hasInputRef: !!inputRef.current,
+      chatMutationPending: chatMutation.isPending,
+      isAccessGranted,
+      isAccessDenied,
+      shouldFocus: !!(
+        inputRef.current &&
+        !chatMutation.isPending &&
+        !isAccessGranted
+      )
+    });
+    
+    if (
+      inputRef.current &&
+      !chatMutation.isPending &&
+      !isAccessGranted
+    ) {
+      console.log("[DEBUG] ChatInterface: Focusing input");
+      inputRef.current.focus();
+    }
+  }, [chatMutation.isPending, isAccessGranted, isAccessDenied]);
+
   const handleSendMessage = () => {
     if (
       !inputMessage.trim() ||
       chatMutation.isPending ||
-      isAccessGranted ||
-      isAccessDenied
+      isAccessGranted
     )
       return;
 
@@ -240,10 +321,21 @@ export const ChatInterface = ({
         <Input
           ref={inputRef}
           value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onChange={(e) => {
+            console.log(
+              "[DEBUG] Input onChange triggered, value:",
+              e.target.value,
+            );
+            setInputMessage(e.target.value);
+          }}
+          onKeyDown={(e) => {
+            console.log("[DEBUG] Input onKeyDown triggered, key:", e.key);
+            handleKeyPress(e);
+          }}
+          onFocus={() => console.log("[DEBUG] Input focused")}
+          onBlur={() => console.log("[DEBUG] Input blurred")}
           placeholder="Type your message..."
-          disabled={chatMutation.isPending || isAccessGranted || isAccessDenied}
+          disabled={chatMutation.isPending || isAccessGranted}
           className="flex-1"
         />
         <Button
@@ -251,8 +343,7 @@ export const ChatInterface = ({
           disabled={
             !inputMessage.trim() ||
             chatMutation.isPending ||
-            isAccessGranted ||
-            isAccessDenied
+            isAccessGranted
           }
           size="sm"
         >

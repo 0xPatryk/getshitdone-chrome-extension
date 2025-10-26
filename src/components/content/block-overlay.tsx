@@ -17,6 +17,13 @@ export const BlockOverlay = ({
   durationMinutes,
   onTimerExpire,
 }: BlockOverlayProps) => {
+  console.log("[DEBUG] BlockOverlay: Rendering with props:", {
+    reason,
+    hasAccessExpiresAt: !!accessExpiresAt,
+    durationMinutes,
+    hasOnTimerExpire: !!onTimerExpire
+  });
+  
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-4">
