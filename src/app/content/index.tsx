@@ -32,7 +32,7 @@ const removeElements = (selectors: string[]) => {
         element.remove();
       }
     } catch (error) {
-      console.error(
+      console.warn(
         `Failed to remove elements with selector: ${selector}`,
         error,
       );
@@ -197,10 +197,11 @@ const ContentScriptUI = ({
         });
         return response;
       } catch (error) {
-        console.error(
-          "ContentScriptUI: Failed to send chat message:",
-          error,
-        );
+        console.error("ContentScriptUI: Failed to send chat message:", {
+          error: error instanceof Error ? error.message : String(error),
+          timestamp: new Date().toISOString(),
+          context: "content script chat message sending"
+        });
         throw error;
       }
     },
@@ -305,7 +306,12 @@ export default defineContentScript({
           }
         }
       } catch (error) {
-        console.error("Error analyzing page:", error);
+        console.error("Error analyzing page:", {
+          error: error instanceof Error ? error.message : String(error),
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          context: "page analysis"
+        });
       }
     };
 

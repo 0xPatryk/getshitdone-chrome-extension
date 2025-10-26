@@ -37,7 +37,12 @@ export const TaskInput = () => {
     },
     onError: (error) => {
       toast.error("Failed to update task");
-      console.error("Error updating task:", error);
+      console.error("Error updating task:", {
+        error: error instanceof Error ? error.message : String(error),
+        task: inputValue,
+        timestamp: new Date().toISOString(),
+        context: "task update"
+      });
     },
   });
 
@@ -64,7 +69,11 @@ export const TaskInput = () => {
     },
     onError: (error) => {
       toast.error("Failed to clear task");
-      console.error("Error clearing task:", error);
+      console.error("Error clearing task:", {
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+        context: "task clearing"
+      });
     },
   });
 

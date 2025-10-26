@@ -32,7 +32,12 @@ export const AlwaysRemoveInput = () => {
     },
     onError: (error) => {
       toast.error("Failed to update always remove list");
-      console.error("Error updating always remove list:", error);
+      console.error("Error updating always remove list:", {
+        error: error instanceof Error ? error.message : String(error),
+        input: inputValue,
+        timestamp: new Date().toISOString(),
+        context: "always remove list update"
+      });
     },
   });
 
@@ -55,7 +60,11 @@ export const AlwaysRemoveInput = () => {
     },
     onError: (error) => {
       toast.error("Failed to clear always remove list");
-      console.error("Error clearing always remove list:", error);
+      console.error("Error clearing always remove list:", {
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+        context: "always remove list clearing"
+      });
     },
   });
 

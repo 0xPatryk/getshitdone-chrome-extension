@@ -21,7 +21,11 @@ export const ExtensionToggle = () => {
       });
     },
     onError: (error) => {
-      console.error("Error toggling extension:", error);
+      console.error("Error toggling extension:", {
+        error: error instanceof Error ? error.message : String(error),
+        timestamp: new Date().toISOString(),
+        context: "extension toggle"
+      });
     },
   });
 

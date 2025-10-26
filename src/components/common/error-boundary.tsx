@@ -28,7 +28,12 @@ class ReactErrorBoundary extends Component<
   }
 
   componentDidCatch(error: unknown, errorInfo: unknown) {
-    console.error(error, errorInfo);
+    console.error("Error boundary caught an error:", {
+      error: error instanceof Error ? error.message : String(error),
+      componentStack: errorInfo,
+      timestamp: new Date().toISOString(),
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown'
+    });
   }
 
   render() {

@@ -199,7 +199,11 @@ IMPORTANT: When granting access, you MUST include the duration number after "ACC
       durationMinutes,
     };
   } catch (error) {
-    console.error("Chat message processing failed:", error);
+    console.error("Chat message processing failed:", {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      context: "AI service chat processing"
+    });
     // Fallback response
     return {
       message: {

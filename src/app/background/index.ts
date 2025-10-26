@@ -31,7 +31,7 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     // Check if we have the necessary API key
     const apiKey = aiProvider === "openai" ? openaiApiKey : geminiApiKey;
     if (!apiKey) {
-      console.error("No API key available for AI provider:", aiProvider);
+      console.warn("No API key available for AI provider:", aiProvider);
       return {
         decision: "ALLOW",
         reason: `No API key configured for ${aiProvider}. Please configure your API key in the extension settings.`,
@@ -83,7 +83,12 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     const validatedResult = AnalysisResultSchema.parse(analysisResult);
     return validatedResult;
   } catch (error) {
-    console.error("Error analyzing page:", error);
+    console.error("Error analyzing page:", {
+      error: error instanceof Error ? error.message : String(error),
+      url: data?.url || "unknown",
+      timestamp: new Date().toISOString(),
+      context: "background page analysis"
+    });
     throw error;
   }
 });
@@ -211,7 +216,12 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       durationMinutes: aiResponse.durationMinutes,
     };
   } catch (error) {
-    console.error("Error processing chat message:", error);
+    console.error("Error processing chat message:", {
+      error: error instanceof Error ? error.message : String(error),
+      sessionId: data?.sessionId || "unknown",
+      timestamp: new Date().toISOString(),
+      context: "chat message processing"
+    });
     throw error;
   }
 });
@@ -226,7 +236,13 @@ onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
       data.newValue || "",
     );
   } catch (error) {
-    console.error("Error invalidating cache for task change:", error);
+    console.error("Error invalidating cache for task change:", {
+      error: error instanceof Error ? error.message : String(error),
+      oldValue: data?.oldValue || "unknown",
+      newValue: data?.newValue || "unknown",
+      timestamp: new Date().toISOString(),
+      context: "cache invalidation for task change"
+    });
     throw error;
   }
 });
@@ -236,7 +252,11 @@ onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
   try {
     await invalidateCacheForAlwaysRemoveChange();
   } catch (error) {
-    console.error("Error invalidating cache for alwaysRemove change:", error);
+    console.error("Error invalidating cache for alwaysRemove change:", {
+      error: error instanceof Error ? error.message : String(error),
+      timestamp: new Date().toISOString(),
+      context: "cache invalidation for alwaysRemove change"
+    });
     throw error;
   }
 });
