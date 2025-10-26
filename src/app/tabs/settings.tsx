@@ -1,3 +1,17 @@
+/**
+ * Settings Tab Component
+ *
+ * This component renders the comprehensive settings interface for the extension.
+ * It provides controls for:
+ * - Extension enable/disable toggle
+ * - AI provider selection (OpenAI vs Google Gemini)
+ * - API key configuration for both providers
+ * - Current focus task management
+ *
+ * The component uses the useStorage hook to persist settings and provides
+ * a responsive layout with organized sections for different configuration areas.
+ */
+
 import { Settings } from "lucide-react";
 import {
   Card,
@@ -14,7 +28,17 @@ import { Textarea } from "~/components/ui/textarea";
 import { useStorage } from "~/lib/storage";
 import { StorageKey } from "~/lib/storage";
 
+/**
+ * Settings Tab Component
+ *
+ * Renders the main settings interface with organized sections for
+ * extension configuration. Uses responsive grid layout for
+ * optimal display on different screen sizes.
+ *
+ * @returns The settings tab UI with all configuration options
+ */
 export const SettingsTab = () => {
+  // Storage hooks for all settings values
   const { data: geminiApiKey, set: setGeminiApiKey } = useStorage(
     StorageKey.GEMINI_API_KEY,
   );
@@ -33,6 +57,7 @@ export const SettingsTab = () => {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-8">
+      {/* Header section with title and description */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <Settings className="size-6" />
@@ -45,6 +70,7 @@ export const SettingsTab = () => {
 
       <Separator />
 
+      {/* Extension status and AI provider settings in a 2-column grid */}
       <div className="grid gap-8 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -91,6 +117,7 @@ export const SettingsTab = () => {
         </Card>
       </div>
 
+      {/* API keys configuration section */}
       <Card>
         <CardHeader>
           <CardTitle>API Keys</CardTitle>
@@ -122,6 +149,7 @@ export const SettingsTab = () => {
         </CardContent>
       </Card>
 
+      {/* Focus task configuration section */}
       <Card>
         <CardHeader>
           <CardTitle>Focus Task</CardTitle>

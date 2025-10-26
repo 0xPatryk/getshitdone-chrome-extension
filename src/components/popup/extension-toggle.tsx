@@ -1,8 +1,27 @@
+/**
+ * Extension toggle component for enabling/disabling focus mode.
+ * This component provides a switch to control whether the extension's
+ * content analysis and blocking functionality is active.
+ */
+
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
+/**
+ * Extension toggle component for controlling focus mode activation.
+ * Displays a toggle switch that enables or disables the extension's
+ * content analysis and blocking functionality. Shows descriptive text
+ * about current state and handles state persistence.
+ *
+ * @example
+ * ```tsx
+ * <ExtensionToggle />
+ * ```
+ *
+ * @returns A React element containing the extension toggle interface
+ */
 export const ExtensionToggle = () => {
   const { data: isEnabled, set: setEnabled } = useStorage(
     StorageKey.EXTENSION_ENABLED,

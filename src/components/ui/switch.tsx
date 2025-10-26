@@ -1,8 +1,34 @@
+/**
+ * Switch component for toggle controls.
+ * This component provides a styled toggle switch built on
+ * Radix UI primitives with accessibility features.
+ */
+
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import * as React from "react";
 
 import { cn } from "~/lib/utils";
 
+/**
+ * Switch component for toggle controls.
+ * Provides a styled toggle switch built on Radix UI primitives
+ * with accessibility features, keyboard navigation, and smooth
+ * animations. Supports all standard HTML switch attributes.
+ *
+ * @example
+ * ```tsx
+ * <Switch />
+ * ```
+ *
+ * @example
+ * ```tsx
+ * <Switch checked={isChecked} onCheckedChange={setIsChecked} />
+ * <Switch disabled />
+ * ```
+ *
+ * @param props - Component props including standard switch attributes
+ * @returns A React element containing the switch
+ */
 const Switch = React.forwardRef<
   React.ElementRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>

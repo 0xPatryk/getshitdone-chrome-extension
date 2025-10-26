@@ -1,3 +1,17 @@
+/**
+ * Extension Popup Interface
+ *
+ * This file renders the extension's popup interface that appears when
+ * users click the extension icon in the browser toolbar. The popup
+ * provides quick access to:
+ * - Extension status and toggle controls
+ * - Current focus task management
+ * - Always-remove element configuration
+ * - Quick access to full settings page
+ *
+ * @see https://developer.chrome.com/docs/extensions/reference/action
+ */
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { browser } from "wxt/browser";
@@ -11,6 +25,15 @@ import { TaskInput } from "~/components/popup/task-input";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 
+/**
+ * Extension Popup Component
+ *
+ * The main component for the extension popup interface. It provides
+ * a compact view of extension controls and status information with
+ * a fixed width of 23rem for consistent appearance.
+ *
+ * @returns The popup interface UI
+ */
 const Popup = () => {
   return (
     <div className="w-[23rem] p-4 space-y-6">
@@ -59,6 +82,18 @@ const Popup = () => {
   );
 };
 
+/**
+ * Renders the popup application
+ *
+ * Mounts React application to the DOM root element with
+ * StrictMode enabled for development debugging and additional
+ * runtime checks. The popup is wrapped in the standard Layout
+ * component for consistent styling.
+ *
+ * @example
+ * // This is called automatically when the popup is opened
+ * // and renders the extension's control interface
+ */
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Layout>

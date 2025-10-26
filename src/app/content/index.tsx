@@ -1,3 +1,18 @@
+/**
+ * Content Script
+ *
+ * This content script runs on web pages and handles:
+ * - Page content analysis and blocking
+ * - UI overlay creation for blocked content
+ * - Element removal based on AI analysis
+ * - Chat interface integration
+ * - Access timer management
+ * - Message passing with background script
+ *
+ * The script uses Shadow DOM to isolate its UI from the page content
+ * and maintains state for blocking decisions and temporary access.
+ */
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
@@ -22,7 +37,17 @@ import "~/assets/styles/globals.css";
 
 const queryClient = new QueryClient();
 
-// Function to remove elements from the page
+/**
+ * Removes DOM elements from the page based on CSS selectors
+ *
+ * This function safely removes elements that match the provided selectors.
+ * It handles errors gracefully and logs warnings for failed removals.
+ *
+ * @param selectors - Array of CSS selectors for elements to remove
+ * @example
+ * // Remove all sidebar and footer elements
+ * removeElements(['.sidebar', 'footer', '.ads']);
+ */
 const removeElements = (selectors: string[]) => {
   for (const selector of selectors) {
     try {
@@ -40,6 +65,15 @@ const removeElements = (selectors: string[]) => {
   }
 };
 
+/**
+ * Content Script UI Component
+ *
+ * Manages the blocking overlay UI and handles user interactions.
+ * This component is rendered inside a Shadow DOM to prevent conflicts
+ * with the page's styles and scripts.
+ *
+ * @param initialBlockResult - Optional initial analysis result to apply
+ */
 const ContentScriptUI = ({
   initialBlockResult,
 }: {
@@ -95,6 +129,16 @@ const ContentScriptUI = ({
     };
   }, []);
 
+  /**
+   * Handles analysis results from the background script
+   *
+   * Processes different types of blocking decisions:
+   * - BLOCK_ALL: Shows the blocking overlay
+   * - REMOVE_ELEMENTS: Removes specific elements from the page
+   * - ALLOW: Removes always-remove elements if specified
+   *
+   * @param result - The analysis result containing the decision
+   */
   const handleBlockResult = (result: AnalysisResult) => {
     setBlockState((prev) => ({ ...prev, blockResult: result }));
 
@@ -114,6 +158,14 @@ const ContentScriptUI = ({
     }
   };
 
+  /**
+   * Handles temporary unblocking of the current page
+   *
+   * Creates an access grant for the specified duration and sets up
+   * a timer to automatically re-block the page when access expires.
+   *
+   * @param durationMinutes - Number of minutes to grant access
+   */
   const handleUnblock = useCallback(async (durationMinutes: number) => {
     const now = Date.now();
     const expiresAt = now + durationMinutes * 60 * 1000;
@@ -151,6 +203,13 @@ const ContentScriptUI = ({
     );
   }, []);
 
+  /**
+   * Handles the expiration of temporary access
+   *
+   * Called when the access timer expires to re-block the page
+   * and clean up the access grant. Includes protection against
+   * multiple simultaneous calls.
+   */
   const handleTimerExpire = useCallback(async () => {
     // Prevent multiple calls
     if (timerExpiredRef.current) {
@@ -181,13 +240,32 @@ const ContentScriptUI = ({
     }));
   }, []);
 
+  /**
+   * Handles chat responses from the background script
+   *
+   * Dispatches a custom event that the ChatInterface component
+   * can listen for to display the AI response.
+   *
+   * @param response - The chat response containing the AI message
+   */
   const handleChatResponse = useCallback((response: ChatResponse) => {
     // This will be handled by the ChatInterface component
     // We'll dispatch a custom event that the ChatInterface can listen for
     window.dispatchEvent(new CustomEvent("chatResponse", { detail: response }));
   }, []);
 
-  // Function to send chat messages to background script
+  /**
+   * Sends chat messages to the background script for processing
+   *
+   * This function is made available globally for the ChatInterface
+   * component to use. It handles communication with the background
+   * script and error logging.
+   *
+   * @param sessionId - The chat session ID (typically the page URL)
+   * @param message - The user's chat message
+   * @returns Promise resolving to the AI response
+   * @throws Error when message sending fails
+   */
   const sendChatMessage = useCallback(
     async (sessionId: string, message: string) => {
       try {
@@ -241,8 +319,27 @@ export default defineContentScript({
   matches: ["<all_urls>"],
   cssInjectionMode: "ui",
 
+  /**
+   * Main entry point for the content script
+   *
+   * Sets up the content script functionality including:
+   * - Page analysis on load
+   * - Shadow DOM UI creation
+   * - Event listeners for navigation changes
+   *
+   * @param ctx - The content script execution context
+   */
   async main(ctx) {
-    // Function to create and mount the ShadowRoot UI
+    /**
+     * Creates and mounts the ShadowRoot UI for blocking
+     *
+     * Uses WXT's createShadowRootUi to create an isolated DOM
+     * environment for the blocking overlay, preventing conflicts
+     * with the page's styles and scripts.
+     *
+     * @param blockResult - The analysis result requiring blocking
+     * @returns Promise resolving to the UI instance
+     */
     const createBlockUI = async (blockResult: AnalysisResult) => {
       const ui = await createShadowRootUi(ctx, {
         name: "focus-block-ui",

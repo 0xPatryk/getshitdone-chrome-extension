@@ -1,3 +1,9 @@
+/**
+ * Task input component for managing current focus task.
+ * This component provides UI for setting, updating, and clearing the
+ * current task that guides the AI's content analysis decisions.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +13,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+/**
+ * Task input component for managing current focus task.
+ * Provides a textarea for users to describe their current task, with
+ * save/clear functionality and cache invalidation. The task description
+ * is used by AI to determine whether content is relevant or distracting.
+ *
+ * @example
+ * ```tsx
+ * <TaskInput />
+ * ```
+ *
+ * @returns A React element containing the task input interface
+ */
 export const TaskInput = () => {
   const { data: currentTask, set: setTask } = useStorage(
     StorageKey.CURRENT_TASK,

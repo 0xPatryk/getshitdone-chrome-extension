@@ -1,3 +1,9 @@
+/**
+ * API key settings component for configuring AI provider credentials.
+ * This component provides UI for managing API keys for different AI providers
+ * (OpenAI and Gemini), including validation, storage, and provider switching.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +12,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+/**
+ * API key settings component for managing AI provider credentials.
+ * Allows users to select between OpenAI and Gemini providers, configure
+ * API keys with validation, and provides instructions for obtaining keys.
+ * Handles secure storage of API keys and provides feedback on save/clear operations.
+ *
+ * @example
+ * ```tsx
+ * <ApiKeySettings />
+ * ```
+ *
+ * @returns A React element containing the API key settings interface
+ */
 export const ApiKeySettings = () => {
   const { data: selectedProvider, set: setProvider } = useStorage(
     StorageKey.AI_PROVIDER,

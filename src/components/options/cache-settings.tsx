@@ -1,3 +1,9 @@
+/**
+ * Cache settings component for managing extension cache data.
+ * This component provides UI for viewing cache statistics, clearing cache,
+ * and managing expired entries to optimize extension performance.
+ */
+
 import { useEffect, useState } from "react";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -10,6 +16,19 @@ import {
   useStorage,
 } from "~/lib/storage";
 
+/**
+ * Cache settings component for managing extension cache.
+ * Displays cache statistics including total entries, AI decisions, user unblocks,
+ * and expired entries. Provides controls for clearing all cache or cleaning up
+ * expired entries. Shows cache information and expiration policies.
+ *
+ * @example
+ * ```tsx
+ * <CacheSettings />
+ * ```
+ *
+ * @returns A React element containing the cache settings interface
+ */
 export const CacheSettings = () => {
   const { data: cache, set: setCache } = useStorage(StorageKey.DECISION_CACHE);
   const [stats, setStats] = useState({

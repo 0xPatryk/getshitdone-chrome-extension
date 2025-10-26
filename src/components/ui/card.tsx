@@ -1,7 +1,23 @@
+/**
+ * Card components for displaying content in contained sections.
+ * This module provides a set of card components for organizing content
+ * with consistent styling and structure.
+ */
+
 import * as React from "react";
 
 import { cn } from "~/lib/utils";
 
+/**
+ * Main card container component
+ *
+ * @example
+ * ```tsx
+ * <Card>
+ *   <CardContent>Card content</CardContent>
+ * </Card>
+ * ```
+ */
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -17,6 +33,17 @@ const Card = React.forwardRef<
 ));
 Card.displayName = "Card";
 
+/**
+ * Card header section for titles and descriptions
+ *
+ * @example
+ * ```tsx
+ * <CardHeader>
+ *   <CardTitle>Title</CardTitle>
+ *   <CardDescription>Description</CardDescription>
+ * </CardHeader>
+ * ```
+ */
 const CardHeader = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -29,6 +56,14 @@ const CardHeader = React.forwardRef<
 ));
 CardHeader.displayName = "CardHeader";
 
+/**
+ * Card title component for headings
+ *
+ * @example
+ * ```tsx
+ * <CardTitle>Card Title</CardTitle>
+ * ```
+ */
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
@@ -44,6 +79,14 @@ const CardTitle = React.forwardRef<
 ));
 CardTitle.displayName = "CardTitle";
 
+/**
+ * Card description component for secondary text
+ *
+ * @example
+ * ```tsx
+ * <CardDescription>Card description text</CardDescription>
+ * ```
+ */
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
@@ -56,6 +99,14 @@ const CardDescription = React.forwardRef<
 ));
 CardDescription.displayName = "CardDescription";
 
+/**
+ * Card content area for main content
+ *
+ * @example
+ * ```tsx
+ * <CardContent>Main card content goes here</CardContent>
+ * ```
+ */
 const CardContent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
@@ -64,6 +115,16 @@ const CardContent = React.forwardRef<
 ));
 CardContent.displayName = "CardContent";
 
+/**
+ * Card footer section for actions and metadata
+ *
+ * @example
+ * ```tsx
+ * <CardFooter>
+ *   <Button>Action</Button>
+ * </CardFooter>
+ * ```
+ */
 const CardFooter = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>

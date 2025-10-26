@@ -1,7 +1,25 @@
+/**
+ * Footer component for displaying social links and project information.
+ * This component renders a footer with links to the project's GitHub repository
+ * and Twitter/X profile, using internationalized text for the button labels.
+ */
+
 import { browser } from "wxt/browser";
 
 import { buttonVariants } from "~/components/ui/button";
 
+/**
+ * Footer component that displays social media links for the project.
+ * Renders buttons linking to the GitHub repository and Twitter/X profile
+ * with appropriate icons and internationalized text labels.
+ *
+ * @example
+ * ```tsx
+ * <Footer />
+ * ```
+ *
+ * @returns A React element containing the footer with social links
+ */
 export const Footer = () => {
   return (
     <footer className="flex w-full justify-center gap-2">

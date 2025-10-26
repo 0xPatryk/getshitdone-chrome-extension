@@ -1,15 +1,55 @@
+/**
+ * Block overlay component for displaying when a page is blocked by the extension.
+ * This component renders a full-screen overlay that blocks access to a page,
+ * showing the reason for blocking and providing options to chat with an AI
+ * assistant or request temporary access with a timer.
+ */
+
 import { Button } from "@/components/ui/button";
 import { ChatInterface } from "./chat-interface";
 import { TimerDisplay } from "./timer-display";
 
+/**
+ * Props for the BlockOverlay component
+ */
 interface BlockOverlayProps {
+  /** The reason why the page is being blocked */
   readonly reason: string;
+  /** Callback function triggered when user is granted temporary access */
   readonly onUnblock: (durationMinutes: number) => void;
+  /** Optional timestamp when temporary access expires */
   readonly accessExpiresAt?: number;
+  /** Optional duration in minutes for temporary access */
   readonly durationMinutes?: number;
+  /** Optional callback triggered when timer expires */
   readonly onTimerExpire?: () => void;
 }
 
+/**
+ * Block overlay component that displays when a page is identified as a distraction.
+ * Shows a blocking screen with the reason, provides a chat interface to request
+ * access, optionally displays a countdown timer for temporary access, and includes
+ * navigation controls to go back to the previous page.
+ *
+ * @example
+ * ```tsx
+ * <BlockOverlay
+ *   reason="This is a social media site that may distract from your current task"
+ *   onUnblock={(minutes) => console.log(`Unblocked for ${minutes} minutes`)}
+ *   accessExpiresAt={Date.now() + 5 * 60 * 1000}
+ *   durationMinutes={5}
+ *   onTimerExpire={() => console.log('Timer expired')}
+ * />
+ * ```
+ *
+ * @param props - Component props
+ * @param props.reason - The reason for blocking the page
+ * @param props.onUnblock - Callback function for when access is granted
+ * @param props.accessExpiresAt - Optional timestamp when access expires
+ * @param props.durationMinutes - Optional duration for temporary access
+ * @param props.onTimerExpire - Optional callback for when timer expires
+ * @returns A React element containing the block overlay interface
+ */
 export const BlockOverlay = ({
   reason,
   onUnblock,

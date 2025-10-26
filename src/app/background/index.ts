@@ -1,3 +1,17 @@
+/**
+ * Background Service Worker
+ *
+ * This service worker handles the core logic of the Chrome extension, including:
+ * - Page content analysis using AI services
+ * - Chat message processing for user interactions
+ * - Cache management for analysis results
+ * - Storage operations for extension state
+ * - Message routing between different extension contexts
+ *
+ * The service worker runs in the background and responds to messages from
+ * content scripts, popup, and other extension components.
+ */
+
 import { analyzePageContent, processChatMessage } from "~/lib/ai-service";
 import { getCachedDecision, setCachedDecision } from "~/lib/cache";
 import { Message, onMessage } from "~/lib/messaging";
@@ -15,6 +29,21 @@ import { StorageKey } from "~/lib/storage";
 import { defineBackground } from "#imports";
 
 // Set up message handlers
+
+/**
+ * Message handler for analyzing page content
+ *
+ * Handles the ANALYZE_PAGE message by:
+ * 1. Checking for required API keys and current task
+ * 2. Checking cache for existing analysis
+ * 3. Performing AI analysis if no cached result exists
+ * 4. Caching the analysis result
+ * 5. Returning the validated analysis result
+ *
+ * @param message - The message containing page data for analysis
+ * @returns Promise resolving to the analysis result with decision and reason
+ * @throws Error when analysis fails or required data is missing
+ */
 onMessage(Message.ANALYZE_PAGE, async (message) => {
   const data = message.data;
 
@@ -93,6 +122,20 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
   }
 });
 
+/**
+ * Message handler for processing chat messages
+ *
+ * Handles the SEND_CHAT_MESSAGE message by:
+ * 1. Validating API key and provider settings
+ * 2. Retrieving or creating a chat session
+ * 3. Processing the message with AI service
+ * 4. Managing access grants if approved
+ * 5. Updating session state and storage
+ *
+ * @param message - The message containing chat session ID and user message
+ * @returns Promise resolving to the AI response with access grant information
+ * @throws Error when chat processing fails or required data is missing
+ */
 onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
   const data = message.data;
 
@@ -227,6 +270,16 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
 });
 
 // Handle cache invalidation for task changes
+
+/**
+ * Message handler for cache invalidation on task changes
+ *
+ * Handles the INVALIDATE_CACHE_TASK message by invalidating cached
+ * analysis results when the user's focus task changes.
+ *
+ * @param message - The message containing old and new task values
+ * @throws Error when cache invalidation fails
+ */
 onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
   const data = message.data;
 
@@ -248,6 +301,15 @@ onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
 });
 
 // Handle cache invalidation for alwaysRemove changes
+
+/**
+ * Message handler for cache invalidation on alwaysRemove changes
+ *
+ * Handles the INVALIDATE_CACHE_ALWAYS_REMOVE message by invalidating
+ * cached analysis results when the always remove list changes.
+ *
+ * @throws Error when cache invalidation fails
+ */
 onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
   try {
     await invalidateCacheForAlwaysRemoveChange();
@@ -261,7 +323,14 @@ onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
   }
 });
 
-// Cleanup old chat sessions (older than 24 hours)
+/**
+ * Cleanup function for old chat sessions
+ *
+ * Removes chat sessions that are older than 24 hours to prevent
+ * storage bloat and maintain performance.
+ *
+ * @throws Error when cleanup operation fails
+ */
 const cleanupOldChatSessions = async () => {
   const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS);
   const allSessions = (await chatSessionsStorage.getValue()) as Record<
@@ -286,6 +355,16 @@ const cleanupOldChatSessions = async () => {
   await chatSessionsStorage.setValue(validSessions);
 };
 
+/**
+ * Background service worker entry point
+ *
+ * Initializes the background service worker and sets up periodic
+ * cleanup tasks for chat sessions and expired cache entries.
+ *
+ * @example
+ * // This function is called automatically when the extension loads
+ * // and runs cleanup tasks on startup and every hour thereafter
+ */
 export default defineBackground(() => {
 
   // Run cleanup on startup

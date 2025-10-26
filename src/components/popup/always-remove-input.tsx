@@ -1,3 +1,9 @@
+/**
+ * Always remove input component for configuring persistent element removal.
+ * This component allows users to define elements that should always be removed
+ * from web pages, regardless of the current task or context.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +13,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
+/**
+ * Always remove input component for managing persistent element removal.
+ * Provides a textarea for users to describe elements that should always be
+ * removed from web pages, with save/clear functionality and cache invalidation.
+ * Elements defined here are removed regardless of the current task context.
+ *
+ * @example
+ * ```tsx
+ * <AlwaysRemoveInput />
+ * ```
+ *
+ * @returns A React element containing the always remove input interface
+ */
 export const AlwaysRemoveInput = () => {
   const { data: alwaysRemove, set: setAlwaysRemove } = useStorage(
     StorageKey.ALWAYS_REMOVE,

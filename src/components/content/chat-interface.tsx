@@ -1,3 +1,11 @@
+/**
+ * Chat interface component for communicating with AI assistant.
+ * This component provides a chat UI that allows users to interact with an AI
+ * assistant to request access to blocked pages. It handles message sending,
+ * displays conversation history, and processes AI responses that may grant
+ * temporary access or deny requests.
+ */
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -5,12 +13,40 @@ import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ChatMessage, ChatResponse } from "~/lib/messaging";
 
+/**
+ * Props for the ChatInterface component
+ */
 interface ChatInterfaceProps {
+  /** Optional initial message to send when component mounts */
   readonly initialMessage?: string;
+  /** Optional callback triggered when AI grants access for a duration */
   readonly onUnblock?: (durationMinutes: number) => void;
+  /** Optional callback triggered when AI denies access with a reason */
   readonly onAccessDenied?: (reason: string) => void;
 }
 
+/**
+ * Chat interface component for interacting with AI assistant.
+ * Provides a full-featured chat UI with message history, input handling,
+ * and special processing for AI responses that can grant or deny access
+ * to blocked pages. Handles loading states, auto-scrolling, and various
+ * response types including access grants with time limits.
+ *
+ * @example
+ * ```tsx
+ * <ChatInterface
+ *   initialMessage="I need access to this page for research"
+ *   onUnblock={(minutes) => console.log(`Access granted for ${minutes} minutes`)}
+ *   onAccessDenied={(reason) => console.log(`Access denied: ${reason}`)}
+ * />
+ * ```
+ *
+ * @param props - Component props
+ * @param props.initialMessage - Optional initial message to send automatically
+ * @param props.onUnblock - Callback for when access is granted
+ * @param props.onAccessDenied - Callback for when access is denied
+ * @returns A React element containing the chat interface
+ */
 export const ChatInterface = ({
   initialMessage,
   onUnblock,
