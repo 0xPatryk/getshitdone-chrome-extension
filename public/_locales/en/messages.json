@@ -1,11 +1,11 @@
 {
   "extensionDescription": {
     "description": "Description of the extension.",
-    "message": "Open source browser extension starter kit."
+    "message": "AI-powered productivity extension that helps you stay on task by intelligently blocking distractions."
   },
   "extensionName": {
     "description": "Name of the extension.",
-    "message": "Extro"
+    "message": "GetShitDone"
   },
   "hello": {
     "message": "Hello from"
