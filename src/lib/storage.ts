@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { DecisionCacheEntry } from "~/lib/cache.types";
 import type { ChatSession } from "~/lib/messaging";
 import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
@@ -22,6 +23,8 @@ export const StorageKey = {
   ACTIVE_CHAT_SESSION: "local:activeChatSession",
   ALWAYS_REMOVE: "local:alwaysRemove",
   ACCESS_GRANTS: "local:accessGrants",
+  DECISION_CACHE: "local:decisionCache",
+  CACHE_LAST_CLEANUP: "local:cacheLastCleanup",
 } as const;
 
 export type StorageKey = (typeof StorageKey)[keyof typeof StorageKey];
@@ -124,6 +127,17 @@ const storage = {
   >(StorageKey.ACCESS_GRANTS, {
     fallback: {},
   }),
+  [StorageKey.DECISION_CACHE]: browserStorage.defineItem<
+    Record<string, DecisionCacheEntry>
+  >(StorageKey.DECISION_CACHE, {
+    fallback: {},
+  }),
+  [StorageKey.CACHE_LAST_CLEANUP]: browserStorage.defineItem<number>(
+    StorageKey.CACHE_LAST_CLEANUP,
+    {
+      fallback: 0,
+    },
+  ),
 } as const;
 
 export type Value<T extends StorageKey> =
@@ -138,6 +152,17 @@ export const getStorageValue = async <K extends StorageKey>(
 ): Promise<Value<K>> => {
   const storageItem = storage[key];
   return (await storageItem.getValue()) as Value<K>;
+};
+
+export const setStorageValue = async <K extends StorageKey>(
+  key: K,
+  value: Value<K>,
+): Promise<void> => {
+  const storageItem = storage[key] as WxtStorageItem<
+    Value<K>,
+    Record<string, unknown>
+  >;
+  await storageItem.setValue(value);
 };
 
 export const useStorage = <K extends StorageKey>(key: K) => {
@@ -229,3 +254,16 @@ export const cleanupExpiredGrants = async (): Promise<void> => {
 
   await grantsStorage.setValue(validGrants);
 };
+
+// Re-export cache functions for convenience
+export {
+  getCachedDecision,
+  setCachedDecision,
+  removeCachedDecision,
+  clearDecisionCache,
+  cleanupExpiredCacheEntries,
+  invalidateCacheForTaskChange,
+  invalidateCacheForAlwaysRemoveChange,
+  getCacheStats,
+  generateCacheKey,
+} from "~/lib/cache";

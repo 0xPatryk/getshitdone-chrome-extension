@@ -21,9 +21,9 @@ export const BlockOverlay = ({
     reason,
     hasAccessExpiresAt: !!accessExpiresAt,
     durationMinutes,
-    hasOnTimerExpire: !!onTimerExpire
+    hasOnTimerExpire: !!onTimerExpire,
   });
-  
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
       <div className="flex-1 flex items-center justify-center p-4">

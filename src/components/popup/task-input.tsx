@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Message, sendMessage } from "@/lib/messaging";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -16,7 +17,16 @@ export const TaskInput = () => {
   // Mutation for setting/updating task
   const setTaskMutation = useMutation({
     mutationFn: async (task: string) => {
-      await setTask(task.trim());
+      const oldTaskValue = currentTask || undefined;
+      const newTaskValue = task.trim();
+      await setTask(newTaskValue);
+
+      // Send cache invalidation message
+      await sendMessage(Message.INVALIDATE_CACHE_TASK, {
+        oldValue: oldTaskValue,
+        newValue: newTaskValue || undefined,
+      });
+
       return task;
     },
     onSuccess: () => {
@@ -34,7 +44,15 @@ export const TaskInput = () => {
   // Mutation for clearing task
   const clearTaskMutation = useMutation({
     mutationFn: async () => {
+      const oldTaskValue = currentTask || undefined;
       await setTask(null);
+
+      // Send cache invalidation message
+      await sendMessage(Message.INVALIDATE_CACHE_TASK, {
+        oldValue: oldTaskValue,
+        newValue: undefined,
+      });
+
       return null;
     },
     onSuccess: () => {

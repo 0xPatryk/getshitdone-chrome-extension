@@ -58,8 +58,11 @@ const ContentScriptUI = ({
 }: {
   initialBlockResult?: AnalysisResult | null;
 }) => {
-  console.log("[DEBUG] ContentScriptUI: Component mounting with initialBlockResult:", initialBlockResult);
-  
+  console.log(
+    "[DEBUG] ContentScriptUI: Component mounting with initialBlockResult:",
+    initialBlockResult,
+  );
+
   const timerExpiredRef = useRef(false);
   const timeoutRef = useRef<number | undefined>(undefined);
   const [blockState, setBlockState] = useState<{
@@ -216,7 +219,10 @@ const ContentScriptUI = ({
   }, []);
 
   const handleChatResponse = useCallback((response: ChatResponse) => {
-    console.log("[DEBUG] ContentScriptUI: Received chat response, dispatching custom event:", response);
+    console.log(
+      "[DEBUG] ContentScriptUI: Received chat response, dispatching custom event:",
+      response,
+    );
     // This will be handled by the ChatInterface component
     // We'll dispatch a custom event that the ChatInterface can listen for
     window.dispatchEvent(new CustomEvent("chatResponse", { detail: response }));
@@ -225,16 +231,25 @@ const ContentScriptUI = ({
   // Function to send chat messages to background script
   const sendChatMessage = useCallback(
     async (sessionId: string, message: string) => {
-      console.log("[DEBUG] ContentScriptUI: sendChatMessage called with sessionId:", sessionId);
+      console.log(
+        "[DEBUG] ContentScriptUI: sendChatMessage called with sessionId:",
+        sessionId,
+      );
       try {
         const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
           sessionId,
           message,
         });
-        console.log("[DEBUG] ContentScriptUI: Received response from background:", response);
+        console.log(
+          "[DEBUG] ContentScriptUI: Received response from background:",
+          response,
+        );
         return response;
       } catch (error) {
-        console.error("[DEBUG] ContentScriptUI: Failed to send chat message:", error);
+        console.error(
+          "[DEBUG] ContentScriptUI: Failed to send chat message:",
+          error,
+        );
         throw error;
       }
     },
@@ -243,24 +258,35 @@ const ContentScriptUI = ({
 
   // Make the sendChatMessage function available globally for the ChatInterface component
   useEffect(() => {
-    console.log("[DEBUG] ContentScriptUI: Attaching sendChatMessage to window object");
-    console.log("[DEBUG] ContentScriptUI: sendChatMessage function type:", typeof sendChatMessage);
+    console.log(
+      "[DEBUG] ContentScriptUI: Attaching sendChatMessage to window object",
+    );
+    console.log(
+      "[DEBUG] ContentScriptUI: sendChatMessage function type:",
+      typeof sendChatMessage,
+    );
     console.log("[DEBUG] ContentScriptUI: Window object before attachment:", {
-      hasSendChatMessage: 'sendChatMessage' in window,
-      sendChatMessageType: typeof (window as Window & { sendChatMessage?: typeof sendChatMessage }).sendChatMessage
+      hasSendChatMessage: "sendChatMessage" in window,
+      sendChatMessageType: typeof (
+        window as Window & { sendChatMessage?: typeof sendChatMessage }
+      ).sendChatMessage,
     });
-    
+
     (
       window as Window & { sendChatMessage?: typeof sendChatMessage }
     ).sendChatMessage = sendChatMessage;
-    
+
     console.log("[DEBUG] ContentScriptUI: Window object after attachment:", {
-      hasSendChatMessage: 'sendChatMessage' in window,
-      sendChatMessageType: typeof (window as Window & { sendChatMessage?: typeof sendChatMessage }).sendChatMessage
+      hasSendChatMessage: "sendChatMessage" in window,
+      sendChatMessageType: typeof (
+        window as Window & { sendChatMessage?: typeof sendChatMessage }
+      ).sendChatMessage,
     });
-    
+
     return () => {
-      console.log("[DEBUG] ContentScriptUI: Removing sendChatMessage from window object");
+      console.log(
+        "[DEBUG] ContentScriptUI: Removing sendChatMessage from window object",
+      );
       (
         window as Window & { sendChatMessage?: typeof sendChatMessage }
       ).sendChatMessage = undefined;
@@ -315,7 +341,7 @@ export default defineContentScript({
           );
           console.log("[DEBUG] Container element:", container);
           console.log("[DEBUG] Container shadowRoot:", container.shadowRoot);
-          
+
           const app = document.createElement("div");
           app.className = "w-full h-full";
           container.append(app);

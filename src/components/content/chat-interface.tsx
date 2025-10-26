@@ -38,8 +38,11 @@ export const ChatInterface = ({
       sessionId,
       message,
     }: { sessionId: string; message: string }) => {
-      console.log("[DEBUG] ChatInterface: Attempting to send message, sessionId:", sessionId);
-      
+      console.log(
+        "[DEBUG] ChatInterface: Attempting to send message, sessionId:",
+        sessionId,
+      );
+
       const windowWithChat = window as Window & {
         sendChatMessage?: (
           sessionId: string,
@@ -47,15 +50,23 @@ export const ChatInterface = ({
         ) => Promise<ChatResponse>;
       };
 
-      console.log("[DEBUG] ChatInterface: window.sendChatMessage available:", !!windowWithChat.sendChatMessage);
-      console.log("[DEBUG] ChatInterface: Window object keys:", Object.keys(window).filter(key => key.includes('chat')));
-      
+      console.log(
+        "[DEBUG] ChatInterface: window.sendChatMessage available:",
+        !!windowWithChat.sendChatMessage,
+      );
+      console.log(
+        "[DEBUG] ChatInterface: Window object keys:",
+        Object.keys(window).filter((key) => key.includes("chat")),
+      );
+
       if (!windowWithChat.sendChatMessage) {
-        console.error("[DEBUG] ChatInterface: Chat function not available - this might be the root cause");
+        console.error(
+          "[DEBUG] ChatInterface: Chat function not available - this might be the root cause",
+        );
         console.error("[DEBUG] ChatInterface: Current window properties:", {
-          hasSendChatMessage: 'sendChatMessage' in window,
+          hasSendChatMessage: "sendChatMessage" in window,
           isInitialized,
-          hasInitialMessage: !!initialMessage
+          hasInitialMessage: !!initialMessage,
         });
         throw new Error("Chat function not available");
       }
@@ -63,14 +74,21 @@ export const ChatInterface = ({
       return await windowWithChat.sendChatMessage(sessionId, message);
     },
     onMutate: (variables) => {
-      console.log("[DEBUG] ChatInterface: Mutation starting with variables:", variables);
+      console.log(
+        "[DEBUG] ChatInterface: Mutation starting with variables:",
+        variables,
+      );
     },
     onSettled: (data, error, variables) => {
-      console.log("[DEBUG] ChatInterface: Mutation settled:", { data, error: error?.message, variables });
+      console.log("[DEBUG] ChatInterface: Mutation settled:", {
+        data,
+        error: error?.message,
+        variables,
+      });
     },
     onSuccess: (response) => {
       console.log("[DEBUG] Chat response received:", response);
-      
+
       // Add AI response to local state
       setMessages((prev) => [...prev, response.message]);
 
@@ -80,12 +98,12 @@ export const ChatInterface = ({
         accessGranted?: boolean;
         durationMinutes?: number;
       };
-      
+
       const accessGranted = chatResponse.accessGranted || false;
       const durationMinutes = chatResponse.durationMinutes;
-      
+
       console.log("[DEBUG] Access check:", { accessGranted, durationMinutes });
-      
+
       if (accessGranted && durationMinutes !== undefined && onUnblock) {
         setIsAccessGranted(true);
         setAccessMessage(
@@ -104,11 +122,11 @@ export const ChatInterface = ({
         );
         const reason =
           reasonMatch?.[1]?.trim() || "Access denied by AI assistant";
-        
+
         // Show the access denied message temporarily but don't permanently disable the input
         setAccessMessage(reason);
         setIsAccessDenied(true);
-        
+
         // Reset the access denied state after showing the message
         setTimeout(() => {
           setIsAccessDenied(false);
@@ -144,11 +162,19 @@ export const ChatInterface = ({
       isDisabled: chatMutation.isPending || isAccessGranted,
       isInitialized,
       hasInitialMessage: !!initialMessage,
-      windowHasSendChatMessage: 'sendChatMessage' in window,
+      windowHasSendChatMessage: "sendChatMessage" in window,
       chatMutationError: chatMutation.error,
-      chatMutationFailureCount: chatMutation.failureCount
+      chatMutationFailureCount: chatMutation.failureCount,
     });
-  }, [chatMutation.isPending, isAccessGranted, isAccessDenied, isInitialized, initialMessage, chatMutation.error, chatMutation.failureCount]);
+  }, [
+    chatMutation.isPending,
+    isAccessGranted,
+    isAccessDenied,
+    isInitialized,
+    initialMessage,
+    chatMutation.error,
+    chatMutation.failureCount,
+  ]);
 
   // Function to send message to AI
   const sendRealMessage = useCallback(
@@ -164,9 +190,9 @@ export const ChatInterface = ({
       isInitialized,
       hasInitialMessage: !!initialMessage,
       sessionId,
-      windowHasSendChatMessage: 'sendChatMessage' in window
+      windowHasSendChatMessage: "sendChatMessage" in window,
     });
-    
+
     if (!isInitialized && initialMessage) {
       console.log("[DEBUG] ChatInterface: Initializing with initial message");
       const userMessage: ChatMessage = {
@@ -206,25 +232,17 @@ export const ChatInterface = ({
         inputRef.current &&
         !chatMutation.isPending &&
         !isAccessGranted
-      )
+      ),
     });
-    
-    if (
-      inputRef.current &&
-      !chatMutation.isPending &&
-      !isAccessGranted
-    ) {
+
+    if (inputRef.current && !chatMutation.isPending && !isAccessGranted) {
       console.log("[DEBUG] ChatInterface: Focusing input");
       inputRef.current.focus();
     }
   }, [chatMutation.isPending, isAccessGranted, isAccessDenied]);
 
   const handleSendMessage = () => {
-    if (
-      !inputMessage.trim() ||
-      chatMutation.isPending ||
-      isAccessGranted
-    )
+    if (!inputMessage.trim() || chatMutation.isPending || isAccessGranted)
       return;
 
     const message = inputMessage.trim();
@@ -341,9 +359,7 @@ export const ChatInterface = ({
         <Button
           onClick={handleSendMessage}
           disabled={
-            !inputMessage.trim() ||
-            chatMutation.isPending ||
-            isAccessGranted
+            !inputMessage.trim() || chatMutation.isPending || isAccessGranted
           }
           size="sm"
         >

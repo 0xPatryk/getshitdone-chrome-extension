@@ -1,8 +1,16 @@
 import { analyzePageContent, processChatMessage } from "~/lib/ai-service";
+import { getCachedDecision, setCachedDecision } from "~/lib/cache";
 import { Message, onMessage } from "~/lib/messaging";
-import { AnalysisResultSchema } from "~/lib/messaging";
+import { type AnalysisResult, AnalysisResultSchema } from "~/lib/messaging";
 import type { ChatMessage, ChatSession } from "~/lib/messaging";
-import { getStorage, getStorageValue, setAccessGrant } from "~/lib/storage";
+import {
+  cleanupExpiredCacheEntries,
+  getStorage,
+  getStorageValue,
+  invalidateCacheForAlwaysRemoveChange,
+  invalidateCacheForTaskChange,
+  setAccessGrant,
+} from "~/lib/storage";
 import { StorageKey } from "~/lib/storage";
 import { defineBackground } from "#imports";
 
@@ -46,6 +54,18 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       };
     }
 
+    // Check cache first
+    const cachedResult = await getCachedDecision(
+      data.url,
+      currentTask || "",
+      data.alwaysRemove || null,
+    );
+
+    if (cachedResult) {
+      console.log("Using cached decision:", cachedResult);
+      return cachedResult;
+    }
+
     // Analyze the page content using the AI service
     console.log("Analyzing page content...");
     const analysisResult = await analyzePageContent(
@@ -59,20 +79,31 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 
     console.log("Analysis result:", analysisResult);
 
+    // Cache the result
+    await setCachedDecision(
+      data.url,
+      currentTask || "",
+      data.alwaysRemove || null,
+      analysisResult,
+      "ai_decision",
+      aiProvider,
+      false,
+    );
+
     // Validate and return the result
     const validatedResult = AnalysisResultSchema.parse(analysisResult);
     return validatedResult;
   } catch (error) {
     console.error("Error analyzing page:", error);
-    return {
-      decision: "ALLOW",
-      reason: `Error analyzing page: ${error instanceof Error ? error.message : "Unknown error"}`,
-    };
+    throw error;
   }
 });
 
 onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
-  console.log("[DEBUG] Background: Received SEND_CHAT_MESSAGE message:", message);
+  console.log(
+    "[DEBUG] Background: Received SEND_CHAT_MESSAGE message:",
+    message,
+  );
   const data = message.data;
 
   try {
@@ -154,7 +185,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
 
     console.log("Chat history saved to storage");
 
-    // If access was granted, save the access grant and clear the chat session
+    // If access was granted, save the access grant and cache the decision
     if (aiResponse.accessGranted && aiResponse.durationMinutes) {
       const now = Date.now();
       const expiresAt = now + aiResponse.durationMinutes * 60 * 1000;
@@ -167,6 +198,22 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         durationMinutes: aiResponse.durationMinutes,
       });
 
+      // Cache the unblocking decision
+      const allowResult: AnalysisResult = {
+        decision: "ALLOW",
+        reason: `Access granted through chat for ${aiResponse.durationMinutes} minutes`,
+      };
+
+      await setCachedDecision(
+        data.sessionId, // URL
+        currentTask || "",
+        null, // alwaysRemove not relevant for chat unblocks
+        allowResult,
+        "user_unblock",
+        aiProvider,
+        false,
+      );
+
       // Mark session as completed and clear messages to free memory
       updatedSession.status = "completed";
       updatedSession.messages = [];
@@ -177,7 +224,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       });
 
       console.log(
-        "[DEBUG] Access granted, session marked as completed and cleared",
+        "[DEBUG] Access granted, decision cached, session marked as completed and cleared",
       );
     }
 
@@ -189,6 +236,39 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     };
   } catch (error) {
     console.error("Error processing chat message:", error);
+    throw error;
+  }
+});
+
+// Handle cache invalidation for task changes
+onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
+  console.log("Background received INVALIDATE_CACHE_TASK message:", message);
+  const data = message.data;
+
+  try {
+    await invalidateCacheForTaskChange(
+      data.oldValue || "",
+      data.newValue || "",
+    );
+    console.log("Cache invalidated for task change");
+  } catch (error) {
+    console.error("Error invalidating cache for task change:", error);
+    throw error;
+  }
+});
+
+// Handle cache invalidation for alwaysRemove changes
+onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
+  console.log(
+    "Background received INVALIDATE_CACHE_ALWAYS_REMOVE message:",
+    message,
+  );
+
+  try {
+    await invalidateCacheForAlwaysRemoveChange();
+    console.log("Cache invalidated for alwaysRemove change");
+  } catch (error) {
+    console.error("Error invalidating cache for alwaysRemove change:", error);
     throw error;
   }
 });
@@ -229,7 +309,9 @@ export default defineBackground(() => {
 
   // Run cleanup on startup
   cleanupOldChatSessions();
+  cleanupExpiredCacheEntries();
 
   // Run cleanup every hour
   setInterval(cleanupOldChatSessions, 60 * 60 * 1000);
+  setInterval(cleanupExpiredCacheEntries, 60 * 60 * 1000);
 });

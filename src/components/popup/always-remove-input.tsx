@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Message, sendMessage } from "@/lib/messaging";
 import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -17,6 +18,10 @@ export const AlwaysRemoveInput = () => {
   const setAlwaysRemoveMutation = useMutation({
     mutationFn: async (items: string) => {
       await setAlwaysRemove(items.trim());
+
+      // Send cache invalidation message
+      await sendMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, {});
+
       return items;
     },
     onSuccess: () => {
@@ -35,6 +40,10 @@ export const AlwaysRemoveInput = () => {
   const clearAlwaysRemoveMutation = useMutation({
     mutationFn: async () => {
       await setAlwaysRemove(null);
+
+      // Send cache invalidation message
+      await sendMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, {});
+
       return null;
     },
     onSuccess: () => {

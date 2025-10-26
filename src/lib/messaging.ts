@@ -6,6 +6,8 @@ export const Message = {
   BLOCK_RESULT: "blockResult",
   SEND_CHAT_MESSAGE: "sendChatMessage",
   CHAT_RESPONSE: "chatResponse",
+  INVALIDATE_CACHE_TASK: "invalidateCacheTask",
+  INVALIDATE_CACHE_ALWAYS_REMOVE: "invalidateCacheAlwaysRemove",
 } as const;
 
 export type Message = (typeof Message)[keyof typeof Message];
@@ -50,12 +52,23 @@ export const AccessGrantSchema = z.object({
   durationMinutes: z.number(),
 });
 
+export const InvalidateCacheTaskSchema = z.object({
+  oldValue: z.string().optional(),
+  newValue: z.string().optional(),
+});
+
+export const InvalidateCacheAlwaysRemoveSchema = z.object({});
+
 export type AnalysisResult = z.infer<typeof AnalysisResultSchema>;
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 export type ChatSession = z.infer<typeof ChatSessionSchema>;
 export type SendChatMessage = z.infer<typeof SendChatMessageSchema>;
 export type ChatResponse = z.infer<typeof ChatResponseSchema>;
 export type AccessGrant = z.infer<typeof AccessGrantSchema>;
+export type InvalidateCacheTask = z.infer<typeof InvalidateCacheTaskSchema>;
+export type InvalidateCacheAlwaysRemove = z.infer<
+  typeof InvalidateCacheAlwaysRemoveSchema
+>;
 
 interface Messages {
   [Message.ANALYZE_PAGE]: (data: {
@@ -66,6 +79,10 @@ interface Messages {
   [Message.BLOCK_RESULT]: (data: AnalysisResult) => void;
   [Message.SEND_CHAT_MESSAGE]: (data: SendChatMessage) => ChatResponse;
   [Message.CHAT_RESPONSE]: (data: ChatResponse) => void;
+  [Message.INVALIDATE_CACHE_TASK]: (data: InvalidateCacheTask) => void;
+  [Message.INVALIDATE_CACHE_ALWAYS_REMOVE]: (
+    data: InvalidateCacheAlwaysRemove,
+  ) => void;
 }
 
 export const { sendMessage, onMessage } = defineExtensionMessaging<Messages>();
