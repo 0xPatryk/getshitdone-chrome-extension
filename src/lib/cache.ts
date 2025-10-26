@@ -118,10 +118,6 @@ export const cleanupExpiredCacheEntries = async (): Promise<void> => {
 
   // Update last cleanup timestamp
   await setStorageValue(StorageKey.CACHE_LAST_CLEANUP, now);
-
-  console.log(
-    `Cache cleanup completed. Removed ${Object.keys(cache).length - Object.keys(validEntries).length} expired entries.`,
-  );
 };
 
 // Invalidate cache entries when the current task changes
@@ -153,15 +149,11 @@ export const invalidateCacheForTaskChange = async (
   );
 
   await setStorageValue(StorageKey.DECISION_CACHE, validEntries);
-  console.log(
-    `Invalidated cache entries for task change from "${oldTask}" to "${newTask}"`,
-  );
 };
 
 // Invalidate cache entries when alwaysRemove settings change
 export const invalidateCacheForAlwaysRemoveChange = async (): Promise<void> => {
   await setStorageValue(StorageKey.DECISION_CACHE, {});
-  console.log("Cleared all cache entries due to alwaysRemove settings change");
 };
 
 // Get cache statistics

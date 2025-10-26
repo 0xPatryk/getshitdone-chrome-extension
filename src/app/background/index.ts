@@ -16,7 +16,6 @@ import { defineBackground } from "#imports";
 
 // Set up message handlers
 onMessage(Message.ANALYZE_PAGE, async (message) => {
-  console.log("Background received ANALYZE_PAGE message:", message);
   const data = message.data;
 
   try {
@@ -28,11 +27,6 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
         getStorageValue(StorageKey.OPENAI_API_KEY),
         getStorageValue(StorageKey.CURRENT_TASK),
       ]);
-
-    console.log("AI Provider:", aiProvider);
-    console.log("Gemini API Key available:", !!geminiApiKey);
-    console.log("OpenAI API Key available:", !!openaiApiKey);
-    console.log("Current Task:", currentTask);
 
     // Check if we have the necessary API key
     const apiKey = aiProvider === "openai" ? openaiApiKey : geminiApiKey;
@@ -46,7 +40,6 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 
     // Check if we have a current task
     if (!currentTask) {
-      console.warn("No current task set, allowing page by default");
       return {
         decision: "ALLOW",
         reason:
@@ -62,12 +55,10 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     );
 
     if (cachedResult) {
-      console.log("Using cached decision:", cachedResult);
       return cachedResult;
     }
 
     // Analyze the page content using the AI service
-    console.log("Analyzing page content...");
     const analysisResult = await analyzePageContent(
       apiKey,
       currentTask,
@@ -76,8 +67,6 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       aiProvider,
       data.alwaysRemove,
     );
-
-    console.log("Analysis result:", analysisResult);
 
     // Cache the result
     await setCachedDecision(
@@ -100,10 +89,6 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 });
 
 onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
-  console.log(
-    "[DEBUG] Background: Received SEND_CHAT_MESSAGE message:",
-    message,
-  );
   const data = message.data;
 
   try {
@@ -158,7 +143,6 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     const chatHistory = session.messages;
 
     // Process the chat message using the AI service
-    console.log("[DEBUG] Background: Processing chat message with AI service");
     const aiResponse = await processChatMessage(
       apiKey,
       currentTask || "No task set",
@@ -166,8 +150,6 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       chatHistory,
       aiProvider,
     );
-
-    console.log("[DEBUG] Background: AI response:", aiResponse);
 
     // Add both user message and AI response to session
     const finalMessages = [...updatedMessages, aiResponse.message];
@@ -182,8 +164,6 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       [data.sessionId]: updatedSession,
     };
     await chatSessionsStorage.setValue(updatedSessions);
-
-    console.log("Chat history saved to storage");
 
     // If access was granted, save the access grant and cache the decision
     if (aiResponse.accessGranted && aiResponse.durationMinutes) {
@@ -222,10 +202,6 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         ...allSessions,
         [data.sessionId]: updatedSession,
       });
-
-      console.log(
-        "[DEBUG] Access granted, decision cached, session marked as completed and cleared",
-      );
     }
 
     return {
@@ -242,7 +218,6 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
 
 // Handle cache invalidation for task changes
 onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
-  console.log("Background received INVALIDATE_CACHE_TASK message:", message);
   const data = message.data;
 
   try {
@@ -250,7 +225,6 @@ onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
       data.oldValue || "",
       data.newValue || "",
     );
-    console.log("Cache invalidated for task change");
   } catch (error) {
     console.error("Error invalidating cache for task change:", error);
     throw error;
@@ -259,14 +233,8 @@ onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
 
 // Handle cache invalidation for alwaysRemove changes
 onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
-  console.log(
-    "Background received INVALIDATE_CACHE_ALWAYS_REMOVE message:",
-    message,
-  );
-
   try {
     await invalidateCacheForAlwaysRemoveChange();
-    console.log("Cache invalidated for alwaysRemove change");
   } catch (error) {
     console.error("Error invalidating cache for alwaysRemove change:", error);
     throw error;
@@ -289,8 +257,6 @@ const cleanupOldChatSessions = async () => {
       // Keep sessions created within the last 24 hours
       if (now - session.createdAt < twentyFourHours) {
         acc[sessionId] = session;
-      } else {
-        console.log("[DEBUG] Removing old chat session:", sessionId);
       }
       return acc;
     },
@@ -298,14 +264,9 @@ const cleanupOldChatSessions = async () => {
   );
 
   await chatSessionsStorage.setValue(validSessions);
-  console.log("[DEBUG] Chat session cleanup completed");
 };
 
-// Initialize the background script
-console.log("Background script initialized");
-
 export default defineBackground(() => {
-  console.log("Background script entry point");
 
   // Run cleanup on startup
   cleanupOldChatSessions();
