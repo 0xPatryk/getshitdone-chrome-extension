@@ -1,102 +1,20 @@
 /**
- * AI Service Module
- * 
- * This module provides AI-powered content analysis and chat functionality for the focus extension.
- * It integrates with Google Gemini and OpenAI providers to analyze web pages and manage user
- * requests for temporary access to blocked content.
- * 
- * Key features:
- * - Page content analysis for distraction detection
- * - Chat-based access request processing
- * - Content extraction utilities
- * - Support for multiple AI providers
- * 
- * @module ai-service
+ * AI Service Functions
+ *
+ * This module contains the main AI service functions for content analysis
+ * and chat functionality.
+ *
+ * @module ai-service/services
  */
 
-import { createGoogleGenerativeAI } from "@ai-sdk/google";
-import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject, generateText } from "ai";
 import {
   type AnalysisResult,
   AnalysisResultSchema,
   type ChatMessage,
 } from "~/lib/messaging";
-
-/**
- * Supported AI providers for content analysis and chat functionality.
- * @typedef {"gemini" | "openai"} AIProvider
- */
-type AIProvider = "gemini" | "openai";
-
-// Singleton instances for AI providers to avoid repeated initialization
-let googleProvider: ReturnType<typeof createGoogleGenerativeAI> | null = null;
-let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
-
-/**
- * Gets or creates a Google Generative AI provider instance.
- * Implements singleton pattern to avoid multiple provider instances.
- *
- * @param apiKey - The API key for Google Generative AI
- * @returns A Google Generative AI provider instance
- *
- * @example
- * ```typescript
- * const provider = getGoogleProvider("your-api-key");
- * const model = provider("gemini-2.5-flash-lite");
- * ```
- */
-const getGoogleProvider = (apiKey: string) => {
-  if (!googleProvider) {
-    googleProvider = createGoogleGenerativeAI({ apiKey });
-  }
-  return googleProvider;
-};
-
-/**
- * Gets or creates an OpenAI provider instance.
- * Implements singleton pattern to avoid multiple provider instances.
- *
- * @param apiKey - The API key for OpenAI
- * @returns An OpenAI provider instance
- *
- * @example
- * ```typescript
- * const provider = getOpenAIProvider("your-api-key");
- * const model = provider("gpt-4o-mini");
- * ```
- */
-const getOpenAIProvider = (apiKey: string) => {
-  if (!openaiProvider) {
-    openaiProvider = createOpenAI({ apiKey });
-  }
-  return openaiProvider;
-};
-
-/**
- * Gets the appropriate AI model based on the specified provider.
- *
- * @param provider - The AI provider to use ("gemini" or "openai")
- * @param apiKey - The API key for the specified provider
- * @returns An AI model instance for the specified provider
- * @throws {Error} When an unsupported provider is specified
- *
- * @example
- * ```typescript
- * const model = getModel("gemini", "your-api-key");
- * // Returns a Gemini 2.5 Flash Lite model
- * ```
- */
-const getModel = (provider: AIProvider, apiKey: string) => {
-  switch (provider) {
-    case "gemini":
-      return getGoogleProvider(apiKey)("gemini-2.5-flash-lite");
-    case "openai":
-      return getOpenAIProvider(apiKey)("gpt-4o-mini");
-    default:
-      throw new Error(`Unsupported provider: ${provider}`);
-  }
-};
+import type { AIProvider } from "./types";
+import { getModel } from "./utils";
 
 /**
  * Analyzes web page content to determine if it's relevant to the user's task or a potential distraction.
@@ -315,7 +233,7 @@ IMPORTANT: When granting access, you MUST include the duration number after "ACC
     console.error("Chat message processing failed:", {
       error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
-      context: "AI service chat processing"
+      context: "AI service chat processing",
     });
     // Fallback response
     return {
@@ -331,7 +249,11 @@ IMPORTANT: When granting access, you MUST include the duration number after "ACC
   }
 };
 
-// Utility function to extract main text content from a page
+/**
+ * Utility function to extract main text content from a page
+ * @param content - The raw HTML content
+ * @returns Cleaned text content with scripts, styles, and tags removed
+ */
 export const extractMainContent = (content: string): string => {
   // Remove scripts, styles, and other non-content elements
   const cleaned = content

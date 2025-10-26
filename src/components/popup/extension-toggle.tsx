@@ -6,8 +6,9 @@
 
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Extension toggle component for controlling focus mode activation.
@@ -43,7 +44,7 @@ export const ExtensionToggle = () => {
       console.error("Error toggling extension:", {
         error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
-        context: "extension toggle"
+        context: "extension toggle",
       });
     },
   });

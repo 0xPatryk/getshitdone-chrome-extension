@@ -65,7 +65,8 @@ class ReactErrorBoundary extends Component<
       error: error instanceof Error ? error.message : String(error),
       componentStack: errorInfo,
       timestamp: new Date().toISOString(),
-      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown'
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "Unknown",
     });
   }
 

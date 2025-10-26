@@ -7,10 +7,11 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * API key settings component for managing AI provider credentials.

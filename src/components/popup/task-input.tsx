@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Message, sendMessage } from "@/lib/messaging";
-import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Task input component for managing current focus task.
@@ -60,7 +61,7 @@ export const TaskInput = () => {
         error: error instanceof Error ? error.message : String(error),
         task: inputValue,
         timestamp: new Date().toISOString(),
-        context: "task update"
+        context: "task update",
       });
     },
   });
@@ -91,7 +92,7 @@ export const TaskInput = () => {
       console.error("Error clearing task:", {
         error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
-        context: "task clearing"
+        context: "task clearing",
       });
     },
   });

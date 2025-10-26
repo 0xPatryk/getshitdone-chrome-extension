@@ -53,7 +53,7 @@ export interface DecisionCacheEntry {
      * The AI provider that made this decision
      */
     provider?: "gemini" | "openai";
-    
+
     /**
      * Whether this was a fallback decision due to AI service failure
      */
@@ -72,12 +72,12 @@ export interface CacheKeyData {
    * The original URL that was cached
    */
   url: string;
-  
+
   /**
    * Hash of the task context
    */
   taskHash: string;
-  
+
   /**
    * Hash of the always-remove configuration
    */
@@ -104,13 +104,13 @@ export const CACHE_TTL = {
    * Longer TTL to reduce API costs for repeated analyses
    */
   AI_DECISION: 24 * 60 * 60 * 1000, // 24 hours
-  
+
   /**
    * TTL for user manual unblocks (1 hour)
    * Shorter TTL to allow users to re-evaluate their decisions
    */
   USER_UNBLOCK: 60 * 60 * 1000, // 1 hour minimum for user unblocks
-  
+
   /**
    * Interval for automatic cache cleanup (1 hour)
    * Determines how often expired entries should be removed

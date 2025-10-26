@@ -9,12 +9,12 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Card } from "~/components/ui/card";
 import {
-  StorageKey,
   cleanupExpiredCacheEntries,
   clearDecisionCache,
   getCacheStats,
-  useStorage,
-} from "~/lib/storage";
+} from "~/lib/cache";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Cache settings component for managing extension cache.

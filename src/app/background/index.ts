@@ -14,18 +14,17 @@
 
 import { analyzePageContent, processChatMessage } from "~/lib/ai-service";
 import { getCachedDecision, setCachedDecision } from "~/lib/cache";
+import {
+  cleanupExpiredCacheEntries,
+  invalidateCacheForAlwaysRemoveChange,
+  invalidateCacheForTaskChange,
+} from "~/lib/cache";
+import { setAccessGrant } from "~/lib/grants";
 import { Message, onMessage } from "~/lib/messaging";
 import { type AnalysisResult, AnalysisResultSchema } from "~/lib/messaging";
 import type { ChatMessage, ChatSession } from "~/lib/messaging";
-import {
-  cleanupExpiredCacheEntries,
-  getStorage,
-  getStorageValue,
-  invalidateCacheForAlwaysRemoveChange,
-  invalidateCacheForTaskChange,
-  setAccessGrant,
-} from "~/lib/storage";
-import { StorageKey } from "~/lib/storage";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 import { defineBackground } from "#imports";
 
 // Set up message handlers
@@ -51,10 +50,10 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
     // Get the AI provider, API key, and current task from storage
     const [aiProvider, geminiApiKey, openaiApiKey, currentTask] =
       await Promise.all([
-        getStorageValue(StorageKey.AI_PROVIDER),
-        getStorageValue(StorageKey.GEMINI_API_KEY),
-        getStorageValue(StorageKey.OPENAI_API_KEY),
-        getStorageValue(StorageKey.CURRENT_TASK),
+        storage[StorageKey.AI_PROVIDER].getValue(),
+        storage[StorageKey.GEMINI_API_KEY].getValue(),
+        storage[StorageKey.OPENAI_API_KEY].getValue(),
+        storage[StorageKey.CURRENT_TASK].getValue(),
       ]);
 
     // Check if we have the necessary API key
@@ -116,7 +115,7 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       error: error instanceof Error ? error.message : String(error),
       url: data?.url || "unknown",
       timestamp: new Date().toISOString(),
-      context: "background page analysis"
+      context: "background page analysis",
     });
     throw error;
   }
@@ -143,10 +142,10 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     // Get the AI provider, API key, and current task from storage
     const [aiProvider, geminiApiKey, openaiApiKey, currentTask] =
       await Promise.all([
-        getStorageValue(StorageKey.AI_PROVIDER),
-        getStorageValue(StorageKey.GEMINI_API_KEY),
-        getStorageValue(StorageKey.OPENAI_API_KEY),
-        getStorageValue(StorageKey.CURRENT_TASK),
+        storage[StorageKey.AI_PROVIDER].getValue(),
+        storage[StorageKey.GEMINI_API_KEY].getValue(),
+        storage[StorageKey.OPENAI_API_KEY].getValue(),
+        storage[StorageKey.CURRENT_TASK].getValue(),
       ]);
 
     // Check if we have the necessary API key
@@ -159,7 +158,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     }
 
     // Get chat sessions from storage
-    const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS);
+    const chatSessionsStorage = storage[StorageKey.CHAT_SESSIONS];
     const allSessions = (await chatSessionsStorage.getValue()) as Record<
       string,
       ChatSession
@@ -263,7 +262,7 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
       error: error instanceof Error ? error.message : String(error),
       sessionId: data?.sessionId || "unknown",
       timestamp: new Date().toISOString(),
-      context: "chat message processing"
+      context: "chat message processing",
     });
     throw error;
   }
@@ -294,7 +293,7 @@ onMessage(Message.INVALIDATE_CACHE_TASK, async (message) => {
       oldValue: data?.oldValue || "unknown",
       newValue: data?.newValue || "unknown",
       timestamp: new Date().toISOString(),
-      context: "cache invalidation for task change"
+      context: "cache invalidation for task change",
     });
     throw error;
   }
@@ -317,7 +316,7 @@ onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
     console.error("Error invalidating cache for alwaysRemove change:", {
       error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),
-      context: "cache invalidation for alwaysRemove change"
+      context: "cache invalidation for alwaysRemove change",
     });
     throw error;
   }
@@ -332,7 +331,7 @@ onMessage(Message.INVALIDATE_CACHE_ALWAYS_REMOVE, async (message) => {
  * @throws Error when cleanup operation fails
  */
 const cleanupOldChatSessions = async () => {
-  const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS);
+  const chatSessionsStorage = storage[StorageKey.CHAT_SESSIONS];
   const allSessions = (await chatSessionsStorage.getValue()) as Record<
     string,
     ChatSession
@@ -366,7 +365,6 @@ const cleanupOldChatSessions = async () => {
  * // and runs cleanup tasks on startup and every hour thereafter
  */
 export default defineBackground(() => {
-
   // Run cleanup on startup
   cleanupOldChatSessions();
   cleanupExpiredCacheEntries();

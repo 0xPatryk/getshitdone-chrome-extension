@@ -5,7 +5,8 @@
  */
 
 import { Badge } from "@/components/ui/badge";
-import { StorageKey, useStorage } from "@/lib/storage";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Status display component for showing extension operational state.

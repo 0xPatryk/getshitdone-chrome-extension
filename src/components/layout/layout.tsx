@@ -4,7 +4,6 @@
  * error boundaries, suspense loading, and global providers for the extension.
  */
 
-import { StorageKey, useStorage } from "@/lib/storage";
 import { Theme } from "@/types";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "~/components/common/error-boundary";
@@ -12,6 +11,8 @@ import { Suspense } from "~/components/common/suspense";
 import { Footer } from "~/components/layout/footer";
 import { Header } from "~/components/layout/header";
 import { Toaster } from "~/components/ui/sonner";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 import { cn } from "~/lib/utils";
 import "~/assets/styles/globals.css";
 

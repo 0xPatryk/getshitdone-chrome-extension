@@ -18,19 +18,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
 import {
+  getActiveAccessGrant,
+  removeAccessGrant,
+  setAccessGrant,
+} from "~/lib/grants";
+import {
   type AnalysisResult,
   type ChatResponse,
   Message,
   onMessage,
   sendMessage,
 } from "~/lib/messaging";
-import {
-  StorageKey,
-  getActiveAccessGrant,
-  getStorageValue,
-  removeAccessGrant,
-  setAccessGrant,
-} from "~/lib/storage";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 import { createShadowRootUi, defineContentScript } from "#imports";
 
 import "~/assets/styles/globals.css";
@@ -79,7 +79,6 @@ const ContentScriptUI = ({
 }: {
   initialBlockResult?: AnalysisResult | null;
 }) => {
-
   const timerExpiredRef = useRef(false);
   const timeoutRef = useRef<number | undefined>(undefined);
   const [blockState, setBlockState] = useState<{
@@ -278,7 +277,7 @@ const ContentScriptUI = ({
         console.error("ContentScriptUI: Failed to send chat message:", {
           error: error instanceof Error ? error.message : String(error),
           timestamp: new Date().toISOString(),
-          context: "content script chat message sending"
+          context: "content script chat message sending",
         });
         throw error;
       }
@@ -381,7 +380,7 @@ export default defineContentScript({
         }
 
         // Get always remove list from storage
-        const alwaysRemove = await getStorageValue(StorageKey.ALWAYS_REMOVE);
+        const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
 
         // Send page content to background script for analysis
         const response = await sendMessage(Message.ANALYZE_PAGE, {
@@ -407,7 +406,7 @@ export default defineContentScript({
           error: error instanceof Error ? error.message : String(error),
           url: window.location.href,
           timestamp: new Date().toISOString(),
-          context: "page analysis"
+          context: "page analysis",
         });
       }
     };

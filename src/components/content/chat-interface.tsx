@@ -173,7 +173,7 @@ export const ChatInterface = ({
       console.error("Failed to send message:", {
         error: error instanceof Error ? error.message : String(error),
         sessionId: variables?.sessionId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
       setMessages((prev) => [
         ...prev,
@@ -190,7 +190,6 @@ export const ChatInterface = ({
       setAccessMessage("");
     },
   });
-
 
   // Function to send message to AI
   const sendRealMessage = useCallback(

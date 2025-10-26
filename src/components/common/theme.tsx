@@ -11,7 +11,8 @@ import { Moon, Sun } from "lucide-react";
 import { memo } from "react";
 
 import { Button } from "~/components/ui/button";
-import { StorageKey, useStorage } from "~/lib/storage";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 import { cn } from "~/lib/utils";
 import { Theme } from "~/types";
 

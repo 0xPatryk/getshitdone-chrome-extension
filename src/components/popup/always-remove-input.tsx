@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Message, sendMessage } from "@/lib/messaging";
-import { StorageKey, useStorage } from "@/lib/storage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Always remove input component for managing persistent element removal.
@@ -55,7 +56,7 @@ export const AlwaysRemoveInput = () => {
         error: error instanceof Error ? error.message : String(error),
         input: inputValue,
         timestamp: new Date().toISOString(),
-        context: "always remove list update"
+        context: "always remove list update",
       });
     },
   });
@@ -82,7 +83,7 @@ export const AlwaysRemoveInput = () => {
       console.error("Error clearing always remove list:", {
         error: error instanceof Error ? error.message : String(error),
         timestamp: new Date().toISOString(),
-        context: "always remove list clearing"
+        context: "always remove list clearing",
       });
     },
   });

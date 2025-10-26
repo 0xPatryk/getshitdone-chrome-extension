@@ -1,5 +1,5 @@
 /**
- * Chat Session Module
+ * Chat Services Module
  *
  * This module provides React hooks for managing chat sessions in the focus extension.
  * It handles session creation, message management, and session lifecycle using
@@ -11,11 +11,17 @@
  * - Active session tracking
  * - Session lifecycle management
  *
- * @module chat-session
+ * @module chat/services
  */
 
-import type { ChatMessage, ChatSession } from "~/lib/messaging";
-import { StorageKey, useStorage } from "./storage";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
+import type { ChatMessage, ChatSession } from "./types";
+import {
+  createChatMessage,
+  generateSessionId,
+  getCurrentTimestamp,
+} from "./utils";
 
 /**
  * React hook for managing chat sessions and messages.
@@ -69,11 +75,11 @@ export const useChatSession = () => {
    * ```
    */
   const createSession = () => {
-    const sessionId = `session_${Date.now()}`;
+    const sessionId = generateSessionId();
     const newSession: ChatSession = {
       id: sessionId,
       messages: [],
-      createdAt: Date.now(),
+      createdAt: getCurrentTimestamp(),
       status: "active",
     };
 
@@ -110,11 +116,7 @@ export const useChatSession = () => {
     sessionId: string,
     message: Omit<ChatMessage, "id" | "timestamp">,
   ) => {
-    const newMessage: ChatMessage = {
-      ...message,
-      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: Date.now(),
-    };
+    const newMessage = createChatMessage(message);
 
     const currentSessions = chatSessionsStorage.data as Record<
       string,

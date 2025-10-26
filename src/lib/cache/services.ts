@@ -1,73 +1,25 @@
 /**
- * Cache Module
+ * Cache Services Module
  *
- * This module provides caching functionality for AI analysis results to improve performance
- * and reduce API costs. It implements a secure, time-based cache with automatic cleanup
- * and invalidation strategies.
+ * This module provides main cache service functions for storing, retrieving,
+ * and managing cached AI analysis results. It implements a secure, time-based
+ * cache with automatic cleanup and invalidation strategies.
  *
  * Key features:
- * - Secure hash-based cache keys
  * - Time-to-live (TTL) based expiration
  * - Automatic cleanup of expired entries
  * - Cache invalidation on task changes
  * - Statistics and monitoring
  *
- * @module cache
+ * @module cache.services
  */
 
-import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex } from "@noble/hashes/utils.js";
-import type { DecisionCacheEntry } from "~/lib/cache.types";
-import { CACHE_TTL } from "~/lib/cache.types";
+import type { DecisionCacheEntry } from "~/lib/cache/types";
+import { CACHE_TTL } from "~/lib/cache/types";
+import { createSecureHash, generateCacheKey } from "~/lib/cache/utils";
 import type { AnalysisResult } from "~/lib/messaging";
-import { StorageKey, getStorageValue, setStorageValue } from "~/lib/storage";
-
-/**
- * Creates a secure hash for cache keys using SHA-256.
- * Uses the first 16 characters of the hex-encoded hash for compactness.
- *
- * @param str - The input string to hash
- * @returns A 16-character hexadecimal hash
- *
- * @example
- * ```typescript
- * const hash = createSecureHash("https://example.com:write report:null");
- * console.log(hash); // "a1b2c3d4e5f6g7h8"
- * ```
- */
-const createSecureHash = (str: string): string => {
-  const hash = sha256(new TextEncoder().encode(str));
-  return bytesToHex(hash).substring(0, 16);
-};
-
-/**
- * Generates a unique cache key based on URL, task, and always-remove settings.
- * Combines the parameters and creates a secure hash for consistent lookup.
- *
- * @param url - The URL of the page being cached
- * @param task - The current user task
- * @param alwaysRemove - The always-remove CSS selector configuration
- * @returns A unique cache key for the combination of parameters
- *
- * @example
- * ```typescript
- * const key = generateCacheKey(
- *   "https://example.com",
- *   "Write research paper",
- *   ".ads,.sidebar"
- * );
- * ```
- */
-export const generateCacheKey = (
-  url: string,
-  task: string,
-  alwaysRemove: string | null,
-): string => {
-  const content = `${url}:${task}:${alwaysRemove}`;
-  const key = createSecureHash(content);
-
-  return key;
-};
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 // Cache lookup function
 export const getCachedDecision = async (
@@ -76,7 +28,10 @@ export const getCachedDecision = async (
   alwaysRemove: string | null,
 ): Promise<AnalysisResult | null> => {
   const cacheKey = generateCacheKey(url, task, alwaysRemove);
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
 
   const entry = cache[cacheKey];
   if (!entry) {
@@ -104,7 +59,10 @@ export const setCachedDecision = async (
   isFallback?: boolean,
 ): Promise<void> => {
   const cacheKey = generateCacheKey(url, task, alwaysRemove);
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
 
   const now = Date.now();
   let expiresAt: number;
@@ -127,7 +85,7 @@ export const setCachedDecision = async (
     },
   };
 
-  await setStorageValue(StorageKey.DECISION_CACHE, {
+  await storage[StorageKey.DECISION_CACHE].setValue({
     ...cache,
     [cacheKey]: entry,
   });
@@ -135,19 +93,25 @@ export const setCachedDecision = async (
 
 // Remove specific cache entry
 export const removeCachedDecision = async (cacheKey: string): Promise<void> => {
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
   const { [cacheKey]: _, ...remainingCache } = cache;
-  await setStorageValue(StorageKey.DECISION_CACHE, remainingCache);
+  await storage[StorageKey.DECISION_CACHE].setValue(remainingCache);
 };
 
 // Clear all cache entries
 export const clearDecisionCache = async (): Promise<void> => {
-  await setStorageValue(StorageKey.DECISION_CACHE, {});
+  await storage[StorageKey.DECISION_CACHE].setValue({});
 };
 
 // Clean up expired cache entries
 export const cleanupExpiredCacheEntries = async (): Promise<void> => {
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
   const now = Date.now();
 
   const validEntries = Object.entries(cache).reduce(
@@ -160,18 +124,21 @@ export const cleanupExpiredCacheEntries = async (): Promise<void> => {
     {} as Record<string, DecisionCacheEntry>,
   );
 
-  await setStorageValue(StorageKey.DECISION_CACHE, validEntries);
+  await storage[StorageKey.DECISION_CACHE].setValue(validEntries);
 
   // Update last cleanup timestamp
-  await setStorageValue(StorageKey.CACHE_LAST_CLEANUP, now);
+  await storage[StorageKey.CACHE_LAST_CLEANUP].setValue(now);
 };
 
-// Invalidate cache entries when the current task changes
+// Invalidate cache entries when current task changes
 export const invalidateCacheForTaskChange = async (
   oldTask: string,
   newTask: string,
 ): Promise<void> => {
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
   const oldTaskHash = createSecureHash(oldTask);
 
   const validEntries = Object.entries(cache).reduce(
@@ -181,7 +148,7 @@ export const invalidateCacheForTaskChange = async (
       if (parts.length >= 2) {
         const taskHash = parts[1];
 
-        // Keep entries that don't match the old task hash
+        // Keep entries that don't match old task hash
         if (taskHash !== oldTaskHash) {
           acc[cacheKey] = entry;
         }
@@ -194,12 +161,12 @@ export const invalidateCacheForTaskChange = async (
     {} as Record<string, DecisionCacheEntry>,
   );
 
-  await setStorageValue(StorageKey.DECISION_CACHE, validEntries);
+  await storage[StorageKey.DECISION_CACHE].setValue(validEntries);
 };
 
 // Invalidate cache entries when alwaysRemove settings change
 export const invalidateCacheForAlwaysRemoveChange = async (): Promise<void> => {
-  await setStorageValue(StorageKey.DECISION_CACHE, {});
+  await storage[StorageKey.DECISION_CACHE].setValue({});
 };
 
 // Get cache statistics
@@ -209,7 +176,10 @@ export const getCacheStats = async (): Promise<{
   userUnblockEntries: number;
   expiredEntries: number;
 }> => {
-  const cache = await getStorageValue(StorageKey.DECISION_CACHE);
+  const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
+    string,
+    DecisionCacheEntry
+  >;
   const now = Date.now();
 
   let aiDecisionEntries = 0;
