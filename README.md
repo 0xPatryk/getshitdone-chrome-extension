@@ -1,5 +1,4 @@
 <div align="center">
- 
  <br />
   <br />
 
@@ -16,182 +15,198 @@
 ![](https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white)
 ![](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)
 ![](https://img.shields.io/badge/Typescript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-
-![GitHub action badge](https://github.com/turbostarter/extro/actions/workflows/tests.yml/badge.svg)
-![GitHub action badge](https://github.com/turbostarter/extro/actions/workflows/publish.yml/badge.svg)
+![](https://img.shields.io/badge/AI-FF6B6B?style=flat-square&logo=openai&logoColor=white)
 
 ![GitHub license](https://img.shields.io/github/license/turbostarter/extro)
 <a href="https://discord.gg/KjpK2uk3JP" target="_blank"><img src="https://discord.com/api/guilds/1280456871693779006/widget.png"/></a>
 
-> This boilerplate
-> has [Plasmo version](https://github.com/turbostarter/extro/tree/plasmo)
+<!-- Product Hunt Launch Placeholder -->
+<a href="https://www.producthunt.com/posts/focus-ai-extension?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-focus-ai" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=000&theme=light" alt="Focus AI Extension - AI-powered distraction blocking that understands your work | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+
+<!-- Kickstarter Campaign Placeholder -->
+<a href="https://www.kickstarter.com/projects/focusai/focus-ai-extension" target="_blank"><img src="https://ksr-ugc.imgix.net/assets/038/123/456/7890abc1234567890abcdef123456789-original.png?ixlib=rb-4.0.2&w=80&h=80&fit=crop&v=1664380163&auto=format&frame=1&q=92&s=1234567890abcdef" alt="Back us on Kickstarter" style="width: 80px; height: 80px;" width="80" height="80" /></a>
 
 </div>
 
-<p align="center">
-    <a href="#features"><strong>Features</strong></a> · 
-    <a href="#tech-stack"><strong>Tech stack</strong></a> · 
-    <a href="#contributing"><strong>Contributing</strong></a> ·
-    <a href="#getting-started"><strong>Getting started</strong></a> ·
-    <a href="#community"><strong>Community</strong></a> ·
-    <a href="#star-history"><strong>Star History</strong></a>
-  </p>
+# AI-Powered Focus Extension
 
+An intelligent browser extension that uses AI to help you stay focused by understanding the context of your work and making smart decisions about what content is relevant to your current task.
 
-  Everything you need to build a production ready browser extension, it's an **opinionated** stack based on learnings from building multiple browser extensions using the latest React framework. It's a starter kit with a focus on code reuse and best practices that will grow with your business.
-
-> [!NOTE]
-> This project is listed on [Awesome Open Source Boilerplates](https://github.com/EinGuterWaran/awesome-opensource-boilerplates) and [Awesome SaaS Boilerplates](https://github.com/smirnov-am/awesome-saas-boilerplates)
-
-
-> [!TIP]
-> Sharing storage and authentication session between all pages
+> Unlike traditional focus apps that rely on static blocklists, this extension analyzes content in real-time and can even negotiate with you when you need access to distracting sites.
 >
-> https://github.com/user-attachments/assets/970eddf8-5faf-42cc-89ed-54b7c7548bc8
+> **Free and Open Source** - Simply add your own OpenAI or Google Gemini API key to get started!
 
+## ✨ What Makes It Special
 
-## Features ✨ <a name="features"></a>
+### 💰 Free & Open Source
+- **No Subscription Fees**: Completely free to use with your own API key
+- **Privacy Focused**: Your data stays private, only API calls are made to your chosen AI provider
+- **Transparent**: Open source code you can inspect and modify
 
-- 🔒 Full type-safety with Typescript
-- 📄 All pages (background, popup, options etc.)
-- 📜 Content scripts (UI)
-- 🔐 Authentication (OAuth)
-- 💾 Storage
-- 💬 Messaging
-- 🔥 Hot reloading
-- 🚀 One-click publishing
-- 🌍 Internationalization
-- 📊 Analytics
-- ✨ Linting and formatting
-- 🧪 Unit tests
-- 🔄 CI/CD pipelines
-- ⚙️ Environment variables
-- 🎨 shadcn/ui compatible
-- 🔤 Custom fonts
-- 🤖 Native AI integration (experimental)
-- ✨ [ts-reset](https://github.com/mattpocock/ts-reset) for enhanced DX
-- 💳 Billing (coming soon)
+### 🤖 AI-Powered Content Analysis
+- **Context-Aware Blocking**: Analyzes actual content rather than just blocking domains
+- **Intelligent Element Removal**: Selectively removes distractions while preserving useful content
 
-## Tech stack 🛠️ <a name="tech-stack"></a>
+### 💬 Conversational Access Control
+- **Chat-Based Negotiation**: When content is blocked, chat with an AI assistant to request temporary access
+- **Contextual Decisions**: AI evaluates requests based on your current task
+- **Educational Feedback**: Learn why content was blocked and understand your distraction patterns
 
-| Tech                                           | Description                                                                   |
-| ---------------------------------------------- | ----------------------------------------------------------------------------- |
-| [TypeScript](https://www.typescriptlang.org/)  | Static type-checking programming language                                     |
-| [React](https://reactjs.org/)                  | Library for building user interfaces                                          |
-| [WXT](https://wxt.dev/)                        | Next-gen Web Extension Framework                                              |
-| [Supabase](https://supabase.com/)              | Open source Firebase alternative                                              |
-| [shadcn/ui](https://ui.shadcn.com/)            | Extendable component library                                                  |
-| [Tailwind](https://tailwindcss.com/)           | Utility-first CSS framework                                                   |
-| [OpenPanel](https://openpanel.dev/)            | Open source analytics                                                         |
-| [React Hook Form](https://react-hook-form.com) | Forms with easy-to-use validation                                             |
-| [Vite](https://vitejs.dev/)                    | Next generation frontend tool                                                 |
-| [Bun](https://bun.sh/)                         | Package manager and build tool                                                |
-| [Husky](https://github.com/typicode/husky)     | Git hooks                                                                     |
-| [Biome](https://biomejs.dev/)                  | Linting and formatting                                                        |
+### 🎯 Task-Driven Filtering
+- **Dynamic Adaptation**: Blocking decisions adapt based on your stated goals
+- **Flexible Blocking Levels**: Supports full page blocking or selective element removal
+- **Automatic Re-blocking**: Time-limited access with automatic re-blocking when timer expires
 
-## Contributing 🤝 <a name="contributing"></a>
-
-Please read [CONTRIBUTING.md](./CONTRIBUTING.md).
-
-## Getting started 🚀 <a name="getting-started"></a>
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- [Bun](https://bun.sh/)
+- [Bun](https://bun.sh/) package manager
+- API key for OpenAI or Google Gemini
 
 ### Installation
 
 1. Clone the repository
-
 ```bash
-git clone git@github.com:turbostarter/extro.git
+git clone [repository-url]
+cd focus-app
 ```
 
 2. Install dependencies
-
 ```bash
 bun install
 ```
 
-3. Copy `.env.example` to `.env` and update the variables
-
+3. Configure environment variables
 ```bash
 cp .env.example .env
+# Edit .env with your API keys
 ```
 
-### Development
-
-#### Chrome
-
-1. Run development server
-
+4. Start development server
 ```bash
+# For Chrome
 bun dev:chrome
-```
 
-2. Open Chrome and go to `chrome://extensions`
-3. Check `Developer mode`
-4. Click `Load unpacked`
-5. Select the `build/chrome-mv3` directory at root
-
-#### Firefox
-
-1. Run development server
-
-```bash
+# For Firefox
 bun dev:firefox
 ```
 
-2. Open Firefox and go to `about:debugging#/runtime/this-firefox`
-3. Click `Load Temporary Add-on...`
-4. Select the `build/firefox-mv2/manifest.json` file at root
+5. Load extension in browser:
+   - **Chrome**: Go to `chrome://extensions`, enable Developer mode, click "Load unpacked", select `build/chrome-mv3`
+   - **Firefox**: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", select `build/firefox-mv2/manifest.json`
 
-> [!NOTE]  
-> In Firefox you're adding a plugin in _temporary_ mode - that means it'll disappear after you close the browser.
+## 📖 Usage
 
-### Publishing
+1. **Set API Key**: In extension options, add your OpenAI or Google Gemini API key
+2. **Define Your Task**: In the popup, describe what you're working on
+3. **Stay Focused**: The AI will analyze content and block distractions intelligently
+4. **Chat for Access**: When blocked, explain why you need access to negotiate temporary access
 
-#### Manual
+## 🏗️ Architecture
 
-1. Run `bun run build` to build the extension for both Chrome and Firefox or `bun build:chrome` or `bun build:firefox` to build only for one of the browsers.
-2. Go to the `build` directory and upload the `.zip` files to the Chrome Web Store and Firefox Add-ons.
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Popup UI      │    │   Options Page  │    │   Side Panel    │
+│                 │    │                 │    │                 │
+│ - Quick toggle  │    │ - API keys      │    │ - Persistent    │
+│ - Task input    │    │ - Provider      │    │   interface     │
+│ - Status view   │    │   settings      │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+         ┌─────────────────────────┼─────────────────────────┐
+         │                      │                      │
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│ Background     │    │ Content Script │    │   Tabs Page     │
+│ Service       │    │                 │    │                 │
+│ Worker        │    │ - Page analysis│    │ - Settings      │
+│               │    │ - UI overlay   │    │ - Full page     │
+│ - AI analysis │    │ - Chat UI      │    │   interface     │
+│ - Cache mgmt  │    │ - Element      │    │                 │
+│ - Storage     │    │   removal      │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-#### CI/CD
+## 🛠️ Tech Stack
 
-1. Obtain all the [required API keys](https://wxt.dev/guide/essentials/publishing.html#github-action) for your submission (check the [official token guide](https://github.com/PlasmoHQ/bms/blob/main/tokens.md) to learn more about the tokens required to submit)
-2. Set your API keys as [Github secrets](https://docs.github.com/en/actions/security-guides/encrypted-secrets) under appropriate names
-3. Run `CI / Publish` workflow
+| Tech | Description |
+| ---- | ----------- |
+| [TypeScript](https://www.typescriptlang.org/) | Static type-checking |
+| [React](https://reactjs.org/) | UI library |
+| [WXT](https://wxt.dev/) | Web Extension Framework |
+| [Tailwind CSS](https://tailwindcss.com/) | Styling framework |
+| [AI SDK](https://sdk.vercel.ai/) | AI integration |
+| [Bun](https://bun.sh/) | Package manager & runtime |
 
-### Pages
+## 🤝 Contributing
 
-Extro ships with the following extension pages preconfigured:
+We welcome contributions of any kind! Here's how to get started:
 
-- `background` - [background service worker](https://wxt.dev/guide/essentials/entrypoints.html#background)
-- `content` - [content scripts](https://wxt.dev/guide/essentials/content-scripts.html) that run in the context of web pages
-- `devtools` - [devtools](https://wxt.dev/guide/essentials/entrypoints.html#devtools) page with custom panels
-- `options` - [options](https://wxt.dev/guide/essentials/entrypoints.html#options) page
-- `popup` - [popup](https://wxt.dev/guide/essentials/entrypoints.html#popup) window
-- `sidepanel` - [side panel](https://wxt.dev/guide/essentials/entrypoints.html#side-panel)
-- `tabs` - [unlisted](https://wxt.dev/guide/essentials/entrypoints.html#unlisted-pages) pages (custom pages delivered with the extension)
+### Development Setup
 
-## Community 💬 <a name="community"></a>
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes
+4. Run tests: `bun test`
+5. Check code style: `bun lint`
+6. Commit your changes: `git commit -m 'feat: add amazing feature'`
+7. Push to the branch: `git push origin feature/amazing-feature`
+8. Open a Pull Request
 
-To chat with other community members, you can join the [Discord](https://discord.gg/KjpK2uk3JP) server.
-You can ask questions on that server, and you can also help others.
+### Code Style
 
-Also, suggest new features or share any challenges you've faced while developing Chrome extensions!
+- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+- Use Biome for formatting (configured in `biome.json`)
+- 2-space indentation, double quotes, trailing commas
+- Functional React components with Hooks
+- TypeScript strict mode with no implicit `any`
 
-## Star History 🌟 <a name="star-history"></a>
+### Project Structure
 
-<a href="https://star-history.com/#turbostarter/extro&Date">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=turbostarter/extro&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=turbostarter/extro&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=turbostarter/extro&type=Date" />
- </picture>
-</a>
+```
+src/
+├── app/          # Entry points for extension parts
+├── components/   # Shared React components
+├── lib/         # Core functionality (AI, cache, storage)
+├── assets/      # Static assets
+└── types/       # TypeScript type definitions
+```
 
+### Testing
+
+- Use Bun test framework
+- Place tests in `src/lib/tests/`
+- Run with: `bun test`
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆚 Comparison with Traditional Focus Apps
+
+| Feature | Traditional Apps | This AI-Powered App |
+|---------|------------------|---------------------|
+| **Blocking Method** | Static blocklists | AI content analysis |
+| **Context Awareness** | None | Understands task relevance |
+| **Flexibility** | Rigid rules | Selective element removal |
+| **Access Control** | Manual overrides | Conversational negotiation |
+| **Authentication** | Often blocks auth | Smart auth detection |
+| **Adaptation** | Manual updates | Automatic adaptation |
+| **User Experience** | Disruptive | Educational feedback |
+
+## 🔮 Future Enhancements
+
+- Multi-task support
+- Usage analytics
+- Team collaboration
+- Advanced scheduling
+- Project management integrations
+
+## 🚀 Support Our Project
+
+- **Product Hunt**: Follow our launch and show your support with an upvote
+- **Kickstarter**: Back our campaign to help fund advanced features
+- **GitHub**: Star the repository and contribute to the codebase
 
 ---
-
-Made with ❤️ by [Bartosz Zagrodzki](https://zagrodzki.me)
