@@ -41,7 +41,8 @@ import {
 describe("AI Service - extractMainContent", () => {
   it("should remove script tags from HTML content", () => {
     // Arrange
-    const content = "<html><head><script>alert('test')</script></head><body>Content</body></html>";
+    const content =
+      "<html><head><script>alert('test')</script></head><body>Content</body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -54,7 +55,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should remove style tags from HTML content", () => {
     // Arrange
-    const content = "<html><head><style>body { color: red; }</style></head><body>Content</body></html>";
+    const content =
+      "<html><head><style>body { color: red; }</style></head><body>Content</body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -67,7 +69,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should remove all HTML tags", () => {
     // Arrange
-    const content = "<html><body><h1>Title</h1><p>Paragraph <strong>bold</strong> text</p></body></html>";
+    const content =
+      "<html><body><h1>Title</h1><p>Paragraph <strong>bold</strong> text</p></body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -87,7 +90,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should normalize whitespace", () => {
     // Arrange
-    const content = "<html><body>  Text   with    multiple     spaces  </body></html>";
+    const content =
+      "<html><body>  Text   with    multiple     spaces  </body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -158,7 +162,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should preserve text content in correct order", () => {
     // Arrange
-    const content = "<html><body><h1>First</h1><p>Second</p><div>Third</div></body></html>";
+    const content =
+      "<html><body><h1>First</h1><p>Second</p><div>Third</div></body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -182,14 +187,16 @@ describe("AI Service - analyzePageContent", () => {
     // Arrange
     const apiKey = "test-api-key";
     const userTask = "Write a research paper on climate change";
-    const pageContent = "<html>Social media content with lots of distractions</html>";
+    const pageContent =
+      "<html>Social media content with lots of distractions</html>";
     const url = "https://facebook.com";
     const provider = "gemini" as const;
     const alwaysRemove = ".ads,.sidebar";
 
     const mockAnalysisResult = {
       decision: "BLOCK_ALL" as const,
-      reason: "This page is a social media platform and likely to be a distraction",
+      reason:
+        "This page is a social media platform and likely to be a distraction",
       selectors: [".ads", ".sidebar"],
     };
 
@@ -350,7 +357,8 @@ describe("AI Service - processChatMessage", () => {
     ];
     const provider = "gemini" as const;
 
-    const aiResponse = "ACCESS_GRANTED: 15 I understand you need to check references for your research.";
+    const aiResponse =
+      "ACCESS_GRANTED: 15 I understand you need to check references for your research.";
     mockGenerateText.mockResolvedValue({ text: aiResponse });
 
     // Act
@@ -366,7 +374,8 @@ describe("AI Service - processChatMessage", () => {
     expect(mockGetModel).toHaveBeenCalledWith(provider, apiKey);
     expect(mockGenerateText).toHaveBeenCalledWith({
       model: {},
-      prompt: expect.stringContaining(userTask) && expect.stringContaining(message),
+      prompt:
+        expect.stringContaining(userTask) && expect.stringContaining(message),
       temperature: 0.3,
     });
     expect(result.accessGranted).toBe(true);
@@ -383,7 +392,8 @@ describe("AI Service - processChatMessage", () => {
     const chatHistory: ChatMessage[] = [];
     const provider = "openai" as const;
 
-    const aiResponse = "ACCESS_DENIED: Watching videos is not related to your assignment. Consider focusing on your work first.";
+    const aiResponse =
+      "ACCESS_DENIED: Watching videos is not related to your assignment. Consider focusing on your work first.";
     mockGenerateText.mockResolvedValue({ text: aiResponse });
 
     // Act

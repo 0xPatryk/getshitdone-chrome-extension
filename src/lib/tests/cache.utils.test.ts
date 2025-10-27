@@ -39,7 +39,7 @@ describe("Cache Utils", () => {
 
     it("should handle empty string input", () => {
       const hash = createSecureHash("");
-      
+
       expect(hash).toHaveLength(16);
       expect(typeof hash).toBe("string");
     });
@@ -47,7 +47,7 @@ describe("Cache Utils", () => {
     it("should handle special characters in input", () => {
       const input = "special-chars-!@#$%^&*()_+-=[]{}|;':\",./<>?";
       const hash = createSecureHash(input);
-      
+
       expect(hash).toHaveLength(16);
       expect(typeof hash).toBe("string");
     });
@@ -55,7 +55,7 @@ describe("Cache Utils", () => {
     it("should handle very long input strings", () => {
       const input = "a".repeat(1000);
       const hash = createSecureHash(input);
-      
+
       expect(hash).toHaveLength(16);
       expect(typeof hash).toBe("string");
     });
@@ -63,7 +63,7 @@ describe("Cache Utils", () => {
     it("should handle Unicode characters", () => {
       const input = "unicode-test-🚀-测试-проверка";
       const hash = createSecureHash(input);
-      
+
       expect(hash).toHaveLength(16);
       expect(typeof hash).toBe("string");
     });
@@ -71,7 +71,7 @@ describe("Cache Utils", () => {
     it("should generate hexadecimal strings", () => {
       const input = "test-hex";
       const hash = createSecureHash(input);
-      
+
       expect(hash).toMatch(/^[0-9a-f]{16}$/);
     });
   });
@@ -81,10 +81,10 @@ describe("Cache Utils", () => {
       const url = "https://example.com";
       const task = "write report";
       const alwaysRemove = ".ads,.sidebar";
-      
+
       const key1 = generateCacheKey(url, task, alwaysRemove);
       const key2 = generateCacheKey(url, task, alwaysRemove);
-      
+
       expect(key1).toBe(key2);
       expect(key1).toHaveLength(16);
     });
@@ -92,40 +92,44 @@ describe("Cache Utils", () => {
     it("should generate different keys for different URLs", () => {
       const task = "write report";
       const alwaysRemove = ".ads,.sidebar";
-      
+
       const key1 = generateCacheKey("https://example.com", task, alwaysRemove);
-      const key2 = generateCacheKey("https://different.com", task, alwaysRemove);
-      
+      const key2 = generateCacheKey(
+        "https://different.com",
+        task,
+        alwaysRemove,
+      );
+
       expect(key1).not.toBe(key2);
     });
 
     it("should generate different keys for different tasks", () => {
       const url = "https://example.com";
       const alwaysRemove = ".ads,.sidebar";
-      
+
       const key1 = generateCacheKey(url, "write report", alwaysRemove);
       const key2 = generateCacheKey(url, "read article", alwaysRemove);
-      
+
       expect(key1).not.toBe(key2);
     });
 
     it("should generate different keys for different alwaysRemove settings", () => {
       const url = "https://example.com";
       const task = "write report";
-      
+
       const key1 = generateCacheKey(url, task, ".ads,.sidebar");
       const key2 = generateCacheKey(url, task, ".popups,.banners");
-      
+
       expect(key1).not.toBe(key2);
     });
 
     it("should handle null alwaysRemove parameter", () => {
       const url = "https://example.com";
       const task = "write report";
-      
+
       const key1 = generateCacheKey(url, task, null);
       const key2 = generateCacheKey(url, task, null);
-      
+
       expect(key1).toBe(key2);
       expect(key1).toHaveLength(16);
     });
@@ -133,10 +137,10 @@ describe("Cache Utils", () => {
     it("should handle empty string alwaysRemove parameter", () => {
       const url = "https://example.com";
       const task = "write report";
-      
+
       const key1 = generateCacheKey(url, task, "");
       const key2 = generateCacheKey(url, task, "");
-      
+
       expect(key1).toBe(key2);
       expect(key1).toHaveLength(16);
     });
@@ -144,20 +148,21 @@ describe("Cache Utils", () => {
     it("should differentiate between null and empty string alwaysRemove", () => {
       const url = "https://example.com";
       const task = "write report";
-      
+
       const key1 = generateCacheKey(url, task, null);
       const key2 = generateCacheKey(url, task, "");
-      
+
       expect(key1).not.toBe(key2);
     });
 
     it("should handle complex URLs with query parameters and fragments", () => {
-      const url = "https://example.com/path/to/page?param1=value1&param2=value2#section";
+      const url =
+        "https://example.com/path/to/page?param1=value1&param2=value2#section";
       const task = "analyze content";
       const alwaysRemove = ".ads";
-      
+
       const key = generateCacheKey(url, task, alwaysRemove);
-      
+
       expect(key).toHaveLength(16);
       expect(typeof key).toBe("string");
     });
@@ -166,9 +171,9 @@ describe("Cache Utils", () => {
       const url = `https://example.com/${"path".repeat(100)}`;
       const task = "task ".repeat(50);
       const alwaysRemove = ".selector".repeat(20);
-      
+
       const key = generateCacheKey(url, task, alwaysRemove);
-      
+
       expect(key).toHaveLength(16);
       expect(typeof key).toBe("string");
     });
@@ -177,9 +182,9 @@ describe("Cache Utils", () => {
       const url = "https://example.com/path?query=value&special=!@#$%";
       const task = "task with 特殊 characters";
       const alwaysRemove = ".selector[data-attr='value']";
-      
+
       const key = generateCacheKey(url, task, alwaysRemove);
-      
+
       expect(key).toHaveLength(16);
       expect(typeof key).toBe("string");
     });
@@ -188,14 +193,14 @@ describe("Cache Utils", () => {
       const url = "https://example.com";
       const task = "write report";
       const alwaysRemove = ".ads";
-      
+
       // Test all parameter orderings (though function has fixed order)
       const keys = [
         generateCacheKey(url, task, alwaysRemove),
         generateCacheKey(url, task, alwaysRemove),
         generateCacheKey(url, task, alwaysRemove),
       ];
-      
+
       // All should be the same since parameters are identical
       expect(keys[0]).toBe(keys[1]);
       expect(keys[1]).toBe(keys[2]);
@@ -203,7 +208,7 @@ describe("Cache Utils", () => {
 
     it("should handle edge case with all empty parameters", () => {
       const key = generateCacheKey("", "", "");
-      
+
       expect(key).toHaveLength(16);
       expect(typeof key).toBe("string");
     });
@@ -211,7 +216,7 @@ describe("Cache Utils", () => {
     it("should handle edge case with all null/undefined parameters", () => {
       const key1 = generateCacheKey("", "", null);
       const key2 = generateCacheKey("", "", null);
-      
+
       expect(key1).toBe(key2);
       expect(key1).toHaveLength(16);
     });

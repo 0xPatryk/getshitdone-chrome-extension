@@ -14,9 +14,9 @@
  * - Async testing helpers
  */
 
-import { render, type RenderOptions } from "@testing-library/react";
+import { type RenderOptions, render } from "@testing-library/react";
 import type { ReactElement } from "react";
-import { mockStorageData, mockMessageListeners } from "./setup";
+import { mockMessageListeners, mockStorageData } from "./setup";
 
 // Custom render function with providers
 export const renderWithProviders = (
@@ -98,7 +98,11 @@ export const messageHelpers = {
 // DOM testing utilities
 export const domHelpers = {
   // Create a mock element
-  createElement: (tag: string, attributes: Record<string, string> = {}, children = "") => {
+  createElement: (
+    tag: string,
+    attributes: Record<string, string> = {},
+    children = "",
+  ) => {
     const element = document.createElement(tag);
     for (const [key, value] of Object.entries(attributes)) {
       element.setAttribute(key, value);
@@ -128,7 +132,11 @@ export const domHelpers = {
   },
 
   // Simulate keyboard event
-  simulateKeyboard: (element: HTMLElement, key: string, options: KeyboardEventInit = {}) => {
+  simulateKeyboard: (
+    element: HTMLElement,
+    key: string,
+    options: KeyboardEventInit = {},
+  ) => {
     element.dispatchEvent(new KeyboardEvent("keydown", { key, ...options }));
     element.dispatchEvent(new KeyboardEvent("keyup", { key, ...options }));
   },
@@ -147,7 +155,7 @@ export const asyncHelpers = {
   ): Promise<void> => {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const check = () => {
         if (condition()) {
           resolve();
@@ -157,36 +165,35 @@ export const asyncHelpers = {
           setTimeout(check, interval);
         }
       };
-      
+
       check();
     });
   },
 
   // Wait for element to appear in DOM
-  waitForElement: (
-    selector: string,
-    timeout = 5000,
-  ): Promise<Element> => {
+  waitForElement: (selector: string, timeout = 5000): Promise<Element> => {
     return new Promise((resolve, reject) => {
       const startTime = Date.now();
-      
+
       const check = () => {
         // Ensure document exists
-        if (typeof document === 'undefined') {
-          reject(new Error('Document not available in test environment'));
+        if (typeof document === "undefined") {
+          reject(new Error("Document not available in test environment"));
           return;
         }
-        
+
         const element = document.querySelector(selector);
         if (element) {
           resolve(element);
         } else if (Date.now() - startTime > timeout) {
-          reject(new Error(`Element ${selector} not found within ${timeout}ms`));
+          reject(
+            new Error(`Element ${selector} not found within ${timeout}ms`),
+          );
         } else {
           setTimeout(check, 50);
         }
       };
-      
+
       check();
     });
   },
@@ -254,7 +261,7 @@ export const testContext = {
   // Create a test context with DOM setup
   withDOM: (html = "<div></div>") => {
     // Ensure document and body exist
-    if (typeof document === 'undefined') {
+    if (typeof document === "undefined") {
       const mockDocument = {
         body: {
           innerHTML: "",
@@ -273,7 +280,7 @@ export const testContext = {
       };
       (global as { document: typeof mockDocument }).document = mockDocument;
     }
-    
+
     document.body.innerHTML = html;
     return {
       cleanup: () => {

@@ -8,14 +8,14 @@
  */
 
 import "./setup"; // Import setup to ensure DOM is initialized
-import { describe, expect, it, beforeEach, mock } from "bun:test";
-import { renderHook, act, waitFor } from "@testing-library/react";
-import type { ChatMessage } from "~/lib/messaging";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import {
+  useAccessState,
   useChatMessages,
   useChatMutation,
-  useAccessState,
 } from "~/lib/chat/hooks";
+import type { ChatMessage } from "~/lib/messaging";
 
 // Mock the TanStack Query mutation
 const mockMutate = mock(() => {});
@@ -47,7 +47,7 @@ describe("useChatMessages", () => {
     const { result } = renderHook(() =>
       useChatMessages({
         sessionId: "test-session-id",
-      })
+      }),
     );
 
     expect(result.current.messages).toEqual([]);
@@ -62,7 +62,7 @@ describe("useChatMessages", () => {
         sessionId: "test-session-id",
         initialMessage,
         onInitialized,
-      })
+      }),
     );
 
     expect(result.current.messages).toHaveLength(1);
@@ -72,7 +72,10 @@ describe("useChatMessages", () => {
       id: expect.stringMatching(/^user_\d+$/),
       timestamp: expect.any(Number),
     });
-    expect(onInitialized).toHaveBeenCalledWith("test-session-id", initialMessage);
+    expect(onInitialized).toHaveBeenCalledWith(
+      "test-session-id",
+      initialMessage,
+    );
   });
 
   it("should not add initial message on re-render", () => {
@@ -84,7 +87,7 @@ describe("useChatMessages", () => {
         sessionId: "test-session-id",
         initialMessage,
         onInitialized,
-      })
+      }),
     );
 
     // Initial render should have one message
@@ -101,7 +104,7 @@ describe("useChatMessages", () => {
     const { result } = renderHook(() =>
       useChatMessages({
         sessionId: "test-session-id",
-      })
+      }),
     );
 
     const newMessage: ChatMessage = {
@@ -123,7 +126,7 @@ describe("useChatMessages", () => {
     const { result } = renderHook(() =>
       useChatMessages({
         sessionId: "test-session-id",
-      })
+      }),
     );
 
     const content = "User message content";
@@ -151,7 +154,7 @@ describe("useChatMessages", () => {
     const { result } = renderHook(() =>
       useChatMessages({
         sessionId: "test-session-id",
-      })
+      }),
     );
 
     const message1: ChatMessage = {
@@ -191,7 +194,7 @@ describe("useChatMutation", () => {
     const { result } = renderHook(() =>
       useChatMutation({
         onMessageReceived,
-      })
+      }),
     );
 
     expect(typeof result.current.sendMessage).toBe("function");
@@ -238,7 +241,7 @@ describe("useChatMutation", () => {
     const { result } = renderHook(() =>
       useChatMutation({
         onMessageReceived,
-      })
+      }),
     );
 
     act(() => {
@@ -280,7 +283,7 @@ describe("useChatMutation", () => {
       useChatMutation({
         onMessageReceived,
         onAccessGranted,
-      })
+      }),
     );
 
     act(() => {
@@ -289,7 +292,10 @@ describe("useChatMutation", () => {
 
     await waitFor(() => {
       expect(onMessageReceived).toHaveBeenCalledWith(mockResponse.message);
-      expect(onAccessGranted).toHaveBeenCalledWith(30, "Access granted for 30 minutes! Unblocking page...");
+      expect(onAccessGranted).toHaveBeenCalledWith(
+        30,
+        "Access granted for 30 minutes! Unblocking page...",
+      );
     });
   });
 
@@ -321,7 +327,7 @@ describe("useChatMutation", () => {
       useChatMutation({
         onMessageReceived,
         onAccessDenied,
-      })
+      }),
     );
 
     act(() => {
@@ -330,7 +336,9 @@ describe("useChatMutation", () => {
 
     await waitFor(() => {
       expect(onMessageReceived).toHaveBeenCalledWith(mockResponse.message);
-      expect(onAccessDenied).toHaveBeenCalledWith("You need to complete your focus time first");
+      expect(onAccessDenied).toHaveBeenCalledWith(
+        "You need to complete your focus time first",
+      );
     });
   });
 
@@ -351,7 +359,7 @@ describe("useChatMutation", () => {
     const { result } = renderHook(() =>
       useChatMutation({
         onMessageReceived,
-      })
+      }),
     );
 
     act(() => {
@@ -361,11 +369,12 @@ describe("useChatMutation", () => {
     await waitFor(() => {
       expect(onMessageReceived).toHaveBeenCalledWith(
         expect.objectContaining({
-          content: "Sorry, I'm having trouble responding right now. Please try again.",
+          content:
+            "Sorry, I'm having trouble responding right now. Please try again.",
           role: "assistant",
           id: expect.stringMatching(/^error_\d+$/),
           timestamp: expect.any(Number),
-        })
+        }),
       );
     });
   });
@@ -436,13 +445,13 @@ describe("useAccessState", () => {
       // Mock timer advancement
       const originalSetTimeout = global.setTimeout;
       const callbacks: Array<() => void> = [];
-      
+
       global.setTimeout = ((callback: () => void, delay: number) => {
         const id = originalSetTimeout(callback, 0);
         callbacks.push(id);
         return id;
       }) as typeof setTimeout;
-      
+
       // Simulate time passing
       setTimeout(() => {
         for (const id of callbacks) {
@@ -490,13 +499,13 @@ describe("useAccessState", () => {
       // Mock timer advancement
       const originalSetTimeout = global.setTimeout;
       const callbacks: Array<() => void> = [];
-      
+
       global.setTimeout = ((callback: () => void, delay: number) => {
         const id = originalSetTimeout(callback, 0);
         callbacks.push(id);
         return id;
       }) as typeof setTimeout;
-      
+
       // Simulate time passing
       setTimeout(() => {
         for (const id of callbacks) {

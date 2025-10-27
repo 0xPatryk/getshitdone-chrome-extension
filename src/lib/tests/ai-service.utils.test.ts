@@ -7,7 +7,7 @@
  * @file ai-service.utils.test.ts
  */
 
-import { beforeEach, describe, expect, it } from "bun:test";
+import { describe, expect, it } from "bun:test";
 import type { AIProvider } from "~/lib/ai-service/types";
 
 describe("AI Service Utils - getModel", () => {

@@ -15,7 +15,8 @@ import { extractMainContent } from "~/lib/ai-service/services";
 describe("AI Service - extractMainContent", () => {
   it("should remove script tags from HTML content", () => {
     // Arrange
-    const content = "<html><head><script>alert('test')</script></head><body>Content</body></html>";
+    const content =
+      "<html><head><script>alert('test')</script></head><body>Content</body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -28,7 +29,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should remove style tags from HTML content", () => {
     // Arrange
-    const content = "<html><head><style>body { color: red; }</style></head><body>Content</body></html>";
+    const content =
+      "<html><head><style>body { color: red; }</style></head><body>Content</body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -41,7 +43,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should remove all HTML tags", () => {
     // Arrange
-    const content = "<html><body><h1>Title</h1><p>Paragraph <strong>bold</strong> text</p></body></html>";
+    const content =
+      "<html><body><h1>Title</h1><p>Paragraph <strong>bold</strong> text</p></body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -61,7 +64,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should normalize whitespace", () => {
     // Arrange
-    const content = "<html><body>  Text   with    multiple     spaces  </body></html>";
+    const content =
+      "<html><body>  Text   with    multiple     spaces  </body></html>";
 
     // Act
     const result = extractMainContent(content);
@@ -132,7 +136,8 @@ describe("AI Service - extractMainContent", () => {
 
   it("should preserve text content in correct order", () => {
     // Arrange
-    const content = "<html><body><h1>First</h1><p>Second</p><div>Third</div></body></html>";
+    const content =
+      "<html><body><h1>First</h1><p>Second</p><div>Third</div></body></html>";
 
     // Act
     const result = extractMainContent(content);

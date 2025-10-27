@@ -14,16 +14,20 @@
  * - Event simulation utilities
  */
 
-import type { StorageKey } from "~/lib/storage/types";
 import type { Message, Messages } from "~/lib/messaging/types";
+import type { StorageKey } from "~/lib/storage/types";
 
 // Enhanced storage mock with WXT-specific features
 export class MockStorage {
   private data: Record<string, unknown> = {};
-  private listeners: Array<(changes: Record<string, unknown>, areaName: string) => void> = [];
+  private listeners: Array<
+    (changes: Record<string, unknown>, areaName: string) => void
+  > = [];
 
   // Basic storage operations
-  async get(keys?: string | string[] | Record<string, unknown> | null): Promise<Record<string, unknown>> {
+  async get(
+    keys?: string | string[] | Record<string, unknown> | null,
+  ): Promise<Record<string, unknown>> {
     if (!keys) return { ...this.data };
     if (typeof keys === "string") {
       return { [keys]: this.data[keys] };
@@ -47,11 +51,11 @@ export class MockStorage {
 
   async set(items: Record<string, unknown>): Promise<void> {
     const changes: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(items)) {
       const oldValue = this.data[key];
       this.data[key] = value;
-      
+
       if (oldValue !== value) {
         changes[key] = { oldValue, newValue: value };
       }
@@ -89,10 +93,14 @@ export class MockStorage {
 
   // Storage change listeners
   onChanged = {
-    addListener: (callback: (changes: Record<string, unknown>, areaName: string) => void) => {
+    addListener: (
+      callback: (changes: Record<string, unknown>, areaName: string) => void,
+    ) => {
       this.listeners.push(callback);
     },
-    removeListener: (callback: (changes: Record<string, unknown>, areaName: string) => void) => {
+    removeListener: (
+      callback: (changes: Record<string, unknown>, areaName: string) => void,
+    ) => {
       const index = this.listeners.indexOf(callback);
       if (index > -1) {
         this.listeners.splice(index, 1);
@@ -101,7 +109,10 @@ export class MockStorage {
   };
 
   // Helper methods for testing
-  private notifyListeners(changes: Record<string, unknown>, areaName: string): void {
+  private notifyListeners(
+    changes: Record<string, unknown>,
+    areaName: string,
+  ): void {
     for (const listener of this.listeners) {
       try {
         listener(changes, areaName);
@@ -142,7 +153,11 @@ export class MockStorage {
 // Enhanced messaging mock with type safety
 export class MockMessaging {
   private listeners: Array<{
-    message: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void;
+    message: (
+      message: unknown,
+      sender: unknown,
+      sendResponse: (response?: unknown) => void,
+    ) => void;
     filter?: (message: unknown) => boolean;
   }> = [];
 
@@ -155,7 +170,11 @@ export class MockMessaging {
     for (const { message: listener, filter } of this.listeners) {
       if (!filter || filter(message)) {
         const response = await new Promise<unknown>((resolve) => {
-          listener(message, { id: "test-sender", url: "https://example.com" }, resolve);
+          listener(
+            message,
+            { id: "test-sender", url: "https://example.com" },
+            resolve,
+          );
         });
         responses.push(response);
       }
@@ -168,20 +187,34 @@ export class MockMessaging {
   // Message listeners
   onMessage = {
     addListener: (
-      callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void,
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
     ) => {
       this.listeners.push({ message: callback });
     },
     addListenerWithFilter: (
-      callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void,
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
       filter: (message: unknown) => boolean,
     ) => {
       this.listeners.push({ message: callback, filter });
     },
     removeListener: (
-      callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void,
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
     ) => {
-      const index = this.listeners.findIndex(({ message }) => message === callback);
+      const index = this.listeners.findIndex(
+        ({ message }) => message === callback,
+      );
       if (index > -1) {
         this.listeners.splice(index, 1);
       }
@@ -189,7 +222,10 @@ export class MockMessaging {
   };
 
   // Test utilities
-  simulateMessage(message: unknown, sender = { id: "test-sender" }): Promise<unknown[]> {
+  simulateMessage(
+    message: unknown,
+    sender = { id: "test-sender" },
+  ): Promise<unknown[]> {
     const responses: unknown[] = [];
 
     for (const { message: listener, filter } of this.listeners) {
@@ -204,10 +240,15 @@ export class MockMessaging {
     return Promise.all(responses);
   }
 
-  waitForMessage<T>(predicate: (message: unknown) => boolean, timeout = 5000): Promise<T> {
+  waitForMessage<T>(
+    predicate: (message: unknown) => boolean,
+    timeout = 5000,
+  ): Promise<T> {
     return new Promise<T>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        const index = this.listeners.findIndex(({ message }) => message === listener);
+        const index = this.listeners.findIndex(
+          ({ message }) => message === listener,
+        );
         if (index > -1) {
           this.listeners.splice(index, 1);
         }
@@ -217,7 +258,9 @@ export class MockMessaging {
       const listener = (message: unknown) => {
         if (predicate(message)) {
           clearTimeout(timeoutId);
-          const index = this.listeners.findIndex(({ message: l }) => l === listener);
+          const index = this.listeners.findIndex(
+            ({ message: l }) => l === listener,
+          );
           if (index > -1) {
             this.listeners.splice(index, 1);
           }
@@ -250,7 +293,9 @@ export class MockTabs {
   ];
   private nextId = 2;
 
-  async create(createProperties: chrome.tabs.CreateProperties): Promise<chrome.tabs.Tab> {
+  async create(
+    createProperties: chrome.tabs.CreateProperties,
+  ): Promise<chrome.tabs.Tab> {
     const newTab: chrome.tabs.Tab = {
       id: this.nextId++,
       url: createProperties.url,
@@ -334,24 +379,38 @@ export class MockRuntime {
 
   async sendMessage(message: unknown): Promise<unknown> {
     const responses: unknown[] = [];
-    
+
     for (const handler of this.messageHandlers) {
       const response = await new Promise<unknown>((resolve) => {
         handler(message, { id: "test-sender" }, resolve);
       });
       responses.push(response);
     }
-    
+
     // Return the first response or default
     return responses.length > 0 ? responses[0] : { success: true };
   }
 
   onMessage = {
-    addListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => {
+    addListener: (
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
+    ) => {
       this.messageHandlers.push(callback);
     },
-    removeListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => {
-      const index = this.messageHandlers.findIndex((handler) => handler === callback);
+    removeListener: (
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
+    ) => {
+      const index = this.messageHandlers.findIndex(
+        (handler) => handler === callback,
+      );
       if (index > -1) {
         this.messageHandlers.splice(index, 1);
       }
@@ -392,12 +451,19 @@ export function createMockChromeAPI() {
 
 // Event simulation utilities
 export const eventSimulator = {
-  simulateStorageChange: (changes: Record<string, unknown>, areaName = "local") => {
+  simulateStorageChange: (
+    changes: Record<string, unknown>,
+    areaName = "local",
+  ) => {
     // This would trigger the storage change event
     console.log("Storage change simulated:", changes, areaName);
   },
 
-  simulateTabUpdate: (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+  simulateTabUpdate: (
+    tabId: number,
+    changeInfo: chrome.tabs.TabChangeInfo,
+    tab: chrome.tabs.Tab,
+  ) => {
     console.log("Tab update simulated:", tabId, changeInfo, tab);
   },
 
@@ -405,7 +471,10 @@ export const eventSimulator = {
     console.log("Tab activation simulated:", activeInfo);
   },
 
-  simulateRuntimeMessage: (message: unknown, sender = { id: "test-sender" }) => {
+  simulateRuntimeMessage: (
+    message: unknown,
+    sender = { id: "test-sender" },
+  ) => {
     console.log("Runtime message simulated:", message, sender);
   },
 };

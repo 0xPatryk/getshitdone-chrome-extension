@@ -12,9 +12,13 @@
  * - Error handling for storage operations
  */
 
-import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { StorageKey } from "~/lib/storage/types";
-import { getStorage, getStorageValue, setStorageValue } from "~/lib/storage/utils";
+import {
+  getStorage,
+  getStorageValue,
+  setStorageValue,
+} from "~/lib/storage/utils";
 import { MockStorage } from "./mocks";
 
 // Mock WxtStorageItem type
@@ -30,7 +34,7 @@ describe("Storage Utils", () => {
 
   beforeEach(() => {
     mockStorage = new MockStorage();
-    
+
     // Create mock storage configuration with all keys
     mockStorageConfig = {
       [StorageKey.THEME]: {
@@ -157,22 +161,30 @@ describe("Storage Utils", () => {
   describe("getStorage", () => {
     it("should return the correct storage item for a valid key", () => {
       const themeStorage = getStorage(StorageKey.THEME, mockStorageConfig);
-      
+
       expect(themeStorage).toBe(mockStorageConfig[StorageKey.THEME]);
       expect(themeStorage.key).toBe(StorageKey.THEME);
     });
 
     it("should return storage item for API key", () => {
-      const apiKeyStorage = getStorage(StorageKey.GEMINI_API_KEY, mockStorageConfig);
-      
+      const apiKeyStorage = getStorage(
+        StorageKey.GEMINI_API_KEY,
+        mockStorageConfig,
+      );
+
       expect(apiKeyStorage).toBe(mockStorageConfig[StorageKey.GEMINI_API_KEY]);
       expect(apiKeyStorage.key).toBe(StorageKey.GEMINI_API_KEY);
     });
 
     it("should return storage item for complex object", () => {
-      const chatSessionsStorage = getStorage(StorageKey.CHAT_SESSIONS, mockStorageConfig);
-      
-      expect(chatSessionsStorage).toBe(mockStorageConfig[StorageKey.CHAT_SESSIONS]);
+      const chatSessionsStorage = getStorage(
+        StorageKey.CHAT_SESSIONS,
+        mockStorageConfig,
+      );
+
+      expect(chatSessionsStorage).toBe(
+        mockStorageConfig[StorageKey.CHAT_SESSIONS],
+      );
       expect(chatSessionsStorage.key).toBe(StorageKey.CHAT_SESSIONS);
     });
 
@@ -203,36 +215,48 @@ describe("Storage Utils", () => {
   describe("getStorageValue", () => {
     it("should return stored value for existing key", async () => {
       await mockStorage.set({ [StorageKey.THEME]: "dark" });
-      
+
       const value = await getStorageValue(StorageKey.THEME, mockStorageConfig);
-      
+
       expect(value).toBe("dark");
       expect(mockStorageConfig[StorageKey.THEME].getValue).toHaveBeenCalled();
     });
 
     it("should return undefined for non-existent key", async () => {
-      const value = await getStorageValue("non-existent-key" as StorageKey, mockStorageConfig);
-      
+      const value = await getStorageValue(
+        "non-existent-key" as StorageKey,
+        mockStorageConfig,
+      );
+
       expect(value).toBeUndefined();
     });
 
     it("should return null for API key when not set", async () => {
-      const value = await getStorageValue(StorageKey.GEMINI_API_KEY, mockStorageConfig);
-      
+      const value = await getStorageValue(
+        StorageKey.GEMINI_API_KEY,
+        mockStorageConfig,
+      );
+
       expect(value).toBeUndefined();
     });
 
     it("should return empty object for chat sessions when not set", async () => {
-      const value = await getStorageValue(StorageKey.CHAT_SESSIONS, mockStorageConfig);
-      
+      const value = await getStorageValue(
+        StorageKey.CHAT_SESSIONS,
+        mockStorageConfig,
+      );
+
       expect(value).toEqual({});
     });
 
     it("should return boolean value correctly", async () => {
       await mockStorage.set({ [StorageKey.EXTENSION_ENABLED]: true });
-      
-      const value = await getStorageValue(StorageKey.EXTENSION_ENABLED, mockStorageConfig);
-      
+
+      const value = await getStorageValue(
+        StorageKey.EXTENSION_ENABLED,
+        mockStorageConfig,
+      );
+
       expect(value).toBe(true);
     });
 
@@ -246,63 +270,86 @@ describe("Storage Utils", () => {
           updatedAt: Date.now(),
         },
       };
-      
+
       await mockStorage.set({ [StorageKey.CHAT_SESSIONS]: mockSessions });
-      
-      const value = await getStorageValue(StorageKey.CHAT_SESSIONS, mockStorageConfig);
-      
+
+      const value = await getStorageValue(
+        StorageKey.CHAT_SESSIONS,
+        mockStorageConfig,
+      );
+
       expect(value).toEqual(mockSessions);
     });
 
     it("should handle string values correctly", async () => {
       const task = "Complete unit tests for storage module";
-      
+
       await mockStorage.set({ [StorageKey.CURRENT_TASK]: task });
-      
-      const value = await getStorageValue(StorageKey.CURRENT_TASK, mockStorageConfig);
-      
+
+      const value = await getStorageValue(
+        StorageKey.CURRENT_TASK,
+        mockStorageConfig,
+      );
+
       expect(value).toBe(task);
     });
 
     it("should handle number values correctly", async () => {
       const timestamp = Date.now();
-      
+
       await mockStorage.set({ [StorageKey.CACHE_LAST_CLEANUP]: timestamp });
-      
-      const value = await getStorageValue(StorageKey.CACHE_LAST_CLEANUP, mockStorageConfig);
-      
+
+      const value = await getStorageValue(
+        StorageKey.CACHE_LAST_CLEANUP,
+        mockStorageConfig,
+      );
+
       expect(value).toBe(timestamp);
     });
 
     it("should handle storage errors gracefully", async () => {
       const errorMessage = "Storage read error";
-      mockStorageConfig[StorageKey.THEME].getValue.mockRejectedValueOnce(new Error(errorMessage));
-      
-      await expect(getStorageValue(StorageKey.THEME, mockStorageConfig)).rejects.toThrow(errorMessage);
+      mockStorageConfig[StorageKey.THEME].getValue.mockRejectedValueOnce(
+        new Error(errorMessage),
+      );
+
+      await expect(
+        getStorageValue(StorageKey.THEME, mockStorageConfig),
+      ).rejects.toThrow(errorMessage);
     });
   });
 
   describe("setStorageValue", () => {
     it("should set value for valid key", async () => {
       const theme = "dark";
-      
+
       await setStorageValue(StorageKey.THEME, theme, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.THEME].setValue).toHaveBeenCalledWith(theme);
+
+      expect(mockStorageConfig[StorageKey.THEME].setValue).toHaveBeenCalledWith(
+        theme,
+      );
       expect(mockStorage.getValue(StorageKey.THEME)).toBe(theme);
     });
 
     it("should set null value for API key", async () => {
       await setStorageValue(StorageKey.GEMINI_API_KEY, null, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.GEMINI_API_KEY].setValue).toHaveBeenCalledWith(null);
+
+      expect(
+        mockStorageConfig[StorageKey.GEMINI_API_KEY].setValue,
+      ).toHaveBeenCalledWith(null);
       expect(mockStorage.getValue(StorageKey.GEMINI_API_KEY)).toBeNull();
     });
 
     it("should set boolean value correctly", async () => {
-      await setStorageValue(StorageKey.EXTENSION_ENABLED, true, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.EXTENSION_ENABLED].setValue).toHaveBeenCalledWith(true);
+      await setStorageValue(
+        StorageKey.EXTENSION_ENABLED,
+        true,
+        mockStorageConfig,
+      );
+
+      expect(
+        mockStorageConfig[StorageKey.EXTENSION_ENABLED].setValue,
+      ).toHaveBeenCalledWith(true);
       expect(mockStorage.getValue(StorageKey.EXTENSION_ENABLED)).toBe(true);
     });
 
@@ -316,36 +363,54 @@ describe("Storage Utils", () => {
           updatedAt: Date.now(),
         },
       };
-      
-      await setStorageValue(StorageKey.CHAT_SESSIONS, mockSessions, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.CHAT_SESSIONS].setValue).toHaveBeenCalledWith(mockSessions);
-      expect(mockStorage.getValue(StorageKey.CHAT_SESSIONS)).toEqual(mockSessions);
+
+      await setStorageValue(
+        StorageKey.CHAT_SESSIONS,
+        mockSessions,
+        mockStorageConfig,
+      );
+
+      expect(
+        mockStorageConfig[StorageKey.CHAT_SESSIONS].setValue,
+      ).toHaveBeenCalledWith(mockSessions);
+      expect(mockStorage.getValue(StorageKey.CHAT_SESSIONS)).toEqual(
+        mockSessions,
+      );
     });
 
     it("should set string value correctly", async () => {
       const task = "Write comprehensive tests";
-      
+
       await setStorageValue(StorageKey.CURRENT_TASK, task, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.CURRENT_TASK].setValue).toHaveBeenCalledWith(task);
+
+      expect(
+        mockStorageConfig[StorageKey.CURRENT_TASK].setValue,
+      ).toHaveBeenCalledWith(task);
       expect(mockStorage.getValue(StorageKey.CURRENT_TASK)).toBe(task);
     });
 
     it("should set number value correctly", async () => {
       const timestamp = Date.now();
-      
-      await setStorageValue(StorageKey.CACHE_LAST_CLEANUP, timestamp, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.CACHE_LAST_CLEANUP].setValue).toHaveBeenCalledWith(timestamp);
-      expect(mockStorage.getValue(StorageKey.CACHE_LAST_CLEANUP)).toBe(timestamp);
+
+      await setStorageValue(
+        StorageKey.CACHE_LAST_CLEANUP,
+        timestamp,
+        mockStorageConfig,
+      );
+
+      expect(
+        mockStorageConfig[StorageKey.CACHE_LAST_CLEANUP].setValue,
+      ).toHaveBeenCalledWith(timestamp);
+      expect(mockStorage.getValue(StorageKey.CACHE_LAST_CLEANUP)).toBe(
+        timestamp,
+      );
     });
 
     it("should update existing value", async () => {
       // Set initial value
       await setStorageValue(StorageKey.THEME, "dark", mockStorageConfig);
       expect(mockStorage.getValue(StorageKey.THEME)).toBe("dark");
-      
+
       // Update value
       await setStorageValue(StorageKey.THEME, "light", mockStorageConfig);
       expect(mockStorage.getValue(StorageKey.THEME)).toBe("light");
@@ -353,15 +418,25 @@ describe("Storage Utils", () => {
 
     it("should handle storage errors gracefully", async () => {
       const errorMessage = "Storage write error";
-      mockStorageConfig[StorageKey.THEME].setValue.mockRejectedValueOnce(new Error(errorMessage));
-      
-      await expect(setStorageValue(StorageKey.THEME, "dark", mockStorageConfig)).rejects.toThrow(errorMessage);
+      mockStorageConfig[StorageKey.THEME].setValue.mockRejectedValueOnce(
+        new Error(errorMessage),
+      );
+
+      await expect(
+        setStorageValue(StorageKey.THEME, "dark", mockStorageConfig),
+      ).rejects.toThrow(errorMessage);
     });
 
     it("should handle undefined values", async () => {
-      await setStorageValue(StorageKey.CURRENT_TASK, undefined, mockStorageConfig);
-      
-      expect(mockStorageConfig[StorageKey.CURRENT_TASK].setValue).toHaveBeenCalledWith(undefined);
+      await setStorageValue(
+        StorageKey.CURRENT_TASK,
+        undefined,
+        mockStorageConfig,
+      );
+
+      expect(
+        mockStorageConfig[StorageKey.CURRENT_TASK].setValue,
+      ).toHaveBeenCalledWith(undefined);
       expect(mockStorage.getValue(StorageKey.CURRENT_TASK)).toBeUndefined();
     });
   });
@@ -387,7 +462,10 @@ describe("Storage Utils", () => {
 
       // Get all values and verify
       for (const [key, expectedValue] of Object.entries(testValues)) {
-        const actualValue = await getStorageValue(key as StorageKey, mockStorageConfig);
+        const actualValue = await getStorageValue(
+          key as StorageKey,
+          mockStorageConfig,
+        );
         expect(actualValue).toEqual(expectedValue);
       }
     });
@@ -395,24 +473,48 @@ describe("Storage Utils", () => {
     it("should maintain type safety for different value types", async () => {
       // String value
       await setStorageValue(StorageKey.THEME, "dark", mockStorageConfig);
-      const themeValue = await getStorageValue(StorageKey.THEME, mockStorageConfig);
+      const themeValue = await getStorageValue(
+        StorageKey.THEME,
+        mockStorageConfig,
+      );
       expect(typeof themeValue).toBe("string");
 
       // Boolean value
-      await setStorageValue(StorageKey.EXTENSION_ENABLED, true, mockStorageConfig);
-      const booleanValue = await getStorageValue(StorageKey.EXTENSION_ENABLED, mockStorageConfig);
+      await setStorageValue(
+        StorageKey.EXTENSION_ENABLED,
+        true,
+        mockStorageConfig,
+      );
+      const booleanValue = await getStorageValue(
+        StorageKey.EXTENSION_ENABLED,
+        mockStorageConfig,
+      );
       expect(typeof booleanValue).toBe("boolean");
 
       // Number value
       const timestamp = Date.now();
-      await setStorageValue(StorageKey.CACHE_LAST_CLEANUP, timestamp, mockStorageConfig);
-      const numberValue = await getStorageValue(StorageKey.CACHE_LAST_CLEANUP, mockStorageConfig);
+      await setStorageValue(
+        StorageKey.CACHE_LAST_CLEANUP,
+        timestamp,
+        mockStorageConfig,
+      );
+      const numberValue = await getStorageValue(
+        StorageKey.CACHE_LAST_CLEANUP,
+        mockStorageConfig,
+      );
       expect(typeof numberValue).toBe("number");
 
       // Object value
       const objectValue = { test: "value" };
-      await setStorageValue(StorageKey.ACCESS_GRANTS, objectValue, mockStorageConfig);
-      const retrievedObject = await getStorageValue(StorageKey.ACCESS_GRANTS, mockStorageConfig);
+      await setStorageValue(
+        StorageKey.ACCESS_GRANTS,
+        objectValue,
+        mockStorageConfig,
+      );
+      const retrievedObject = await getStorageValue(
+        StorageKey.ACCESS_GRANTS,
+        mockStorageConfig,
+      );
       expect(typeof retrievedObject).toBe("object");
       expect(retrievedObject).toEqual(objectValue);
     });
@@ -430,50 +532,83 @@ describe("Storage Utils", () => {
         undefined: undefined,
       };
 
-      await setStorageValue(StorageKey.CHAT_SESSIONS, complexObject, mockStorageConfig);
-      
-      const retrievedValue = await getStorageValue(StorageKey.CHAT_SESSIONS, mockStorageConfig);
-      
+      await setStorageValue(
+        StorageKey.CHAT_SESSIONS,
+        complexObject,
+        mockStorageConfig,
+      );
+
+      const retrievedValue = await getStorageValue(
+        StorageKey.CHAT_SESSIONS,
+        mockStorageConfig,
+      );
+
       expect(retrievedValue).toEqual(complexObject);
     });
 
     it("should handle special characters in strings", async () => {
-      const specialString = 'Special chars: "quotes", \n newlines, \t tabs, \\ backslashes';
-      
-      await setStorageValue(StorageKey.CURRENT_TASK, specialString, mockStorageConfig);
-      
-      const retrievedValue = await getStorageValue(StorageKey.CURRENT_TASK, mockStorageConfig);
-      
+      const specialString =
+        'Special chars: "quotes", \n newlines, \t tabs, \\ backslashes';
+
+      await setStorageValue(
+        StorageKey.CURRENT_TASK,
+        specialString,
+        mockStorageConfig,
+      );
+
+      const retrievedValue = await getStorageValue(
+        StorageKey.CURRENT_TASK,
+        mockStorageConfig,
+      );
+
       expect(retrievedValue).toBe(specialString);
     });
 
     it("should handle empty values", async () => {
       // Empty string
       await setStorageValue(StorageKey.CURRENT_TASK, "", mockStorageConfig);
-      expect(await getStorageValue(StorageKey.CURRENT_TASK, mockStorageConfig)).toBe("");
+      expect(
+        await getStorageValue(StorageKey.CURRENT_TASK, mockStorageConfig),
+      ).toBe("");
 
       // Empty object
       await setStorageValue(StorageKey.CHAT_SESSIONS, {}, mockStorageConfig);
-      expect(await getStorageValue(StorageKey.CHAT_SESSIONS, mockStorageConfig)).toEqual({});
+      expect(
+        await getStorageValue(StorageKey.CHAT_SESSIONS, mockStorageConfig),
+      ).toEqual({});
 
       // Zero
-      await setStorageValue(StorageKey.CACHE_LAST_CLEANUP, 0, mockStorageConfig);
-      expect(await getStorageValue(StorageKey.CACHE_LAST_CLEANUP, mockStorageConfig)).toBe(0);
+      await setStorageValue(
+        StorageKey.CACHE_LAST_CLEANUP,
+        0,
+        mockStorageConfig,
+      );
+      expect(
+        await getStorageValue(StorageKey.CACHE_LAST_CLEANUP, mockStorageConfig),
+      ).toBe(0);
 
       // False
-      await setStorageValue(StorageKey.EXTENSION_ENABLED, false, mockStorageConfig);
-      expect(await getStorageValue(StorageKey.EXTENSION_ENABLED, mockStorageConfig)).toBe(false);
+      await setStorageValue(
+        StorageKey.EXTENSION_ENABLED,
+        false,
+        mockStorageConfig,
+      );
+      expect(
+        await getStorageValue(StorageKey.EXTENSION_ENABLED, mockStorageConfig),
+      ).toBe(false);
     });
   });
 
   describe("Error Handling", () => {
     it("should handle missing storage configuration", async () => {
       const emptyConfig = {};
-      
+
       const value = await getStorageValue(StorageKey.THEME, emptyConfig);
       expect(value).toBeUndefined();
-      
-      await expect(setStorageValue(StorageKey.THEME, "dark", emptyConfig)).rejects.toThrow();
+
+      await expect(
+        setStorageValue(StorageKey.THEME, "dark", emptyConfig),
+      ).rejects.toThrow();
     });
 
     it("should handle storage item without getValue method", async () => {
@@ -483,8 +618,10 @@ describe("Storage Utils", () => {
           setValue: mock(),
         },
       };
-      
-      await expect(getStorageValue(StorageKey.THEME, invalidConfig)).rejects.toThrow();
+
+      await expect(
+        getStorageValue(StorageKey.THEME, invalidConfig),
+      ).rejects.toThrow();
     });
 
     it("should handle storage item without setValue method", async () => {
@@ -494,23 +631,27 @@ describe("Storage Utils", () => {
           getValue: mock(),
         },
       };
-      
-      await expect(setStorageValue(StorageKey.THEME, "dark", invalidConfig)).rejects.toThrow();
+
+      await expect(
+        setStorageValue(StorageKey.THEME, "dark", invalidConfig),
+      ).rejects.toThrow();
     });
 
     it("should handle concurrent operations", async () => {
       const promises = [];
-      
+
       // Concurrent reads
       for (let i = 0; i < 10; i++) {
         promises.push(getStorageValue(StorageKey.THEME, mockStorageConfig));
       }
-      
+
       // Concurrent writes
       for (let i = 0; i < 10; i++) {
-        promises.push(setStorageValue(StorageKey.THEME, `theme-${i}`, mockStorageConfig));
+        promises.push(
+          setStorageValue(StorageKey.THEME, `theme-${i}`, mockStorageConfig),
+        );
       }
-      
+
       await expect(Promise.all(promises)).resolves.toBeDefined();
     });
   });

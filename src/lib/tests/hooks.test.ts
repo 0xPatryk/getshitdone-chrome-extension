@@ -34,7 +34,7 @@ describe("useAutoScroll", () => {
     mockScrollTop.mockClear();
 
     // Ensure document exists
-    if (typeof document === 'undefined') {
+    if (typeof document === "undefined") {
       (global as { document: typeof document }).document = {
         createElement: (tag: string) => {
           const element = {
@@ -48,12 +48,12 @@ describe("useAutoScroll", () => {
             dispatchEvent: () => {},
             remove: () => {},
           };
-          Object.defineProperty(element, 'scrollTop', {
+          Object.defineProperty(element, "scrollTop", {
             get: () => 0,
             set: mockScrollTop,
             configurable: true,
           });
-          Object.defineProperty(element, 'scrollHeight', {
+          Object.defineProperty(element, "scrollHeight", {
             get: () => mockScrollHeight,
             configurable: true,
           });

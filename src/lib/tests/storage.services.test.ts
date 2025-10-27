@@ -12,9 +12,9 @@
  * - Error handling for storage failures
  */
 
-import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
-import { Theme } from "~/types";
+import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { StorageKey } from "~/lib/storage/types";
+import { Theme } from "~/types";
 import { MockStorage } from "./mocks";
 
 // Mock environment variables
@@ -35,7 +35,7 @@ const mockBrowserStorage = {
   defineItem: mock((key: string, options: Record<string, unknown>) => {
     const fallback = options.fallback;
     const init = options.init;
-    
+
     return {
       key,
       fallback,
@@ -56,11 +56,13 @@ const mockBrowserStorage = {
       }),
       watch: mock((callback: (value: unknown) => void) => {
         const mockStorage = new MockStorage();
-        const unwatch = mockStorage.onChanged.addListener((changes: Record<string, unknown>) => {
-          if (changes[key]) {
-            callback(changes[key].newValue);
-          }
-        });
+        const unwatch = mockStorage.onChanged.addListener(
+          (changes: Record<string, unknown>) => {
+            if (changes[key]) {
+              callback(changes[key].newValue);
+            }
+          },
+        );
         return unwatch;
       }),
     };
@@ -74,7 +76,11 @@ mock.module("#imports", () => ({
 
 // Import after mocking
 let storage: Record<string, unknown>;
-let useStorage: (key: string) => { data: unknown; set: (value: unknown) => void; remove: () => void };
+let useStorage: (key: string) => {
+  data: unknown;
+  set: (value: unknown) => void;
+  remove: () => void;
+};
 let Value: (key: string) => unknown;
 
 describe("Storage Services", () => {
@@ -83,20 +89,20 @@ describe("Storage Services", () => {
     mockBrowserStorage.defineItem.mockClear();
     mockUseState.mockClear();
     mockUseEffect.mockClear();
-    
+
     // Reset environment variables
     import.meta.env = { ...originalEnv };
-    
+
     // Mock useState implementation
     let stateValue: unknown = null;
     mockUseState.mockImplementation((initialValue) => {
       stateValue = initialValue;
-      const setState = mock((newValue: unknown) => { 
-        stateValue = newValue; 
+      const setState = mock((newValue: unknown) => {
+        stateValue = newValue;
       });
       return [stateValue, setState];
     });
-    
+
     // Mock useEffect implementation
     mockUseEffect.mockImplementation((callback, deps) => {
       // Immediately execute callback for testing
@@ -105,7 +111,7 @@ describe("Storage Services", () => {
         return typeof result === "function" ? result : mock();
       }
     });
-    
+
     // Import modules after mocking
     const storageModule = require("~/lib/storage/services");
     storage = storageModule.storage;
@@ -152,7 +158,7 @@ describe("Storage Services", () => {
     it("should define API key storage with null fallback", () => {
       const geminiStorage = storage[StorageKey.GEMINI_API_KEY];
       const openaiStorage = storage[StorageKey.OPENAI_API_KEY];
-      
+
       expect(geminiStorage.fallback).toBe(null);
       expect(openaiStorage.fallback).toBe(null);
     });
@@ -171,7 +177,7 @@ describe("Storage Services", () => {
       const chatSessionsStorage = storage[StorageKey.CHAT_SESSIONS];
       const accessGrantsStorage = storage[StorageKey.ACCESS_GRANTS];
       const decisionCacheStorage = storage[StorageKey.DECISION_CACHE];
-      
+
       expect(chatSessionsStorage.fallback).toEqual({});
       expect(accessGrantsStorage.fallback).toEqual({});
       expect(decisionCacheStorage.fallback).toEqual({});
@@ -192,7 +198,7 @@ describe("Storage Services", () => {
         }
         return null;
       };
-      
+
       expect(initFunction("test-gemini-key")).toBe("test-gemini-key");
       expect(initFunction("your-gemini-key")).toBe(null);
       expect(initFunction("")).toBe(null);
@@ -206,7 +212,7 @@ describe("Storage Services", () => {
         }
         return null;
       };
-      
+
       expect(initFunction("test-openai-key")).toBe("test-openai-key");
       expect(initFunction("your-openai-key")).toBe(null);
       expect(initFunction("")).toBe(null);
@@ -219,7 +225,7 @@ describe("Storage Services", () => {
         }
         return "gemini";
       };
-      
+
       expect(initFunction("openai")).toBe("openai");
       expect(initFunction("gemini")).toBe("gemini");
       expect(initFunction("invalid")).toBe("gemini");
@@ -233,8 +239,10 @@ describe("Storage Services", () => {
         }
         return null;
       };
-      
-      expect(initFunction("Test task description")).toBe("Test task description");
+
+      expect(initFunction("Test task description")).toBe(
+        "Test task description",
+      );
       expect(initFunction("")).toBe(null);
       expect(initFunction("   ")).toBe("   "); // Whitespace is considered valid
     });
@@ -246,7 +254,7 @@ describe("Storage Services", () => {
         }
         return false;
       };
-      
+
       expect(initFunction("true")).toBe(true);
       expect(initFunction("false")).toBe(false);
       expect(initFunction("")).toBe(false);
@@ -260,7 +268,7 @@ describe("Storage Services", () => {
         }
         return null;
       };
-      
+
       expect(initFunction(".ads,.sidebar")).toBe(".ads,.sidebar");
       expect(initFunction("")).toBe(null);
     });
@@ -276,11 +284,13 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: "system",
       };
-      
+
       // Simulate useState and useEffect behavior
       let currentValue = mockItem.fallback;
-      const setValue = (newValue: unknown) => { currentValue = newValue; };
-      
+      const setValue = (newValue: unknown) => {
+        currentValue = newValue;
+      };
+
       expect(currentValue).toBe("system");
       expect(typeof setValue).toBe("function");
     });
@@ -293,13 +303,13 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: "system",
       };
-      
+
       let currentValue = mockItem.fallback;
-      const setValue = async (newValue: unknown) => { 
+      const setValue = async (newValue: unknown) => {
         await mockItem.setValue(newValue);
-        currentValue = newValue; 
+        currentValue = newValue;
       };
-      
+
       await setValue("dark");
       expect(currentValue).toBe("dark");
       expect(mockItem.setValue).toHaveBeenCalledWith("dark");
@@ -315,7 +325,7 @@ describe("Storage Services", () => {
           updatedAt: Date.now(),
         },
       };
-      
+
       const mockItem = {
         getValue: mock(async () => ({})),
         setValue: mock(async () => {}),
@@ -323,13 +333,13 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: {},
       };
-      
+
       let currentValue = mockItem.fallback;
-      const setValue = async (newValue: unknown) => { 
+      const setValue = async (newValue: unknown) => {
         await mockItem.setValue(newValue);
-        currentValue = newValue; 
+        currentValue = newValue;
       };
-      
+
       await setValue(mockSessions);
       expect(currentValue).toEqual(mockSessions);
       expect(mockItem.setValue).toHaveBeenCalledWith(mockSessions);
@@ -343,13 +353,13 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: null,
       };
-      
+
       let currentValue = mockItem.fallback;
-      const setValue = async (newValue: unknown) => { 
+      const setValue = async (newValue: unknown) => {
         await mockItem.setValue(newValue);
-        currentValue = newValue; 
+        currentValue = newValue;
       };
-      
+
       await setValue(null);
       expect(currentValue).toBe(null);
       expect(mockItem.setValue).toHaveBeenCalledWith(null);
@@ -363,17 +373,17 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: false,
       };
-      
+
       let currentValue = mockItem.fallback;
-      const setValue = async (newValue: unknown) => { 
+      const setValue = async (newValue: unknown) => {
         await mockItem.setValue(newValue);
-        currentValue = newValue; 
+        currentValue = newValue;
       };
-      
+
       await setValue(true);
       expect(currentValue).toBe(true);
       expect(mockItem.setValue).toHaveBeenCalledWith(true);
-      
+
       await setValue(false);
       expect(currentValue).toBe(false);
       expect(mockItem.setValue).toHaveBeenCalledWith(false);
@@ -390,7 +400,7 @@ describe("Storage Services", () => {
         watch: mock(() => mock()),
         fallback: "system",
       };
-      
+
       // Should fallback to default value on error
       try {
         await mockItem.getValue();
@@ -406,22 +416,22 @@ describe("Storage Services", () => {
       type ThemeValue = Value<typeof StorageKey.THEME>;
       const themeTest: ThemeValue = Theme.DARK;
       expect(themeTest).toBe(Theme.DARK);
-      
+
       // Test API key type
       type ApiKeyValue = Value<typeof StorageKey.GEMINI_API_KEY>;
       const apiKeyTest: ApiKeyValue = null;
       expect(apiKeyTest).toBe(null);
-      
+
       // Test AI provider type
       type AiProviderValue = Value<typeof StorageKey.AI_PROVIDER>;
       const aiProviderTest: AiProviderValue = "openai";
       expect(aiProviderTest).toBe("openai");
-      
+
       // Test boolean type
       type BooleanValue = Value<typeof StorageKey.EXTENSION_ENABLED>;
       const booleanTest: BooleanValue = true;
       expect(booleanTest).toBe(true);
-      
+
       // Test object type
       type ObjectValue = Value<typeof StorageKey.CHAT_SESSIONS>;
       const objectTest: ObjectValue = {};

@@ -44,7 +44,7 @@ describe("Cache Services", () => {
         expiresAt: now + CACHE_TTL.AI_DECISION,
         type: "ai_decision",
       };
-      
+
       expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.AI_DECISION);
     });
 
@@ -56,7 +56,7 @@ describe("Cache Services", () => {
         expiresAt: now + CACHE_TTL.USER_UNBLOCK,
         type: "user_unblock",
       };
-      
+
       expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.USER_UNBLOCK);
     });
 
@@ -70,7 +70,7 @@ describe("Cache Services", () => {
         ...mockCacheEntry,
         expiresAt: now - 1000, // Expired 1 second ago
       };
-      
+
       expect(now >= validEntry.expiresAt).toBe(false);
       expect(now >= expiredEntry.expiresAt).toBe(true);
     });
@@ -89,7 +89,7 @@ describe("Cache Services", () => {
           isFallback: false,
         },
       };
-      
+
       expect(entry.result).toEqual(mockAnalysisResult);
       expect(entry.type).toBe("ai_decision");
       expect(entry.metadata?.provider).toBe("gemini");
@@ -105,7 +105,7 @@ describe("Cache Services", () => {
         expiresAt: now + CACHE_TTL.USER_UNBLOCK,
         type: "user_unblock",
       };
-      
+
       expect(entry.result).toEqual(mockAnalysisResult);
       expect(entry.type).toBe("user_unblock");
       expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.USER_UNBLOCK);
@@ -119,7 +119,7 @@ describe("Cache Services", () => {
         expiresAt: now + CACHE_TTL.AI_DECISION,
         type: "ai_decision",
       };
-      
+
       expect(entry.metadata).toBeUndefined();
     });
   });
@@ -147,13 +147,13 @@ describe("Cache Services", () => {
         "user-unblock-key": userUnblockEntry,
         "expired-key": expiredEntry,
       };
-      
+
       // Calculate stats manually
       let totalEntries = 0;
       let aiDecisionEntries = 0;
       let userUnblockEntries = 0;
       let expiredEntries = 0;
-      
+
       for (const entry of Object.values(cache)) {
         totalEntries++;
         if (entry.type === "ai_decision") {
@@ -161,12 +161,12 @@ describe("Cache Services", () => {
         } else if (entry.type === "user_unblock") {
           userUnblockEntries++;
         }
-        
+
         if (now >= entry.expiresAt) {
           expiredEntries++;
         }
       }
-      
+
       expect(totalEntries).toBe(3);
       expect(aiDecisionEntries).toBe(2);
       expect(userUnblockEntries).toBe(1);
@@ -175,7 +175,7 @@ describe("Cache Services", () => {
 
     it("should handle empty cache", () => {
       const cache = {};
-      
+
       const totalEntries = Object.keys(cache).length;
       expect(totalEntries).toBe(0);
     });
@@ -196,7 +196,7 @@ describe("Cache Services", () => {
         "valid-key": validEntry,
         "expired-key": expiredEntry,
       };
-      
+
       // Filter logic from cleanupExpiredCacheEntries
       const validEntries = Object.entries(cache).reduce(
         (acc, [cacheKey, entry]) => {
@@ -207,7 +207,7 @@ describe("Cache Services", () => {
         },
         {} as Record<string, DecisionCacheEntry>,
       );
-      
+
       expect(validEntries).toHaveProperty("valid-key");
       expect(validEntries).not.toHaveProperty("expired-key");
       expect(Object.keys(validEntries)).toHaveLength(1);
@@ -227,7 +227,7 @@ describe("Cache Services", () => {
         "expired-key-1": expiredEntry1,
         "expired-key-2": expiredEntry2,
       };
-      
+
       // Filter logic from cleanupExpiredCacheEntries
       const validEntries = Object.entries(cache).reduce(
         (acc, [cacheKey, entry]) => {
@@ -238,7 +238,7 @@ describe("Cache Services", () => {
         },
         {} as Record<string, DecisionCacheEntry>,
       );
-      
+
       expect(Object.keys(validEntries)).toHaveLength(0);
     });
   });
@@ -251,10 +251,10 @@ describe("Cache Services", () => {
         "url:old-task-hash:different-always-remove": mockCacheEntry,
         "malformed-key": mockCacheEntry,
       };
-      
+
       // Mock createSecureHash to return predictable values
       const mockCreateSecureHash = mock((str: string) => str);
-      
+
       // Simulate task hash extraction and comparison
       const oldTaskHash = "old-task-hash";
       const validEntries = Object.entries(cache).reduce(
@@ -262,7 +262,7 @@ describe("Cache Services", () => {
           const parts = cacheKey.split(":");
           if (parts.length >= 2) {
             const taskHash = parts[1];
-            
+
             // Keep entries that don't match old task hash
             if (taskHash !== oldTaskHash) {
               acc[cacheKey] = entry;
@@ -275,10 +275,16 @@ describe("Cache Services", () => {
         },
         {} as Record<string, DecisionCacheEntry>,
       );
-      
-      expect(validEntries).not.toHaveProperty("url:old-task-hash:always-remove-hash");
-      expect(validEntries).not.toHaveProperty("url:old-task-hash:different-always-remove");
-      expect(validEntries).toHaveProperty("url:new-task-hash:always-remove-hash");
+
+      expect(validEntries).not.toHaveProperty(
+        "url:old-task-hash:always-remove-hash",
+      );
+      expect(validEntries).not.toHaveProperty(
+        "url:old-task-hash:different-always-remove",
+      );
+      expect(validEntries).toHaveProperty(
+        "url:new-task-hash:always-remove-hash",
+      );
       expect(validEntries).toHaveProperty("malformed-key");
     });
   });
@@ -287,10 +293,10 @@ describe("Cache Services", () => {
     it("should handle cache key removal correctly", () => {
       const cacheKey = "test-key";
       const cache = { [cacheKey]: mockCacheEntry, "other-key": mockCacheEntry };
-      
+
       // Simulate removal logic from removeCachedDecision
       const { [cacheKey]: _, ...remainingCache } = cache;
-      
+
       expect(remainingCache).not.toHaveProperty(cacheKey);
       expect(remainingCache).toHaveProperty("other-key");
       expect(Object.keys(remainingCache)).toHaveLength(1);
@@ -299,20 +305,20 @@ describe("Cache Services", () => {
     it("should handle removal of non-existent key", () => {
       const cacheKey = "non-existent-key";
       const cache = { "other-key": mockCacheEntry };
-      
+
       // Simulate removal logic from removeCachedDecision
       const { [cacheKey]: _, ...remainingCache } = cache;
-      
+
       expect(remainingCache).toEqual(cache);
     });
 
     it("should handle empty cache removal", () => {
       const cacheKey = "test-key";
       const cache = {};
-      
+
       // Simulate removal logic from removeCachedDecision
       const { [cacheKey]: _, ...remainingCache } = cache;
-      
+
       expect(remainingCache).toEqual({});
     });
   });
@@ -320,14 +326,14 @@ describe("Cache Services", () => {
   describe("Cache Clear Operations", () => {
     it("should clear all cache entries", () => {
       const cache = {
-        "key1": mockCacheEntry,
-        "key2": mockCacheEntry,
-        "key3": mockCacheEntry,
+        key1: mockCacheEntry,
+        key2: mockCacheEntry,
+        key3: mockCacheEntry,
       };
-      
+
       // Simulate clear operation
       const clearedCache = {};
-      
+
       expect(Object.keys(clearedCache)).toHaveLength(0);
       expect(clearedCache).toEqual({});
     });

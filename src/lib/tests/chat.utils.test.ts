@@ -8,13 +8,13 @@
  */
 
 import { describe, expect, it } from "bun:test";
-import type { ChatMessage } from "~/lib/messaging";
 import {
   createChatMessage,
   generateMessageId,
   generateSessionId,
   getCurrentTimestamp,
 } from "~/lib/chat/utils";
+import type { ChatMessage } from "~/lib/messaging";
 
 describe("Chat Utils", () => {
   describe("generateSessionId", () => {
@@ -26,7 +26,7 @@ describe("Chat Utils", () => {
     it("should generate unique session IDs", async () => {
       const sessionId1 = generateSessionId();
       // Add a small delay to ensure different timestamps
-      await new Promise(resolve => setTimeout(resolve, 1));
+      await new Promise((resolve) => setTimeout(resolve, 1));
       const sessionId2 = generateSessionId();
       expect(sessionId1).not.toEqual(sessionId2);
     });
@@ -41,8 +41,11 @@ describe("Chat Utils", () => {
       const beforeTime = Date.now();
       const sessionId = generateSessionId();
       const afterTime = Date.now();
-      
-      const timestampPart = Number.parseInt(sessionId.replace("session_", ""), 10);
+
+      const timestampPart = Number.parseInt(
+        sessionId.replace("session_", ""),
+        10,
+      );
       expect(timestampPart).toBeGreaterThanOrEqual(beforeTime);
       expect(timestampPart).toBeLessThanOrEqual(afterTime);
     });
@@ -64,10 +67,10 @@ describe("Chat Utils", () => {
       const messageId = generateMessageId();
       const parts = messageId.replace("msg_", "").split("_");
       expect(parts).toHaveLength(2);
-      
+
       // First part should be a timestamp
       expect(parts[0]).toMatch(/^\d+$/);
-      
+
       // Second part should be a random string
       expect(parts[1]).toMatch(/^[a-z0-9]+$/);
     });
@@ -76,8 +79,11 @@ describe("Chat Utils", () => {
       const beforeTime = Date.now();
       const messageId = generateMessageId();
       const afterTime = Date.now();
-      
-      const timestampPart = Number.parseInt(messageId.replace("msg_", "").split("_")[0], 10);
+
+      const timestampPart = Number.parseInt(
+        messageId.replace("msg_", "").split("_")[0],
+        10,
+      );
       expect(timestampPart).toBeGreaterThanOrEqual(beforeTime);
       expect(timestampPart).toBeLessThanOrEqual(afterTime);
     });
@@ -162,20 +168,18 @@ describe("Chat Utils", () => {
 
       // TypeScript type check would be done at compile time,
       // but we can verify the structure at runtime
-      const isChatMessage = (
-        msg: unknown
-      ): msg is ChatMessage =>
-        typeof msg === "object" &&
-        msg !== null &&
-        "id" in msg &&
-        "content" in msg &&
-        "role" in msg &&
-        "timestamp" in msg &&
-        typeof (msg as ChatMessage).id === "string" &&
-        typeof (msg as ChatMessage).content === "string" &&
-        (msg as ChatMessage).role === "user" ||
-        (msg as ChatMessage).role === "assistant" &&
-        typeof (msg as ChatMessage).timestamp === "number";
+      const isChatMessage = (msg: unknown): msg is ChatMessage =>
+        (typeof msg === "object" &&
+          msg !== null &&
+          "id" in msg &&
+          "content" in msg &&
+          "role" in msg &&
+          "timestamp" in msg &&
+          typeof (msg as ChatMessage).id === "string" &&
+          typeof (msg as ChatMessage).content === "string" &&
+          (msg as ChatMessage).role === "user") ||
+        ((msg as ChatMessage).role === "assistant" &&
+          typeof (msg as ChatMessage).timestamp === "number");
 
       expect(isChatMessage(message)).toBe(true);
     });
@@ -238,7 +242,9 @@ describe("Chat Utils", () => {
       expect(sessionId).not.toContain(assistantMessage.id);
 
       // Verify timestamps are reasonable
-      expect(userMessage.timestamp).toBeLessThanOrEqual(assistantMessage.timestamp);
+      expect(userMessage.timestamp).toBeLessThanOrEqual(
+        assistantMessage.timestamp,
+      );
     });
   });
 });

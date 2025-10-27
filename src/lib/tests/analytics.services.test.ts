@@ -1,5 +1,9 @@
-import { describe, it, expect, vi } from "bun:test";
-import { analytics, trackEvent, initializeAnalytics } from "~/lib/analytics/services";
+import { describe, expect, it, vi } from "bun:test";
+import {
+  analytics,
+  initializeAnalytics,
+  trackEvent,
+} from "~/lib/analytics/services";
 
 // Mock the analytics module for testing
 vi.mock("~/lib/analytics/services", () => ({
@@ -10,7 +14,7 @@ vi.mock("~/lib/analytics/services", () => ({
     trackAttributes: true,
   })),
   trackEvent: vi.fn(),
-  initializeAnalytics: vi.fn()
+  initializeAnalytics: vi.fn(),
 }));
 
 describe("Analytics Services", () => {
@@ -21,13 +25,15 @@ describe("Analytics Services", () => {
 
   it("should call track method with correct arguments", () => {
     trackEvent("event-name", { property: "value" });
-    
-    expect(trackEvent).toHaveBeenCalledWith("event-name", { property: "value" });
+
+    expect(trackEvent).toHaveBeenCalledWith("event-name", {
+      property: "value",
+    });
   });
 
   it("should handle initialization with custom options", () => {
     const customAnalytics = initializeAnalytics({ trackScreenViews: false });
-    
+
     expect(customAnalytics.trackScreenViews).toBeFalsy();
   });
 });

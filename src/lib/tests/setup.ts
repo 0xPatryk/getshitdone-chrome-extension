@@ -13,19 +13,23 @@
  * - Message passing simulation
  */
 
-import { beforeEach, afterEach, mock } from "bun:test";
+import { afterEach, beforeEach, mock } from "bun:test";
 import { JSDOM } from "jsdom";
 
 // Type definitions for Chrome APIs
 interface ChromeStorage {
   local: {
-    get: (keys?: string | string[] | Record<string, unknown> | null) => Promise<Record<string, unknown>>;
+    get: (
+      keys?: string | string[] | Record<string, unknown> | null,
+    ) => Promise<Record<string, unknown>>;
     set: (items: Record<string, unknown>) => Promise<void>;
     remove: (keys: string | string[]) => Promise<void>;
     clear: () => Promise<void>;
   };
   sync: {
-    get: (keys?: string | string[] | Record<string, unknown> | null) => Promise<Record<string, unknown>>;
+    get: (
+      keys?: string | string[] | Record<string, unknown> | null,
+    ) => Promise<Record<string, unknown>>;
     set: (items: Record<string, unknown>) => Promise<void>;
     remove: (keys: string | string[]) => Promise<void>;
     clear: () => Promise<void>;
@@ -37,8 +41,20 @@ interface ChromeRuntime {
   getURL: (path: string) => string;
   sendMessage: (message: unknown) => Promise<unknown>;
   onMessage: {
-    addListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
-    removeListener: (callback: (message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void) => void;
+    addListener: (
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
+    ) => void;
+    removeListener: (
+      callback: (
+        message: unknown,
+        sender: unknown,
+        sendResponse: (response?: unknown) => void,
+      ) => void,
+    ) => void;
   };
 }
 
@@ -51,9 +67,18 @@ interface MockTab {
 }
 
 interface ChromeTabs {
-  create: (createProperties: { url: string; active?: boolean }) => Promise<MockTab>;
-  query: (queryInfo: { active?: boolean; currentWindow?: boolean }) => Promise<MockTab[]>;
-  sendMessage: (tabId: number, message: unknown, options?: { frameId?: number }) => Promise<unknown>;
+  create: (createProperties: {
+    url: string;
+    active?: boolean;
+  }) => Promise<MockTab>;
+  query: (queryInfo: { active?: boolean; currentWindow?: boolean }) => Promise<
+    MockTab[]
+  >;
+  sendMessage: (
+    tabId: number,
+    message: unknown,
+    options?: { frameId?: number },
+  ) => Promise<unknown>;
 }
 
 // Mock storage data
@@ -63,7 +88,13 @@ const mockStorageData: Record<string, Record<string, unknown>> = {
 };
 
 // Mock message listeners
-const mockMessageListeners: Array<(message: unknown, sender: unknown, sendResponse: (response?: unknown) => void) => void> = [];
+const mockMessageListeners: Array<
+  (
+    message: unknown,
+    sender: unknown,
+    sendResponse: (response?: unknown) => void,
+  ) => void
+> = [];
 
 // Mock tabs
 const mockTabs: MockTab[] = [
@@ -193,7 +224,10 @@ const createChromeMocks = () => {
         if (queryInfo.active !== undefined && tab.active !== queryInfo.active) {
           return false;
         }
-        if (queryInfo.currentWindow !== undefined && tab.currentWindow !== queryInfo.currentWindow) {
+        if (
+          queryInfo.currentWindow !== undefined &&
+          tab.currentWindow !== queryInfo.currentWindow
+        ) {
           return false;
         }
         return true;
@@ -246,7 +280,7 @@ beforeEach(() => {
   // Create and assign Chrome mocks
   const chromeMocks = createChromeMocks();
   global.chrome = chromeMocks as unknown as typeof chrome;
-  
+
   // Ensure chrome.runtime.id exists to prevent extension errors
   if (!chromeMocks.runtime.id) {
     chromeMocks.runtime.id = "test-extension-id";

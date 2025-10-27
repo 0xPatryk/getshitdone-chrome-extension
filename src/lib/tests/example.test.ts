@@ -13,10 +13,10 @@
  * - Async testing patterns
  */
 
-import { describe, expect, it, beforeEach } from "bun:test";
-import { domHelpers, asyncHelpers, mockData, testContext } from "./utils";
-import { MockStorage, MockMessaging, createMockChromeAPI } from "./mocks";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { testCategories } from "./config";
+import { MockMessaging, MockStorage, createMockChromeAPI } from "./mocks";
+import { asyncHelpers, domHelpers, mockData, testContext } from "./utils";
 
 // Example 1: Testing Storage Operations
 describe("Storage Operations", () => {
@@ -29,13 +29,13 @@ describe("Storage Operations", () => {
   it("should store and retrieve values", async () => {
     // Set up test data
     const testData = { user: "test-user", theme: "dark" };
-    
+
     // Store values
     await mockStorage.set(testData);
-    
+
     // Retrieve values
     const result = await mockStorage.get();
-    
+
     expect(result).toEqual(testData);
     expect(mockStorage.hasKey("user")).toBe(true);
     expect(mockStorage.getValue("theme")).toBe("dark");
@@ -106,7 +106,10 @@ describe("Message Passing", () => {
 
     // Start waiting for message
     const messagePromise = mockMessaging.waitForMessage(
-      (msg) => typeof msg === "object" && msg !== null && (msg as Record<string, unknown>).type === "ASYNC_TEST"
+      (msg) =>
+        typeof msg === "object" &&
+        msg !== null &&
+        (msg as Record<string, unknown>).type === "ASYNC_TEST",
     );
 
     // Simulate message after delay
@@ -134,7 +137,9 @@ describe("DOM Manipulation", () => {
 
   it("should simulate user interactions", () => {
     const button = document.querySelector('[data-testid="test-button"]');
-    const input = document.querySelector('[data-testid="test-input"]') as HTMLInputElement;
+    const input = document.querySelector(
+      '[data-testid="test-input"]',
+    ) as HTMLInputElement;
     const output = document.querySelector('[data-testid="test-output"]');
 
     // Simulate input
@@ -147,25 +152,31 @@ describe("DOM Manipulation", () => {
     if (button) {
       domHelpers.simulateClick(button);
     }
-    
+
     // Verify output exists
     expect(output).toBeTruthy();
   });
 
   it("should create and manipulate elements", () => {
     const container = document.getElementById("app");
-    
+
     // Create new element
-    const newElement = domHelpers.createElement("div", { 
-      class: "test-class",
-      "data-testid": "new-element"
-    }, "Test content");
+    const newElement = domHelpers.createElement(
+      "div",
+      {
+        class: "test-class",
+        "data-testid": "new-element",
+      },
+      "Test content",
+    );
 
     // Append to container
     container?.appendChild(newElement);
 
     // Verify element exists
-    const createdElement = document.querySelector('[data-testid="new-element"]');
+    const createdElement = document.querySelector(
+      '[data-testid="new-element"]',
+    );
     expect(createdElement).toBeTruthy();
     expect(createdElement?.textContent).toBe("Test content");
     expect(createdElement?.classList.contains("test-class")).toBe(true);
@@ -182,29 +193,29 @@ describe("Chrome API Integration", () => {
   it("should use Chrome storage API", async () => {
     // Set up test data
     const testData = { "local:theme": "dark", "local:user": "test-user" };
-    
+
     // Store data using Chrome API
     await chrome.storage.local.set(testData);
-    
+
     // Retrieve data
     const result = await chrome.storage.local.get();
-    
+
     expect(result).toEqual(testData);
   });
 
   it("should handle Chrome messaging", async () => {
     let receivedMessage: unknown;
-    
+
     // Set up message listener
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       receivedMessage = message;
       sendResponse({ received: true });
     });
-    
+
     // Send message
     const testMessage = { type: "TEST", data: "test-data" };
     const response = await chrome.runtime.sendMessage(testMessage);
-    
+
     expect(receivedMessage).toEqual(testMessage);
     expect(response).toEqual({ received: true });
   });
@@ -214,15 +225,15 @@ describe("Chrome API Integration", () => {
 describe("Async Testing Patterns", () => {
   it("should handle async operations with waitFor", async () => {
     let conditionMet = false;
-    
+
     // Simulate async operation
     setTimeout(() => {
       conditionMet = true;
     }, 100);
-    
+
     // Wait for condition
     await asyncHelpers.waitFor(() => conditionMet, 1000);
-    
+
     expect(conditionMet).toBe(true);
   });
 
@@ -233,10 +244,12 @@ describe("Async Testing Patterns", () => {
       element.setAttribute("data-testid", "delayed-element");
       document.body.appendChild(element);
     }, 100);
-    
+
     // Wait for element
-    const element = await asyncHelpers.waitForElement("[data-testid='delayed-element']");
-    
+    const element = await asyncHelpers.waitForElement(
+      "[data-testid='delayed-element']",
+    );
+
     expect(element).toBeTruthy();
   });
 
@@ -246,9 +259,9 @@ describe("Async Testing Patterns", () => {
       asyncHelpers.wait(100),
       asyncHelpers.wait(25),
     ];
-    
+
     await Promise.all(promises);
-    
+
     // All promises should resolve
     expect(true).toBe(true);
   });
@@ -260,13 +273,13 @@ describe("Mock Data Generators", () => {
     const user = mockData.user();
     const message = mockData.chatMessage();
     const task = mockData.task();
-    
+
     expect(user).toHaveProperty("id", "test-user-id");
     expect(user).toHaveProperty("name", "Test User");
-    
+
     expect(message).toHaveProperty("id", "test-message-id");
     expect(message).toHaveProperty("role", "user");
-    
+
     expect(task).toHaveProperty("id", "test-task-id");
     expect(task).toHaveProperty("completed", false);
   });
@@ -276,7 +289,7 @@ describe("Mock Data Generators", () => {
       name: "Custom User",
       email: "custom@example.com",
     });
-    
+
     expect(customUser.name).toBe("Custom User");
     expect(customUser.email).toBe("custom@example.com");
     expect(customUser.id).toBe("test-user-id"); // Default value preserved
@@ -287,7 +300,7 @@ describe("Mock Data Generators", () => {
 describe("Test Categories", () => {
   it("should use unit test configuration", () => {
     const config = testCategories.unit.config;
-    
+
     expect(config.defaultTimeout).toBe(3000);
     expect(config.asyncTimeout).toBe(5000);
     expect(config.verbose).toBe(false);
@@ -296,7 +309,7 @@ describe("Test Categories", () => {
 
   it("should use integration test configuration", () => {
     const config = testCategories.integration.config;
-    
+
     expect(config.defaultTimeout).toBe(10000);
     expect(config.asyncTimeout).toBe(20000);
     expect(config.verbose).toBe(true);
@@ -308,19 +321,19 @@ describe("Test Categories", () => {
 describe("Error Handling", () => {
   it("should handle storage errors gracefully", async () => {
     const mockStorage = new MockStorage();
-    
+
     // Try to get non-existent key
     const result = await mockStorage.get("non-existent-key");
-    
+
     expect(result).toEqual({ "non-existent-key": undefined });
   });
 
   it("should handle message errors", async () => {
     const mockMessaging = new MockMessaging();
-    
+
     // Send message with no listeners
     const response = await mockMessaging.sendMessage({ type: "NO_LISTENERS" });
-    
+
     expect(response).toBeUndefined();
   });
 });
@@ -330,23 +343,23 @@ describe("Performance Testing", () => {
   it("should handle large storage operations efficiently", async () => {
     const mockStorage = new MockStorage();
     const largeDataSet: Record<string, unknown> = {};
-    
+
     // Create large data set
     for (let i = 0; i < 1000; i++) {
       largeDataSet[`key-${i}`] = `value-${i}`;
     }
-    
+
     const startTime = performance.now();
-    
+
     // Store large data set
     await mockStorage.set(largeDataSet);
-    
+
     const endTime = performance.now();
     const duration = endTime - startTime;
-    
+
     // Should complete within reasonable time (adjust threshold as needed)
     expect(duration).toBeLessThan(1000); // 1 second
-    
+
     // Verify data was stored correctly
     const result = await mockStorage.get();
     expect(Object.keys(result)).toHaveLength(1000);

@@ -30,19 +30,19 @@ const mockBrowserStorage = {
 beforeEach(() => {
   // Clear all mocks
   mock.restore();
-  
+
   // Reset storage
   storageHelpers.clearStorage();
-  
+
   // Mock storage operations
   mockGetValue.mockImplementation(async () => ({}));
   mockSetValue.mockImplementation(async () => {});
-  
+
   // Mock the WXT imports
   mock.module("#imports", () => ({
     storage: mockBrowserStorage,
   }));
-  
+
   // Mock the storage service
   const mockStorageService = {
     [StorageKey.ACCESS_GRANTS]: {
@@ -50,7 +50,7 @@ beforeEach(() => {
       setValue: mockSetValue,
     },
   };
-  
+
   // Mock the storage import
   mock.module("~/lib/storage/services", () => ({
     storage: mockStorageService,
@@ -61,11 +61,11 @@ describe("getActiveAccessGrant", () => {
   it("should return null when no grant exists for the URL", async () => {
     // Arrange
     mockGetValue.mockResolvedValue({});
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toBeNull();
     expect(mockGetValue).toHaveBeenCalled();
@@ -81,15 +81,15 @@ describe("getActiveAccessGrant", () => {
       grantedAt: now,
       durationMinutes: 60,
     };
-    
+
     mockGetValue.mockResolvedValue({
       "https://example.com": testGrant,
     });
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toEqual(testGrant);
     expect(mockGetValue).toHaveBeenCalled();
@@ -105,15 +105,15 @@ describe("getActiveAccessGrant", () => {
       grantedAt: now - 2 * 60 * 60 * 1000, // 2 hours ago
       durationMinutes: 60,
     };
-    
+
     mockGetValue.mockResolvedValue({
       "https://example.com": testGrant,
     });
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toBeNull();
     expect(mockGetValue).toHaveBeenCalled();
@@ -125,12 +125,14 @@ describe("getActiveAccessGrant", () => {
     // Arrange
     const errorMessage = "Storage access failed";
     mockGetValue.mockRejectedValue(new Error(errorMessage));
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
-    
+
     // Assert
-    await expect(getActiveAccessGrant("https://example.com")).rejects.toThrow(errorMessage);
+    await expect(getActiveAccessGrant("https://example.com")).rejects.toThrow(
+      errorMessage,
+    );
   });
 });
 
@@ -145,7 +147,7 @@ describe("setAccessGrant", () => {
       grantedAt: now,
       durationMinutes: 60,
     };
-    
+
     const existingGrants = {
       "https://existing.com": {
         url: "https://existing.com",
@@ -154,13 +156,13 @@ describe("setAccessGrant", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(existingGrants);
-    
+
     // Act
     const { setAccessGrant } = await import("~/lib/grants/services");
     await setAccessGrant(testGrant);
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({
@@ -179,7 +181,7 @@ describe("setAccessGrant", () => {
       grantedAt: now,
       durationMinutes: 60,
     };
-    
+
     const existingGrants = {
       "https://example.com": {
         url: "https://example.com",
@@ -188,13 +190,13 @@ describe("setAccessGrant", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(existingGrants);
-    
+
     // Act
     const { setAccessGrant } = await import("~/lib/grants/services");
     await setAccessGrant(testGrant);
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({
@@ -212,13 +214,13 @@ describe("setAccessGrant", () => {
       grantedAt: now,
       durationMinutes: 60,
     };
-    
+
     mockGetValue.mockResolvedValue({});
-    
+
     // Act
     const { setAccessGrant } = await import("~/lib/grants/services");
     await setAccessGrant(testGrant);
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({
@@ -235,13 +237,13 @@ describe("setAccessGrant", () => {
       grantedAt: now,
       durationMinutes: 60,
     };
-    
+
     const errorMessage = "Storage write failed";
     mockGetValue.mockRejectedValue(new Error(errorMessage));
-    
+
     // Act
     const { setAccessGrant } = await import("~/lib/grants/services");
-    
+
     // Assert
     await expect(setAccessGrant(testGrant)).rejects.toThrow(errorMessage);
   });
@@ -265,13 +267,13 @@ describe("removeAccessGrant", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(existingGrants);
-    
+
     // Act
     const { removeAccessGrant } = await import("~/lib/grants/services");
     await removeAccessGrant("https://example.com");
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({
@@ -290,13 +292,13 @@ describe("removeAccessGrant", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(existingGrants);
-    
+
     // Act
     const { removeAccessGrant } = await import("~/lib/grants/services");
     await removeAccessGrant("https://nonexistent.com");
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith(existingGrants);
@@ -305,11 +307,11 @@ describe("removeAccessGrant", () => {
   it("should handle empty storage gracefully", async () => {
     // Arrange
     mockGetValue.mockResolvedValue({});
-    
+
     // Act
     const { removeAccessGrant } = await import("~/lib/grants/services");
     await removeAccessGrant("https://example.com");
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({});
@@ -319,12 +321,14 @@ describe("removeAccessGrant", () => {
     // Arrange
     const errorMessage = "Storage access failed";
     mockGetValue.mockRejectedValue(new Error(errorMessage));
-    
+
     // Act
     const { removeAccessGrant } = await import("~/lib/grants/services");
-    
+
     // Assert
-    await expect(removeAccessGrant("https://example.com")).rejects.toThrow(errorMessage);
+    await expect(removeAccessGrant("https://example.com")).rejects.toThrow(
+      errorMessage,
+    );
   });
 });
 
@@ -334,7 +338,7 @@ describe("cleanupExpiredGrants", () => {
     const now = Date.now();
     const pastTime = now - 60 * 60 * 1000; // 1 hour ago
     const futureTime = now + 60 * 60 * 1000; // 1 hour from now
-    
+
     const grants = {
       "https://expired1.com": {
         url: "https://expired1.com",
@@ -355,13 +359,13 @@ describe("cleanupExpiredGrants", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(grants);
-    
+
     // Act
     const { cleanupExpiredGrants } = await import("~/lib/grants/services");
     await cleanupExpiredGrants();
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({
@@ -372,11 +376,11 @@ describe("cleanupExpiredGrants", () => {
   it("should handle empty storage gracefully", async () => {
     // Arrange
     mockGetValue.mockResolvedValue({});
-    
+
     // Act
     const { cleanupExpiredGrants } = await import("~/lib/grants/services");
     await cleanupExpiredGrants();
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({});
@@ -386,7 +390,7 @@ describe("cleanupExpiredGrants", () => {
     // Arrange
     const now = Date.now();
     const pastTime = now - 60 * 60 * 1000; // 1 hour ago
-    
+
     const grants = {
       "https://expired1.com": {
         url: "https://expired1.com",
@@ -401,13 +405,13 @@ describe("cleanupExpiredGrants", () => {
         durationMinutes: 30,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(grants);
-    
+
     // Act
     const { cleanupExpiredGrants } = await import("~/lib/grants/services");
     await cleanupExpiredGrants();
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith({});
@@ -417,7 +421,7 @@ describe("cleanupExpiredGrants", () => {
     // Arrange
     const now = Date.now();
     const futureTime = now + 60 * 60 * 1000; // 1 hour from now
-    
+
     const grants = {
       "https://valid1.com": {
         url: "https://valid1.com",
@@ -432,13 +436,13 @@ describe("cleanupExpiredGrants", () => {
         durationMinutes: 90,
       },
     };
-    
+
     mockGetValue.mockResolvedValue(grants);
-    
+
     // Act
     const { cleanupExpiredGrants } = await import("~/lib/grants/services");
     await cleanupExpiredGrants();
-    
+
     // Assert
     expect(mockGetValue).toHaveBeenCalled();
     expect(mockSetValue).toHaveBeenCalledWith(grants);
@@ -448,10 +452,10 @@ describe("cleanupExpiredGrants", () => {
     // Arrange
     const errorMessage = "Storage access failed";
     mockGetValue.mockRejectedValue(new Error(errorMessage));
-    
+
     // Act
     const { cleanupExpiredGrants } = await import("~/lib/grants/services");
-    
+
     // Assert
     await expect(cleanupExpiredGrants()).rejects.toThrow(errorMessage);
   });
@@ -467,15 +471,15 @@ describe("Edge Cases", () => {
       grantedAt: now - 10 * 60 * 1000,
       durationMinutes: 10,
     };
-    
+
     mockGetValue.mockResolvedValue({
       "https://example.com": testGrant,
     });
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toBeNull();
     // Verify that setValue was called with the grants object without the expired grant
@@ -492,15 +496,15 @@ describe("Edge Cases", () => {
       grantedAt: now,
       durationMinutes: 525600, // 365 days in minutes
     };
-    
+
     mockGetValue.mockResolvedValue({
       "https://example.com": testGrant,
     });
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toEqual(testGrant);
   });
@@ -514,15 +518,15 @@ describe("Edge Cases", () => {
       grantedAt: Date.now() - 10 * 60 * 1000,
       durationMinutes: 10,
     };
-    
+
     mockGetValue.mockResolvedValue({
       "https://example.com": testGrant,
     });
-    
+
     // Act
     const { getActiveAccessGrant } = await import("~/lib/grants/services");
     const result = await getActiveAccessGrant("https://example.com");
-    
+
     // Assert
     expect(result).toBeNull();
     // Verify that setValue was called with the grants object without the expired grant

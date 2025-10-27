@@ -7,8 +7,8 @@
  * @module chat/services.test
  */
 
-import { describe, expect, it, beforeEach, mock } from "bun:test";
-import { renderHook, act } from "@testing-library/react";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+import { act, renderHook } from "@testing-library/react";
 import type { ChatSession } from "~/lib/messaging";
 import { StorageKey } from "~/lib/storage/types";
 import "./setup"; // Import setup to ensure mocks are initialized
@@ -112,11 +112,11 @@ describe("useChatSession", () => {
       StorageKey.CHAT_SESSIONS,
       expect.objectContaining({
         [newSession.id]: newSession,
-      })
+      }),
     );
     expect(mockSet).toHaveBeenCalledWith(
       StorageKey.ACTIVE_CHAT_SESSION,
-      newSession.id
+      newSession.id,
     );
 
     // Check that the session is now active
@@ -146,10 +146,14 @@ describe("useChatSession", () => {
     // Check that the session was updated with the message
     // Get the last call to CHAT_SESSIONS
     const chatSessionsCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.CHAT_SESSIONS
+      (call) => call[0] === StorageKey.CHAT_SESSIONS,
     );
-    const lastChatSessionsCall = chatSessionsCalls[chatSessionsCalls.length - 1];
-    const updatedSessions = lastChatSessionsCall?.[1] as Record<string, ChatSession>;
+    const lastChatSessionsCall =
+      chatSessionsCalls[chatSessionsCalls.length - 1];
+    const updatedSessions = lastChatSessionsCall?.[1] as Record<
+      string,
+      ChatSession
+    >;
 
     const updatedSession = updatedSessions[session.id];
     expect(updatedSession?.messages).toHaveLength(1);
@@ -188,10 +192,14 @@ describe("useChatSession", () => {
     // Check that both messages were added in order
     // Get the last call to CHAT_SESSIONS
     const chatSessionsCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.CHAT_SESSIONS
+      (call) => call[0] === StorageKey.CHAT_SESSIONS,
     );
-    const lastChatSessionsCall = chatSessionsCalls[chatSessionsCalls.length - 1];
-    const updatedSessions = lastChatSessionsCall?.[1] as Record<string, ChatSession>;
+    const lastChatSessionsCall =
+      chatSessionsCalls[chatSessionsCalls.length - 1];
+    const updatedSessions = lastChatSessionsCall?.[1] as Record<
+      string,
+      ChatSession
+    >;
 
     const updatedSession = updatedSessions[session.id];
     expect(updatedSession?.messages).toHaveLength(2);
@@ -216,7 +224,7 @@ describe("useChatSession", () => {
 
     // Check that storage was not updated
     const chatSessionsCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.CHAT_SESSIONS
+      (call) => call[0] === StorageKey.CHAT_SESSIONS,
     );
     expect(chatSessionsCalls).toHaveLength(0);
   });
@@ -238,10 +246,14 @@ describe("useChatSession", () => {
     // Check that the session status was updated
     // Get the last call to CHAT_SESSIONS
     const chatSessionsCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.CHAT_SESSIONS
+      (call) => call[0] === StorageKey.CHAT_SESSIONS,
     );
-    const lastChatSessionsCall = chatSessionsCalls[chatSessionsCalls.length - 1];
-    const updatedSessions = lastChatSessionsCall?.[1] as Record<string, ChatSession>;
+    const lastChatSessionsCall =
+      chatSessionsCalls[chatSessionsCalls.length - 1];
+    const updatedSessions = lastChatSessionsCall?.[1] as Record<
+      string,
+      ChatSession
+    >;
 
     const updatedSession = updatedSessions[session.id];
     expect(updatedSession?.status).toBe("completed");
@@ -265,10 +277,7 @@ describe("useChatSession", () => {
     });
 
     // Check that active session was cleared
-    expect(mockSet).toHaveBeenCalledWith(
-      StorageKey.ACTIVE_CHAT_SESSION,
-      null
-    );
+    expect(mockSet).toHaveBeenCalledWith(StorageKey.ACTIVE_CHAT_SESSION, null);
   });
 
   it("should not clear active session when ending a non-active session", () => {
@@ -297,7 +306,7 @@ describe("useChatSession", () => {
 
     // Check that the last call to ACTIVE_CHAT_SESSION was not null
     const activeSessionCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.ACTIVE_CHAT_SESSION
+      (call) => call[0] === StorageKey.ACTIVE_CHAT_SESSION,
     );
     const lastCall = activeSessionCalls[activeSessionCalls.length - 1];
     expect(lastCall?.[1]).toBe(session2.id);
@@ -315,7 +324,7 @@ describe("useChatSession", () => {
 
     // Check that storage was not updated
     const chatSessionsCalls = mockSet.mock.calls.filter(
-      (call) => call[0] === StorageKey.CHAT_SESSIONS
+      (call) => call[0] === StorageKey.CHAT_SESSIONS,
     );
     expect(chatSessionsCalls).toHaveLength(0);
   });
