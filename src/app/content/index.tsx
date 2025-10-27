@@ -379,6 +379,12 @@ export default defineContentScript({
           return;
         }
 
+        // Check if extension is enabled
+        const extensionEnabled = await storage[StorageKey.EXTENSION_ENABLED].getValue();
+        if (!extensionEnabled) {
+          return;
+        }
+
         // Get always remove list from storage
         const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
 

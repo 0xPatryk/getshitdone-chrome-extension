@@ -106,7 +106,7 @@ export const storage = {
       fallback: false,
       init: () => {
         const envValue = import.meta.env.VITE_EXTENSION_ENABLED;
-        if (envValue === "true") {
+        if (envValue?.toLowerCase() === "true") {
           return true;
         }
         return false;
