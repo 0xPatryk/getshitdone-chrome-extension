@@ -73,11 +73,14 @@ const removeElements = (selectors: string[]) => {
  * with the page's styles and scripts.
  *
  * @param initialBlockResult - Optional initial analysis result to apply
+ * @param originalContent - The original page HTML content before blocking
  */
 const ContentScriptUI = ({
   initialBlockResult,
+  originalContent,
 }: {
   initialBlockResult?: AnalysisResult | null;
+  originalContent?: string;
 }) => {
   const timerExpiredRef = useRef(false);
   const timeoutRef = useRef<number | undefined>(undefined);
@@ -329,6 +332,10 @@ export default defineContentScript({
    * @param ctx - The content script execution context
    */
   async main(ctx) {
+    // Store the original page content globally so it can be restored when unblocked
+    let storedOriginalContent: string | null = null;
+    let currentUI: Awaited<ReturnType<typeof createShadowRootUi>> | null = null;
+
     /**
      * Creates and mounts the ShadowRoot UI for blocking
      *
@@ -340,6 +347,9 @@ export default defineContentScript({
      * @returns Promise resolving to the UI instance
      */
     const createBlockUI = async (blockResult: AnalysisResult) => {
+      // Store the original page content before replacing it
+      storedOriginalContent = document.documentElement.outerHTML;
+
       const ui = await createShadowRootUi(ctx, {
         name: "focus-block-ui",
         position: "inline",
@@ -353,16 +363,39 @@ export default defineContentScript({
           const root = ReactDOM.createRoot(app);
           root.render(
             <QueryClientProvider client={queryClient}>
-              <ContentScriptUI initialBlockResult={blockResult} />
+              <ContentScriptUI
+                initialBlockResult={blockResult}
+                originalContent={storedOriginalContent || undefined}
+              />
             </QueryClientProvider>,
           );
           return root;
         },
         onRemove: (root) => {
           root?.unmount();
+          // Restore original content when UI is removed
+          if (storedOriginalContent) {
+            document.documentElement.innerHTML = storedOriginalContent;
+            // Re-run scripts that were in the original content
+            for (const script of Array.from(
+              document.querySelectorAll("script"),
+            )) {
+              const newScript = document.createElement("script");
+              for (const attr of Array.from(script.attributes)) {
+                newScript.setAttribute(attr.name, attr.value);
+              }
+              if (script.innerHTML) {
+                newScript.innerHTML = script.innerHTML;
+              } else if (script.src) {
+                newScript.src = script.src;
+              }
+              script.parentNode?.replaceChild(newScript, script);
+            }
+          }
         },
       });
 
+      currentUI = ui;
       ui.mount();
       return ui;
     };

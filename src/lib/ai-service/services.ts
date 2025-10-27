@@ -64,7 +64,7 @@ Your analysis must be critical and distinguish between:
 1.  **Directly Relevant:** Content that directly helps complete the \`userTask\`.
 2.  **Productivity Tool:** Tools needed for the task (e.g., Google Docs, IDE, code repositories).
 3.  **Unrelated Productivity (Fake Productivity):** Content that is work-related but *not* for the *current \`userTask\`*. (e.g., Task is 'Write Next.js frontend', content is 'Postgres database optimization').
-4.  **Distraction:** Content clearly unrelated to work (e.g., social media, news, entertainment).
+4.  **Distraction:** Content clearly unrelated to work (e.g., social media, news, entertainment, gaming, gambling, streaming videos, sports betting, online casinos).
 5.  **Critical Bypass:** Pages necessary for *access*, regardless of task (e.g., login, CAPTCHA).
 
 ---
@@ -92,7 +92,10 @@ Compare the \`pageContent\` and \`pageURL\` to the *specific* \`userTask\`.
 * **Is it Unrelated Productivity (Fake Productivity)?**
     * If YES: Stop and return \`BLOCK_ALL\` with a reason explaining the mismatch (e.g., "Page is unrelated productivity. Task is 'X', but content is 'Y'.").
 * **Is it a clear Distraction?**
-    * If YES: Stop and return \`BLOCK_ALL\` with the reason "Page is a distraction (e.g., social media, news)."
+    * Look for gaming, gambling, betting, streaming, entertainment, social media, news, or other non-work content.
+    * Check if the URL contains gaming-related keywords (e.g., "game", "casino", "bet", "poker", "slots", "gambling").
+    * Check if the content mentions gaming, gambling, betting, or entertainment.
+    * If YES: Stop and return \`BLOCK_ALL\` with the reason "Page is a distraction (e.g., gaming, gambling, entertainment, social media)."
 
 **Step 4: Analyze Relevant Content for Distractions**
 The page is relevant, but check for distracting elements.
@@ -172,7 +175,22 @@ Your response MUST be a single, valid JSON object. Do not add any text or markdo
     }
     \`\`\`
 
-**Example 4: Unclear Task**
+**Example 4: Gaming Distraction**
+* **Input:**
+    * \`userTask\`: "Complete the quarterly financial report"
+    * \`pageURL\`: "https://gamingnation.true.th/en"
+    * \`alwaysRemoveSelectors\`: "None"
+    * \`pageContent\`: "<html><title>Gaming Nation</title><body><h1>Latest Gaming Promotions</h1><div>Play the best games and win big!</div></body></html>"
+* **Output:**
+    \`\`\`json
+    {
+      "decision": "BLOCK_ALL",
+      "reason": "Page is a distraction (gaming, entertainment). The task is financial reporting, not gaming.",
+      "selectors": []
+    }
+    \`\`\`
+
+**Example 5: Unclear Task**
 * **Input:**
     * \`userTask\`: "Work"
     * \`pageURL\`: "https://www.google.com"
