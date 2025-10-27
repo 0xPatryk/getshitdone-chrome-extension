@@ -429,14 +429,37 @@ ${message}
  * @returns Cleaned text content with scripts, styles, and tags removed
  */
 export const extractMainContent = (content: string): string => {
-  // Remove scripts, styles, and other non-content elements
-  const cleaned = content
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  // Limit content length to avoid token limits
-  return cleaned.substring(0, 10000);
+  return (
+    content
+      // Remove head section (contains meta tags, title, styles, scripts, etc.)
+      .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, "")
+      // Handle malformed head tags - remove any remaining head content up to body tag
+      .replace(/<head\b[^>]*>[\s\S]*?(?=<body)/gi, "")
+      // Remove script tags and their content
+      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+      // Remove style tags and their content
+      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+      // Remove comments
+      .replace(/<!--[\s\S]*?-->/g, "")
+      // Remove CDATA sections
+      .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "")
+      // Remove inline style attributes
+      .replace(/\s+style\s*=\s*(['"])[\s\S]*?\1/gi, "")
+      // Remove common non-content elements (nav, header, footer, aside, etc.)
+      .replace(
+        /<(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)\b[^>]*>[\s\S]*?<\/(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)>/gi,
+        "",
+      )
+      // Remove self-closing non-content elements
+      .replace(
+        /<(?:img|br|hr|input|meta|link|base|col|command|embed|keygen|param|source|track|wbr)\b[^>]*>/gi,
+        " ",
+      )
+      // Remove all remaining HTML tags, preserving the text content
+      .replace(/<[^>]+>/g, " ")
+      // Normalize whitespace (replace multiple spaces, tabs, and newlines with a single space)
+      .replace(/\s+/g, " ")
+      // Trim leading and trailing whitespace
+      .trim()
+  );
 };
