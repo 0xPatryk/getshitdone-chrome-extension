@@ -134,7 +134,8 @@ Before responding, confirm you will:
 1. Analyze only the provided inputs
 2. Focus on detecting fake productivity
 3. Return valid JSON matching the schema
-4. Default to ALLOW when uncertain`;
+4. Apply the decision logic consistently - if content is identified as a distraction or fake productivity, use BLOCK_ALL regardless of uncertainty
+5. Only default to ALLOW when the content genuinely doesn't fit any distraction category and you cannot make a clear determination`;
 
   const prompt = `${alwaysRemoveSection}
 
