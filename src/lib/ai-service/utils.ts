@@ -74,7 +74,7 @@ export const getModel = (provider: AIProvider, apiKey: string) => {
     case "gemini":
       return getGoogleProvider(apiKey)("gemini-2.5-flash-lite");
     case "openai":
-      return getOpenAIProvider(apiKey)("gpt-4o-mini");
+      return getOpenAIProvider(apiKey)("gpt-4.1-nano");
     default:
       throw new Error(`Unsupported provider: ${provider}`);
   }
