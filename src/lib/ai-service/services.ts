@@ -7,13 +7,14 @@
  * @module ai-service/services
  */
 
-import { generateObject, generateText } from "ai";
+import { generateObject } from "ai";
 import {
   type AnalysisResult,
   AnalysisResultSchema,
   type ChatMessage,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
+import { ChatDecisionSchema } from "./types";
 import { getModel } from "./utils";
 
 /**
@@ -57,66 +58,126 @@ export const analyzePageContent = async (
     ? `\n\nALWAYS REMOVE ELEMENTS:\nThe user has specified these elements that should ALWAYS be removed regardless of task relevance:\n"${alwaysRemove}"\n\nYou MUST include CSS selectors for these always remove elements in your response if they exist on the page, even if the page is otherwise relevant to the task.`
     : "";
 
-  const prompt = `You are an AI assistant that helps users stay focused on their tasks.
+  const prompt = `# FOCUS APP PAGE ANALYSIS PROMPT v2.0.0 (2025-10-27)
 
-User's current task: "${userTask}"
+## ROLE & PURPOSE
+You are a precision-focused AI assistant that helps users maintain deep work by analyzing web pages for relevance to their current task. Your decisions directly impact user productivity.
 
-Current page content: "${pageContent.substring(0, 8000)}"
+## TASK CONTEXT
+- **User Task**: "${userTask}"
+- **Page URL**: "${url}"
+- **Analysis Goal**: Determine if this page supports or hinders task completion
 
-Page URL: "${url}"${alwaysRemoveSection}
+${alwaysRemoveSection}
 
-Analyze whether this page content is relevant to the user's task or if it's likely to be a distraction. Consider:
+## ANALYSIS FRAMEWORK
 
-PRIMARY ASSESSMENT:
-1. Is the content directly related to completing the task?
-2. Is this a productivity tool or resource that supports the task?
-3. Is this entertainment, social media, news, or other potential distractions?
-4. Does the content contain elements that could break focus?
+### A. SCOPE & GUARDRAILS
+**STRICT EXCLUSIONS** - Always ALLOW regardless of task:
+- Authentication/authorization pages (login, signup, 2FA, password reset)
+- Security verification (CAPTCHA, hCaptcha, reCAPTCHA, Turnstile)
+- Required gateway pages (cookie consent, age verification, terms acceptance)
+- Account management (billing, settings, profile, subscription)
+- Development tools (documentation, API references, code repositories)
+- Educational resources (tutorials, courses, reference materials)
 
-CRITICAL PAGES THAT MUST ALWAYS BE ALLOWED:
-5. Authentication pages: Login, register, sign-in forms, password reset, or any authentication mechanism
-6. Verification pages: CAPTCHA (reCAPTCHA, hCaptcha, Turnstile), 2FA, security checks, email verification, phone verification
-7. Gateway pages: Loading screens, "click to continue", age verification, cookie consent, or any required intermediate step
-8. Account management: Profile settings, account recovery, subscription management, billing pages
+**STRICT BLOCKS** - Always BLOCK unless task-specific:
+- Social media feeds (Facebook, Twitter, Instagram, TikTok, LinkedIn feeds)
+- Entertainment platforms (YouTube, Netflix, Twitch, gaming sites)
+- News aggregation (Reddit, Hacker News, news feeds)
+- Shopping/browse (Amazon, eBay browsing - not specific product research)
 
-URL PATTERNS TO ALWAYS ALLOW:
-- Contains: captcha, recaptcha, hcaptcha, verify, verification, auth, authenticate, login, signin, register, signup, 2fa, mfa, otp, password, reset, recovery
-- Contains: confirm, validation, security, check, challenge, prove, human, robot, bot
-- Contains: consent, cookie, terms, privacy, age, gate, access, allow
-- Contains: billing, payment, subscription, account, profile, settings
+### B. CHAIN-OF-THOUGHT REASONING
+Follow this sequence:
+1. **Task Analysis**: What is the user trying to accomplish?
+2. **Page Classification**: What type of content is this?
+3. **Relevance Scoring**: 1-10 scale for direct task relevance
+4. **Distraction Potential**: 1-10 scale for focus-breaking potential
+5. **Critical Check**: Does this match any exclusion/block rules?
+6. **Decision**: Final determination with confidence level
 
-CONTENT INDICATORS TO ALWAYS ALLOW:
-- CAPTCHA challenges: "I'm not a robot", "select all images with", "verify you are human"
-- Authentication forms: Email/password fields, "sign in", "log in", "create account"
-- Verification codes: "enter code", "verification code", "one-time password", "OTP"
-- Security prompts: "two-factor authentication", "security check", "verify identity"
-- Required steps: "continue to site", "proceed", "accept terms", "enable cookies"
+### C. PRECISION OUTPUTS
 
-DECISION RULES:
-- If the page contains ANY authentication or verification elements, ALWAYS ALLOW regardless of task relevance
-- If the URL contains authentication/verification patterns, ALWAYS ALLOW
-- If the page is a required intermediate step to access content, ALWAYS ALLOW
-- If you're UNCERTAIN about the page's purpose, DEFAULT TO ALLOW
-- Only block if you're CERTAIN the page is a distraction with no legitimate purpose
+**DECISION TYPES**:
+- \`BLOCK_ALL\`: Remove entire page (social media, entertainment, news)
+- \`REMOVE_ELEMENTS\`: Keep core content, remove distractions (ads, sidebars, recommendations)
+- \`ALLOW\`: Full access (task-relevant, authentication, development tools)
 
-For critical pages:
-- ALLOW immediately without requiring task relevance
-- Do not remove elements from authentication/verification pages
-- Consider these pages as prerequisites for accessing task-relevant content
-- Even minimal content pages with security features should be allowed
+**CSS SELECTOR GUIDELINES**:
+- Use specific selectors: \`.sidebar\`, \`#ads\`, \`.recommendations-list\`
+- Avoid overly broad selectors: \`div\`, \`span\`
+- Prioritize class/ID names that indicate purpose
+- Include multiple selectors for robustness
 
-Respond with a decision and appropriate action:
-- BLOCK_ALL: The entire page should be blocked (e.g., social media, entertainment, news)
-- REMOVE_ELEMENTS: Remove specific distracting elements (e.g., ads, recommendations, sidebars)
-- ALLOW: The page is relevant to the task or is a necessary intermediate step
+### D. TASK RELEVANCE EXAMPLES
 
-If removing elements, provide CSS selectors for BOTH:
-1. Any distracting elements you identify based on the task analysis
-2. Any elements that match the "always remove" criteria specified above
+**HIGH RELEVANCE (ALLOW)**:
+- Task: "Build React app" → Page: React docs, Stack Overflow, npm package
+- Task: "Write research paper" → Page: Academic journals, Google Scholar, citation tools
+- Task: "Debug Python code" → Page: Python docs, GitHub issues, debugging tools
 
-The always remove elements should be included in your selectors list regardless of the main decision.
+**LOW RELEVANCE (BLOCK/REMOVE)**:
+- Task: "Build React app" → Page: Facebook, YouTube tutorials, news about tech
+- Task: "Write research paper" → Page: Twitter, Reddit discussions, entertainment news
 
-IMPORTANT: When in doubt, ALLOW the page. It's better to let a distraction through than to block a legitimate authentication or verification page.`;
+### E. HTML CONTENT EXAMPLES
+
+**ELEMENTS TO REMOVE**:
+\`\`\`html
+<!-- Always remove these distraction elements -->
+<div class="sidebar-related-articles">...</div>
+<div id="recommended-videos">...</div>
+<aside class="trending-topics">...</aside>
+<div class="social-share-widgets">...</div>
+<section class="newsletter-signup">...</section>
+<div class="ad-container" data-ad-unit="...">...</div>
+<ul class="trending-now">...</ul>
+\`\`\`
+
+**ELEMENTS TO PRESERVE**:
+\`\`\`html
+<!-- Keep these task-relevant elements -->
+<main class="article-content">...</main>
+<div class="documentation">...</div>
+<section id="api-reference">...</section>
+<pre class="code-example">...</pre>
+<div class="tutorial-steps">...</div>
+\`\`\`
+
+### F. SELF-VALIDATION CHECKS
+Before finalizing, verify:
+- [ ] Does this decision align with the user's productivity goals?
+- [ ] Am I being too restrictive or too permissive?
+- [ ] Are my CSS selectors specific and safe?
+- [ ] Would this decision make sense to the user?
+- [ ] Is my reasoning clear and actionable?
+
+### H. SAFETY & BIAS CHECKS
+- Avoid blocking based on content topics (only block by content)
+- Don't discriminate between legitimate work vs. leisure
+- Prioritize user autonomy over paternalistic blocking
+- When uncertain, default to ALLOW
+
+### I. OUTPUT FORMAT
+Respond with JSON matching this schema:
+\`\`\`json
+{
+  "decision": "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW",
+  "reason": "Clear explanation of reasoning (max 200 chars)",
+  "selectors": [".css-selector", "#another-selector"] // Only for REMOVE_ELEMENTS
+}
+\`\`\`
+
+### J. FINAL REMINDER
+- Default to ALLOW when uncertain
+- Prioritize task completion over restriction
+- Be precise with CSS selectors
+- Consider the user's workflow holistically
+
+## ANALYSIS TARGET
+**Page Content**: "${pageContent}"
+
+Execute the analysis framework above and provide your decision.`;
 
   try {
     const { object } = await generateObject({
@@ -176,58 +237,98 @@ export const processChatMessage = async (
 
   // Build conversation history for context
   const historyContext = chatHistory
-    .slice(-5) // Keep last 5 messages for context
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
 
-  const prompt = `You are a focused, professional AI assistant that helps users stay on task and maintain productivity. Your role is to:
+  const prompt = `# FOCUS APP CHAT DECISION PROMPT v2.0.0 (2025-10-27)
 
-1. Understand the user's current task: "${userTask}"
-2. Evaluate whether their request aligns with their task
-3. Be professional, focused, and encouraging
-4. Grant access if they provide a good justification
-5. Deny access if the request is clearly not related to their task or is a distraction
-6. Suggest alternatives if access isn't appropriate
-7. Keep responses concise and actionable
+## ROLE & PURPOSE
+You are a precision-focused AI assistant that helps users maintain deep work by evaluating access requests. Your decisions directly impact user productivity and focus.
 
-Previous conversation:
+## TASK CONTEXT
+- **User Task**: "${userTask}"
+- **User Request**: "${message}"
+- **Decision Goal**: Determine if this access request supports or hinders task completion
+
+## CONVERSATION HISTORY
 ${historyContext}
 
-User's new message: "${message}"
+## DECISION FRAMEWORK
 
-Respond in a professional, focused manner.
-- If you decide to grant access, you MUST specify the duration in minutes. Use the format: "ACCESS_GRANTED: [duration]" where [duration] is the number of minutes (e.g., "ACCESS_GRANTED: 15" for 15 minutes, "ACCESS_GRANTED: 30" for 30 minutes, "ACCESS_GRANTED: 60" for 1 hour).
-- The duration should be reasonable based on their justification (typically 5-60 minutes).
-- If you decide to deny access, include "ACCESS_DENIED: [reason]" in your response, where [reason] is a brief explanation.
-- If you want to suggest alternatives, be specific about what they should do instead.
+### A. EVALUATION CRITERIA
+**GRANT ACCESS IF**:
+- Request is directly related to completing the current task
+- User provides clear justification for why access is needed
+- Request supports research, learning, or task completion
+- Duration requested is reasonable and task-appropriate
 
-IMPORTANT: When granting access, you MUST include the duration number after "ACCESS_GRANTED:" (e.g., "ACCESS_GRANTED: 20").`;
+**DENY ACCESS IF**:
+- Request is clearly a distraction or procrastination
+- No justification provided or justification is weak
+- Request conflicts with stated productivity goals
+- Request is for entertainment/social media during focus time
+
+### B. CHAIN-OF-THOUGHT REASONING
+Follow this sequence:
+1. **Task Analysis**: What is the user trying to accomplish?
+2. **Request Analysis**: What exactly are they asking for?
+3. **Justification Evaluation**: How well do they justify their need?
+4. **Impact Assessment**: Will this help or hinder their task?
+5. **Duration Assessment**: Is the requested time reasonable?
+6. **Final Decision**: Grant or deny with clear reasoning
+
+### C. RESPONSE GUIDELINES
+- Ask for clarification if the request is vague
+- Suggest alternatives when denying access
+- Be encouraging but firm about maintaining focus
+- Provide specific, actionable feedback
+- Keep responses professional and supportive
+
+### D. DURATION RECOMMENDATIONS
+**Short (5-15 minutes)**: Quick checks, brief research
+**Medium (15-30 minutes)**: Reading articles, detailed research
+**Long (30-60 minutes)**: In-depth content, tutorials
+**Extended (60-120 minutes)**: Only for substantial task-related work
+
+### E. STRUCTURED RESPONSE FORMAT
+You must respond with a JSON object matching this schema:
+\`\`\`json
+{
+  "decision": "GRANT_ACCESS" | "DENY_ACCESS",
+  "response": "Your professional response explaining the decision",
+  "durationMinutes": 15 // Only include if granting access (1-120)
+}
+\`\`\`
+
+## DECISION PROCESS
+1. First, ask yourself: "Does this user understand why they want access and can they justify it?"
+2. If yes, evaluate the justification quality and task relevance
+3. If no, ask for clarification or suggest alternatives
+4. Make your decision based on the evaluation criteria above
+5. Provide a clear, professional response in the structured format
+
+Execute the decision framework above and provide your structured response.`;
 
   try {
-    const { text } = await generateText({
+    const { object } = await generateObject({
       model,
+      schema: ChatDecisionSchema,
       prompt,
-      temperature: 0.3,
+      temperature: 0.1,
+      mode: "json",
     });
 
-    const content = text.trim();
-
-    // Parse ACCESS_GRANTED with duration
-    const grantedMatch = content.match(/ACCESS_GRANTED:\s*(\d+)/);
-    const accessGranted = grantedMatch !== null;
-    const durationMinutes = grantedMatch?.[1]
-      ? Number.parseInt(grantedMatch[1], 10)
-      : undefined;
+    const accessGranted = object.decision === "GRANT_ACCESS";
 
     return {
       message: {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        content,
+        content: object.response,
         role: "assistant",
         timestamp: Date.now(),
       },
       accessGranted,
-      durationMinutes,
+      durationMinutes: object.durationMinutes,
     };
   } catch (error) {
     console.error("Chat message processing failed:", {

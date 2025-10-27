@@ -380,7 +380,8 @@ export default defineContentScript({
         }
 
         // Check if extension is enabled
-        const extensionEnabled = await storage[StorageKey.EXTENSION_ENABLED].getValue();
+        const extensionEnabled =
+          await storage[StorageKey.EXTENSION_ENABLED].getValue();
         if (!extensionEnabled) {
           return;
         }
@@ -393,6 +394,15 @@ export default defineContentScript({
           url: window.location.href,
           content: document.documentElement.outerHTML,
           alwaysRemove,
+        });
+
+        // Log the analysis response for debugging
+        console.log("Focus App: Page analysis response received", {
+          url: window.location.href,
+          decision: response.decision,
+          reason: response.reason,
+          selectors: response.selectors,
+          timestamp: new Date().toISOString(),
         });
 
         // Only create UI if we need to block the page
