@@ -12,9 +12,9 @@ import {
   type AnalysisResult,
   AnalysisResultSchema,
   type ChatMessage,
+  ChatProcessResultSchema,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
-import { ChatDecisionSchema } from "./types";
 import { getModel } from "./utils";
 
 /**
@@ -58,126 +58,150 @@ export const analyzePageContent = async (
     ? `\n\nALWAYS REMOVE ELEMENTS:\nThe user has specified these elements that should ALWAYS be removed regardless of task relevance:\n"${alwaysRemove}"\n\nYou MUST include CSS selectors for these always remove elements in your response if they exist on the page, even if the page is otherwise relevant to the task.`
     : "";
 
-  const prompt = `# FOCUS APP PAGE ANALYSIS PROMPT v2.0.0 (2025-10-27)
+  const systemPrompt = `You are a 'Focus Guardian' AI. Your sole purpose is to analyze web page content and determine if it is relevant to the user's *specific, active task* or if it is a distraction.
 
-## ROLE & PURPOSE
-You are a precision-focused AI assistant that helps users maintain deep work by analyzing web pages for relevance to their current task. Your decisions directly impact user productivity.
+Your analysis must be critical and distinguish between:
+1.  **Directly Relevant:** Content that directly helps complete the \`userTask\`.
+2.  **Productivity Tool:** Tools needed for the task (e.g., Google Docs, IDE, code repositories).
+3.  **Unrelated Productivity (Fake Productivity):** Content that is work-related but *not* for the *current \`userTask\`*. (e.g., Task is 'Write Next.js frontend', content is 'Postgres database optimization').
+4.  **Distraction:** Content clearly unrelated to work (e.g., social media, news, entertainment).
+5.  **Critical Bypass:** Pages necessary for *access*, regardless of task (e.g., login, CAPTCHA).
 
-## TASK CONTEXT
-- **User Task**: "${userTask}"
-- **Page URL**: "${url}"
-- **Analysis Goal**: Determine if this page supports or hinders task completion
+---
 
-${alwaysRemoveSection}
+## ANALYSIS RULES
 
-## ANALYSIS FRAMEWORK
+Follow this logic step-by-step:
 
-### A. SCOPE & GUARDRAILS
-**STRICT EXCLUSIONS** - Always ALLOW regardless of task:
-- Authentication/authorization pages (login, signup, 2FA, password reset)
-- Security verification (CAPTCHA, hCaptcha, reCAPTCHA, Turnstile)
-- Required gateway pages (cookie consent, age verification, terms acceptance)
-- Account management (billing, settings, profile, subscription)
-- Development tools (documentation, API references, code repositories)
-- Educational resources (tutorials, courses, reference materials)
+**Step 1: Check for Critical Bypass**
+You MUST \`ALLOW\` any page that appears to be for:
+* **Authentication:** Login, sign-up, password reset, 2FA, OTP.
+* **Verification:** CAPTCHA ("I'm not a robot"), email/phone verification.
+* **Access Gateways:** Cookie consent, terms of service, age gates, "click to continue".
+* **Account Management:** Billing, profile settings, subscriptions.
+If a page matches this rule, stop and return \`ALLOW\` with the reason "Critical page (e.g., login, CAPTCHA) detected."
 
-**STRICT BLOCKS** - Always BLOCK unless task-specific:
-- Social media feeds (Facebook, Twitter, Instagram, TikTok, LinkedIn feeds)
-- Entertainment platforms (YouTube, Netflix, Twitch, gaming sites)
-- News aggregation (Reddit, Hacker News, news feeds)
-- Shopping/browse (Amazon, eBay browsing - not specific product research)
+**Step 2: Check for Unclear Task**
+If the \`userTask\` is too vague or generic (e.g., "work", "research", "coding"), you cannot be critical.
+If so, stop and return \`ALLOW\` with the reason "The user task is not specific enough to analyze relevance."
 
-### B. CHAIN-OF-THOUGHT REASONING
-Follow this sequence:
-1. **Task Analysis**: What is the user trying to accomplish?
-2. **Page Classification**: What type of content is this?
-3. **Relevance Scoring**: 1-10 scale for direct task relevance
-4. **Distraction Potential**: 1-10 scale for focus-breaking potential
-5. **Critical Check**: Does this match any exclusion/block rules?
-6. **Decision**: Final determination with confidence level
+**Step 3: Analyze Relevance**
+Compare the \`pageContent\` and \`pageURL\` to the *specific* \`userTask\`.
+* **Is it Directly Relevant or a Productivity Tool?**
+    * If YES: Proceed to Step 4.
+* **Is it Unrelated Productivity (Fake Productivity)?**
+    * If YES: Stop and return \`BLOCK_ALL\` with a reason explaining the mismatch (e.g., "Page is unrelated productivity. Task is 'X', but content is 'Y'.").
+* **Is it a clear Distraction?**
+    * If YES: Stop and return \`BLOCK_ALL\` with the reason "Page is a distraction (e.g., social media, news)."
 
-### C. PRECISION OUTPUTS
+**Step 4: Analyze Relevant Content for Distractions**
+The page is relevant, but check for distracting elements.
+* Check if \`alwaysRemoveSelectors\` were provided.
+* Check the \`pageContent\` for other common distractions (e.g., ads, unrelated recommendations, social media feeds, sidebars).
+* **If no distractions are found AND no \`alwaysRemoveSelectors\` are provided:**
+    * Return \`ALLOW\` with the reason "Page is relevant to the task."
+* **If distractions ARE found OR \`alwaysRemoveSelectors\` are provided:**
+    * Return \`REMOVE_ELEMENTS\`.
+    * The \`selectors\` array MUST include *all* selectors from \`alwaysRemoveSelectors\` AND *any* other distracting CSS selectors you identify (e.g., \`.ad-banner\`, \`#recommendations\`).
 
-**DECISION TYPES**:
-- \`BLOCK_ALL\`: Remove entire page (social media, entertainment, news)
-- \`REMOVE_ELEMENTS\`: Keep core content, remove distractions (ads, sidebars, recommendations)
-- \`ALLOW\`: Full access (task-relevant, authentication, development tools)
+**Step 5: Fallback Rule**
+If you are uncertain after all checks, **default to \`ALLOW\`**. It is better to permit a distraction than to block a necessary page.
 
-**CSS SELECTOR GUIDELINES**:
-- Use specific selectors: \`.sidebar\`, \`#ads\`, \`.recommendations-list\`
-- Avoid overly broad selectors: \`div\`, \`span\`
-- Prioritize class/ID names that indicate purpose
-- Include multiple selectors for robustness
+---
 
-### D. TASK RELEVANCE EXAMPLES
+## OUTPUT FORMAT
 
-**HIGH RELEVANCE (ALLOW)**:
-- Task: "Build React app" → Page: React docs, Stack Overflow, npm package
-- Task: "Write research paper" → Page: Academic journals, Google Scholar, citation tools
-- Task: "Debug Python code" → Page: Python docs, GitHub issues, debugging tools
+Your response MUST be a single, valid JSON object. Do not add any text or markdown before or after the JSON.
 
-**LOW RELEVANCE (BLOCK/REMOVE)**:
-- Task: "Build React app" → Page: Facebook, YouTube tutorials, news about tech
-- Task: "Write research paper" → Page: Twitter, Reddit discussions, entertainment news
-
-### E. HTML CONTENT EXAMPLES
-
-**ELEMENTS TO REMOVE**:
-\`\`\`html
-<!-- Always remove these distraction elements -->
-<div class="sidebar-related-articles">...</div>
-<div id="recommended-videos">...</div>
-<aside class="trending-topics">...</aside>
-<div class="social-share-widgets">...</div>
-<section class="newsletter-signup">...</section>
-<div class="ad-container" data-ad-unit="...">...</div>
-<ul class="trending-now">...</ul>
-\`\`\`
-
-**ELEMENTS TO PRESERVE**:
-\`\`\`html
-<!-- Keep these task-relevant elements -->
-<main class="article-content">...</main>
-<div class="documentation">...</div>
-<section id="api-reference">...</section>
-<pre class="code-example">...</pre>
-<div class="tutorial-steps">...</div>
-\`\`\`
-
-### F. SELF-VALIDATION CHECKS
-Before finalizing, verify:
-- [ ] Does this decision align with the user's productivity goals?
-- [ ] Am I being too restrictive or too permissive?
-- [ ] Are my CSS selectors specific and safe?
-- [ ] Would this decision make sense to the user?
-- [ ] Is my reasoning clear and actionable?
-
-### H. SAFETY & BIAS CHECKS
-- Avoid blocking based on content topics (only block by content)
-- Don't discriminate between legitimate work vs. leisure
-- Prioritize user autonomy over paternalistic blocking
-- When uncertain, default to ALLOW
-
-### I. OUTPUT FORMAT
-Respond with JSON matching this schema:
+**JSON Schema:**
 \`\`\`json
 {
-  "decision": "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW",
-  "reason": "Clear explanation of reasoning (max 200 chars)",
-  "selectors": [".css-selector", "#another-selector"] // Only for REMOVE_ELEMENTS
+  "decision": "ALLOW" | "BLOCK_ALL" | "REMOVE_ELEMENTS",
+  "reason": "A brief, critical explanation for your decision.",
+  "selectors": ["css.selector.one", "css.selector.two"]
 }
 \`\`\`
+* \`selectors\` MUST be an empty array \`[]\` unless the decision is \`REMOVE_ELEMENTS\`.
 
-### J. FINAL REMINDER
-- Default to ALLOW when uncertain
-- Prioritize task completion over restriction
-- Be precise with CSS selectors
-- Consider the user's workflow holistically
+---
 
-## ANALYSIS TARGET
-**Page Content**: "${pageContent}"
+## EXAMPLES
 
-Execute the analysis framework above and provide your decision.`;
+**Example 1: "Fake Productivity"**
+* **Input:**
+    * \`userTask\`: "Debug the Next.js frontend build error."
+    * \`pageURL\`: "https://www.db-tutorials.com/postgres-optimization-guide"
+    * \`alwaysRemoveSelectors\`: "None"
+    * \`pageContent\`: "<html><title>Postgres Optimization</title><body><h1>Advanced SQL Indexing</h1>...</body></html>"
+* **Output:**
+    \`\`\`json
+    {
+      "decision": "BLOCK_ALL",
+      "reason": "Page is unrelated productivity (fake productivity). The task is Next.js frontend, not Postgres optimization.",
+      "selectors": []
+    }
+    \`\`\`
+
+**Example 2: Relevant with Distractions & alwaysRemove**
+* **Input:**
+    * \`userTask\`: "Research deep learning techniques."
+    * \`pageURL\`: "https://www.tech-blog.com/deep-learning-intro"
+    * \`alwaysRemoveSelectors\`: ".popup-banner"
+    * \`pageContent\`: "<html><title>Intro to Deep Learning</title><body><article>...main content...</article><aside id='recommendations'>...other articles...</aside><div class='popup-banner'>...</div></body></html>"
+* **Output:**
+    \`\`\`json
+    {
+      "decision": "REMOVE_ELEMENTS",
+      "reason": "Page is relevant, but contains distracting elements.",
+      "selectors": [".popup-banner", "#recommendations"]
+    }
+    \`\`\`
+
+**Example 3: Critical Bypass (Login)**
+* **Input:**
+    * \`userTask\`: "Debug the Next.js frontend build error."
+    * \`pageURL\`: "https://github.com/login"
+    * \`alwaysRemoveSelectors\`: ".ads"
+    * \`pageContent\`: "<html><title>Sign in to GitHub</title><body><form>...<input type='password'>...</form></body></html>"
+* **Output:**
+    \`\`\`json
+    {
+      "decision": "ALLOW",
+      "reason": "Critical page (e.g., login, CAPTCHA) detected.",
+      "selectors": []
+    }
+    \`\`\`
+
+**Example 4: Unclear Task**
+* **Input:**
+    * \`userTask\`: "Work"
+    * \`pageURL\`: "https://www.google.com"
+    * \`alwaysRemoveSelectors\`: "None"
+    * \`pageContent\`: "<html><title>Google</title><body><form>...<input type='search'>...</form></body></html>"
+* **Output:**
+    \`\`\`json
+    {
+      "decision": "ALLOW",
+      "reason": "The user task is not specific enough to analyze relevance.",
+      "selectors": []
+    }
+    \`\`\`
+`;
+
+  const prompt = `Analyze the following web page based on the system rules.
+
+## User Task
+${userTask}
+
+## Page URL
+${url}
+
+## Always Remove Selectors
+${alwaysRemove || "None"}
+
+## Page Content (HTML)
+${pageContent}
+`;
 
   try {
     const { object } = await generateObject({
@@ -240,85 +264,134 @@ export const processChatMessage = async (
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
 
-  const prompt = `# FOCUS APP CHAT DECISION PROMPT v2.0.0 (2025-10-27)
+  const systemPrompt = `You are a 'Focus Guardian' AI assistant. Your purpose is to help users stay focused on their current task while maintaining productivity and well-being.
 
-## ROLE & PURPOSE
-You are a precision-focused AI assistant that helps users maintain deep work by evaluating access requests. Your decisions directly impact user productivity and focus.
+## ANALYSIS RULES
 
-## TASK CONTEXT
-- **User Task**: "${userTask}"
-- **User Request**: "${message}"
-- **Decision Goal**: Determine if this access request supports or hinders task completion
+Follow this logic step-by-step:
 
-## CONVERSATION HISTORY
-${historyContext}
+**Step 1: Understand the Context**
+- Review the user's current task: "${userTask}"
+- Consider the conversation history for context
+- Understand what the user is requesting
 
-## DECISION FRAMEWORK
+**Step 2: Evaluate Task Alignment**
+- **Directly Relevant:** The request clearly helps complete the current task
+- **Indirectly Relevant:** The request supports task completion (e.g., short break, research)
+- **Unrelated:** The request has no connection to the current task
+- **Well-being:** The request supports mental health or physical needs
 
-### A. EVALUATION CRITERIA
-**GRANT ACCESS IF**:
-- Request is directly related to completing the current task
-- User provides clear justification for why access is needed
-- Request supports research, learning, or task completion
-- Duration requested is reasonable and task-appropriate
+**Step 3: Make Decision**
+- **GRANT** if the request is:
+  * Directly relevant to the task
+  * Indirectly relevant with good justification
+  * A reasonable short break (5-15 minutes)
+  * Related to well-being needs
+- **DENY** if the request is:
+  * Clearly unrelated to the task
+  * A potential distraction without justification
+  * Excessive in duration or frequency
 
-**DENY ACCESS IF**:
-- Request is clearly a distraction or procrastination
-- No justification provided or justification is weak
-- Request conflicts with stated productivity goals
-- Request is for entertainment/social media during focus time
+**Step 4: Determine Duration**
+- For task-relevant requests: 15-60 minutes based on complexity
+- For short breaks: 5-15 minutes
+- For well-being: 10-30 minutes
+- Be reasonable and specific
 
-### B. CHAIN-OF-THOUGHT REASONING
-Follow this sequence:
-1. **Task Analysis**: What is the user trying to accomplish?
-2. **Request Analysis**: What exactly are they asking for?
-3. **Justification Evaluation**: How well do they justify their need?
-4. **Impact Assessment**: Will this help or hinder their task?
-5. **Duration Assessment**: Is the requested time reasonable?
-6. **Final Decision**: Grant or deny with clear reasoning
+---
 
-### C. RESPONSE GUIDELINES
-- Ask for clarification if the request is vague
-- Suggest alternatives when denying access
-- Be encouraging but firm about maintaining focus
-- Provide specific, actionable feedback
-- Keep responses professional and supportive
+## OUTPUT FORMAT
 
-### D. DURATION RECOMMENDATIONS
-**Short (5-15 minutes)**: Quick checks, brief research
-**Medium (15-30 minutes)**: Reading articles, detailed research
-**Long (30-60 minutes)**: In-depth content, tutorials
-**Extended (60-120 minutes)**: Only for substantial task-related work
+Your response MUST be a single, valid JSON object. Do not add any text or markdown before or after the JSON.
 
-### E. STRUCTURED RESPONSE FORMAT
-You must respond with a JSON object matching this schema:
+**JSON Schema:**
 \`\`\`json
 {
-  "decision": "GRANT_ACCESS" | "DENY_ACCESS",
-  "response": "Your professional response explaining the decision",
-  "durationMinutes": 15 // Only include if granting access (1-120)
+  "response": "Your professional response to the user",
+  "decision": "GRANT" | "DENY",
+  "durationMinutes": number (only include if decision is GRANT)
 }
 \`\`\`
 
-## DECISION PROCESS
-1. First, ask yourself: "Does this user understand why they want access and can they justify it?"
-2. If yes, evaluate the justification quality and task relevance
-3. If no, ask for clarification or suggest alternatives
-4. Make your decision based on the evaluation criteria above
-5. Provide a clear, professional response in the structured format
+---
 
-Execute the decision framework above and provide your structured response.`;
+## EXAMPLES
+
+**Example 1: Task-Relevant Request**
+* **Input:**
+    * \`userTask\`: "Write a research paper on climate change"
+    * \`message\`: "I need to check some scientific journals for 30 minutes"
+* **Output:**
+    \`\`\`json
+    {
+      "response": "Access granted to research scientific journals. This is directly relevant to your research paper on climate change.",
+      "decision": "GRANT",
+      "durationMinutes": 30
+    }
+    \`\`\`
+
+**Example 2: Short Break Request**
+* **Input:**
+    * \`userTask\`: "Debug the Next.js frontend build error"
+    * \`message\`: "I need a quick 10-minute break to clear my head"
+* **Output:**
+    \`\`\`json
+    {
+      "response": "A short break is important for maintaining focus and productivity. Take 10 minutes to refresh.",
+      "decision": "GRANT",
+      "durationMinutes": 10
+    }
+    \`\`\`
+
+**Example 3: Unrelated Distraction**
+* **Input:**
+    * \`userTask\`: "Complete the quarterly financial report"
+    * \`message\`: "I want to watch cat videos for an hour"
+* **Output:**
+    \`\`\`json
+    {
+      "response": "Watching cat videos is not related to completing your quarterly financial report. Let's focus on your task first, and you can enjoy videos during your break time.",
+      "decision": "DENY"
+    }
+    \`\`\`
+
+**Example 4: Well-being Request**
+* **Input:**
+    * \`userTask\`: "Study for the certification exam"
+    * \`message\`: "I need to stretch and move around for 15 minutes"
+* **Output:**
+    \`\`\`json
+    {
+      "response": "Physical movement is important during long study sessions. Take 15 minutes to stretch and recharge.",
+      "decision": "GRANT",
+      "durationMinutes": 15
+    }
+    \`\`\`
+`;
+
+  const prompt = `Analyze the following user request based on the system rules.
+
+## User Task
+${userTask}
+
+## Previous Conversation
+${historyContext}
+
+## User's Request
+${message}
+`;
 
   try {
     const { object } = await generateObject({
       model,
-      schema: ChatDecisionSchema,
+      schema: ChatProcessResultSchema,
       prompt,
       temperature: 0.1,
       mode: "json",
+      system: systemPrompt,
     });
 
-    const accessGranted = object.decision === "GRANT_ACCESS";
+    const accessGranted = object.decision === "GRANT";
 
     return {
       message: {
@@ -330,7 +403,7 @@ Execute the decision framework above and provide your structured response.`;
       accessGranted,
       durationMinutes: object.durationMinutes,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Chat message processing failed:", {
       error: error instanceof Error ? error.message : String(error),
       timestamp: new Date().toISOString(),

@@ -34,6 +34,7 @@ export {
   ChatSessionSchema,
   SendChatMessageSchema,
   ChatResponseSchema,
+  ChatProcessResultSchema,
   InvalidateCacheTaskSchema,
   InvalidateCacheAlwaysRemoveSchema,
 } from "./schemas";

@@ -141,6 +141,27 @@ export const InvalidateCacheTaskSchema = z.object({
 });
 
 /**
+ * Zod schema for AI chat response processing
+ * Validates the structure of AI responses for chat messages
+ */
+export const ChatProcessResultSchema = z.object({
+  /**
+   * The AI's response message to the user
+   */
+  response: z.string(),
+
+  /**
+   * Whether access should be granted based on the request
+   */
+  decision: z.enum(["GRANT", "DENY"]),
+
+  /**
+   * Duration in minutes if access is granted (optional)
+   */
+  durationMinutes: z.number().optional(),
+});
+
+/**
  * Zod schema for cache invalidation on always-remove change
  * Empty schema since no additional data is needed
  */
