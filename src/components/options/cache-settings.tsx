@@ -103,7 +103,9 @@ export const CacheSettings = () => {
           <h4 className="font-medium">Cache Information</h4>
           <div className="text-sm text-muted-foreground space-y-1">
             <p>• All decisions are cached for 1 week by default</p>
-            <p>• Chat access grants use custom duration based on user selection</p>
+            <p>
+              • Chat access grants use custom duration based on user selection
+            </p>
             <p>• Cache is automatically cleaned every hour</p>
             <p>
               • Cache is invalidated when task or alwaysRemove settings change

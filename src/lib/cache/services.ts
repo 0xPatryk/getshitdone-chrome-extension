@@ -66,17 +66,17 @@ export const setCachedDecision = async (
     string,
     AnalysisResultCache
   >;
-  
+
   const now = Date.now();
   const ttl = customTTL || CACHE_TTL.DEFAULT;
-  
+
   const entry: AnalysisResultCache = {
     decision,
     reason,
     selectors: selectors || undefined,
     expiresAt: now + ttl,
   };
-  
+
   await storage[StorageKey.DECISION_CACHE].setValue({
     ...cache,
     [cacheKey]: entry,

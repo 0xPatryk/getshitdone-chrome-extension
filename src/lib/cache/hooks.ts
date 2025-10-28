@@ -13,12 +13,9 @@
  * @module cache.hooks
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
-import {
-  getCachedDecision,
-  setCachedDecision
-} from "~/lib/cache/services";
+import { getCachedDecision, setCachedDecision } from "~/lib/cache/services";
 import { sendMessage } from "~/lib/messaging";
 import { Message } from "~/lib/messaging/types";
 
@@ -112,18 +109,17 @@ export const useCacheInvalidation = () => {
     });
   }, [queryClient]);
 
-  const invalidateCacheForUrl = useCallback((
-    url: string,
-    task: string,
-    alwaysRemove: string | null,
-  ) => {
-    queryClient.invalidateQueries({
-      queryKey: ["cache", url, task, alwaysRemove],
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["analysis", url, task, alwaysRemove],
-    });
-  }, [queryClient]);
+  const invalidateCacheForUrl = useCallback(
+    (url: string, task: string, alwaysRemove: string | null) => {
+      queryClient.invalidateQueries({
+        queryKey: ["cache", url, task, alwaysRemove],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["analysis", url, task, alwaysRemove],
+      });
+    },
+    [queryClient],
+  );
 
   return {
     invalidateCache,

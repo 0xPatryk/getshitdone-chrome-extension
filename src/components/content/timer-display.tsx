@@ -80,19 +80,19 @@ export const TimerDisplay = ({
   };
 
   return (
-    <div className="flex items-center gap-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+    <div className="flex items-center gap-4 bg-primary/5 border border-primary/20 rounded-lg p-4">
       <div className="flex-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+          <span className="text-sm font-medium text-primary">
             Time Remaining
           </span>
-          <span className="text-2xl font-bold text-blue-600 dark:text-blue-400 font-mono">
+          <span className="text-2xl font-bold text-primary font-mono">
             {formatTime(timeRemaining)}
           </span>
         </div>
-        <div className="w-full bg-blue-100 dark:bg-blue-900/40 rounded-full h-2">
+        <div className="w-full bg-primary/10 rounded-full h-2">
           <div
-            className="bg-blue-500 dark:bg-blue-400 h-2 rounded-full transition-all duration-1000"
+            className="bg-primary h-2 rounded-full transition-all duration-1000"
             style={{ width: `${percentageRemaining()}%` }}
           />
         </div>

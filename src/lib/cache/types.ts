@@ -30,10 +30,10 @@ export interface AnalysisResultCache extends AnalysisResult {
 export interface CacheKeyData {
   /** The original URL that was cached */
   url: string;
-  
+
   /** The current user task */
   task: string;
-  
+
   /** The always-remove configuration */
   alwaysRemove: string | null;
 }
@@ -45,7 +45,7 @@ export interface CacheKeyData {
 export const CACHE_TTL = {
   /** Default TTL for cache entries (1 week) */
   DEFAULT: 7 * 24 * 60 * 60 * 1000, // 1 week
-  
+
   /** Interval for automatic cache cleanup (1 hour) */
   CLEANUP_INTERVAL: 60 * 60 * 1000, // 1 hour
 } as const;

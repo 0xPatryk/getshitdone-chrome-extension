@@ -47,12 +47,14 @@ const extractMainContent = (content: string): string => {
   if (cleaned.length <= 10000) {
     return cleaned;
   }
-  
+
   // If content is too long, truncate at the last complete word before the limit
   const truncated = cleaned.substring(0, 10000);
   const lastSpaceIndex = truncated.lastIndexOf(" ");
-  
-  return lastSpaceIndex > 0 ? truncated.substring(0, lastSpaceIndex) : truncated;
+
+  return lastSpaceIndex > 0
+    ? truncated.substring(0, lastSpaceIndex)
+    : truncated;
 };
 
 describe("AI Service - extractMainContent", () => {

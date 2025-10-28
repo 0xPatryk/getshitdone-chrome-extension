@@ -66,15 +66,15 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2",
           isUser
-            ? "bg-blue-500 text-white"
-            : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100",
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground",
         )}
       >
         <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         <p
           className={cn(
             "text-xs mt-1",
-            isUser ? "text-blue-100" : "text-gray-500 dark:text-gray-400",
+            isUser ? "text-primary-foreground/70" : "text-muted-foreground/70",
           )}
         >
           {formatTime(message.timestamp)}

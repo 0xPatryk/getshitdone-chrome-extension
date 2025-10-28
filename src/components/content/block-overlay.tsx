@@ -27,8 +27,8 @@ interface BlockOverlayProps {
 
 /**
  * Block overlay component that displays when a page is identified as a distraction.
- * Shows a blocking screen with the reason, provides a chat interface to request
- * access, optionally displays a countdown timer for temporary access, and includes
+ * Shows a minimal blocking screen with the AI assistant as the primary focus,
+ * optionally displays a countdown timer for temporary access, and includes
  * navigation controls to go back to the previous page.
  *
  * @example
@@ -58,25 +58,29 @@ export const BlockOverlay = ({
   onTimerExpire,
 }: BlockOverlayProps) => {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              🚫 Access Blocked
+        <div className="w-full max-w-2xl mx-auto space-y-6">
+          {/* Header with minimal blocking message */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4">
+              <span className="text-2xl">🤖</span>
+            </div>
+            <h1 className="text-2xl font-semibold text-foreground">
+              Access Restricted
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              This page has been identified as a distraction from your current
-              task.
+            <p className="text-muted-foreground">
+              Your AI assistant has blocked this page to help you stay focused.
             </p>
           </div>
 
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-            <p className="text-lg font-medium text-red-800 dark:text-red-200">
-              Reason: {reason}
-            </p>
+          {/* Reason display with subtle styling */}
+          <div className="bg-muted/50 border border-border rounded-lg p-4">
+            <p className="text-sm text-muted-foreground mb-1">AI Analysis:</p>
+            <p className="text-foreground">{reason}</p>
           </div>
 
+          {/* Timer display if temporary access is granted */}
           {accessExpiresAt && durationMinutes && onTimerExpire && (
             <TimerDisplay
               expiresAt={accessExpiresAt}
@@ -85,10 +89,17 @@ export const BlockOverlay = ({
             />
           )}
 
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 min-h-[400px]">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Chat with Assistant
-            </h2>
+          {/* Chat interface as the main interaction point */}
+          <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
+            <div className="mb-3">
+              <h2 className="text-lg font-medium text-foreground">
+                Explain why you need access
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Your AI assistant will evaluate your request and decide whether
+                to grant access.
+              </p>
+            </div>
             <ChatInterface
               initialMessage="I need access to this page. Can you help me understand why it's blocked?"
               onUnblock={onUnblock}
@@ -100,12 +111,13 @@ export const BlockOverlay = ({
         </div>
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto flex gap-4">
+      {/* Footer with navigation */}
+      <div className="border-t border-border p-4 bg-card/50">
+        <div className="max-w-2xl mx-auto">
           <Button
-            variant="outline"
+            variant="ghost"
             onClick={() => window.history.back()}
-            className="flex-1"
+            className="w-full"
           >
             Go Back
           </Button>

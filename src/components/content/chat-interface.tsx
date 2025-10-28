@@ -1,11 +1,11 @@
-import { useMutation } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMutation } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useAccessState, useChatMessages } from "~/lib/chat";
 import { useAutoScroll } from "~/lib/hooks";
-import { Message, sendMessage, type ChatResponse } from "~/lib/messaging";
+import { type ChatResponse, Message, sendMessage } from "~/lib/messaging";
 import { ChatAccessStatus } from "./chat-access-status";
 import { ChatLoadingIndicator } from "./chat-loading-indicator";
 import { ChatMessage } from "./chat-message";
@@ -62,14 +62,24 @@ export const ChatInterface = ({
     sessionId,
     onInitialized: (sid, msg) => {
       // Store this for later use in mutation
-      return sendMessage(Message.SEND_CHAT_MESSAGE, { sessionId: sid, message: msg });
+      return sendMessage(Message.SEND_CHAT_MESSAGE, {
+        sessionId: sid,
+        message: msg,
+      });
     },
   });
 
   // Chat mutation for sending messages to AI
-  const chatMutation = useMutation<ChatResponse, Error, { sessionId: string; message: string }>({
+  const chatMutation = useMutation<
+    ChatResponse,
+    Error,
+    { sessionId: string; message: string }
+  >({
     mutationFn: async ({ sessionId, message }) => {
-      const response = await sendMessage(Message.SEND_CHAT_MESSAGE, { sessionId, message });
+      const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
+        sessionId,
+        message,
+      });
       return response;
     },
     onSuccess: (response) => {
@@ -92,7 +102,8 @@ export const ChatInterface = ({
     },
     onError: (error) => {
       // Add specific error message based on the error type
-      let errorMessageContent = "Sorry, I'm having trouble responding right now. Please try again.";
+      let errorMessageContent =
+        "Sorry, I'm having trouble responding right now. Please try again.";
 
       if (error instanceof Error) {
         errorMessageContent = error.message;
@@ -130,7 +141,7 @@ export const ChatInterface = ({
     const message = inputMessage.trim();
     setInputMessage("");
     const userMessage = addUserMessage(message);
-    
+
     // Use the mutation to send the message
     await chatMutation.mutateAsync({ sessionId, message });
   };
@@ -145,9 +156,9 @@ export const ChatInterface = ({
   const isInputDisabled = chatMutation.isPending || accessState.isGranted;
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
-        <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-3">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 pr-3">
+        <div className="space-y-3">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
@@ -169,7 +180,7 @@ export const ChatInterface = ({
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Type your message..."
+          placeholder="Explain why you need access..."
           disabled={isInputDisabled}
           className="flex-1"
         />

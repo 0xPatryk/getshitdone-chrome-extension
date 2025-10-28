@@ -52,15 +52,15 @@ export const ChatAccessStatus = ({
     <div
       className={cn(
         "flex justify-center",
-        isGranted ? "text-green-600" : "text-red-600",
+        isGranted ? "text-foreground" : "text-foreground",
       )}
     >
       <div
         className={cn(
-          "rounded-lg px-4 py-2 text-center",
+          "rounded-lg px-4 py-2 text-center border",
           isGranted
-            ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-            : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800",
+            ? "bg-primary/10 border-primary/30 text-primary"
+            : "bg-destructive/10 border-destructive/30 text-destructive",
         )}
       >
         <p className="text-sm font-medium">{message}</p>

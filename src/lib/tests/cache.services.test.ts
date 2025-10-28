@@ -236,7 +236,10 @@ describe("Cache Services", () => {
       const cache = { "other-key": mockCacheEntry };
 
       // Simulate removal logic from removeCachedDecision
-      const { [cacheKey]: _, ...remainingCache } = cache as Record<string, unknown>;
+      const { [cacheKey]: _, ...remainingCache } = cache as Record<
+        string,
+        unknown
+      >;
 
       expect(remainingCache).toEqual(cache);
     });
@@ -246,7 +249,10 @@ describe("Cache Services", () => {
       const cache: Record<string, AnalysisResultCache> = {};
 
       // Simulate removal logic from removeCachedDecision
-      const { [cacheKey]: _, ...remainingCache } = cache as Record<string, unknown>;
+      const { [cacheKey]: _, ...remainingCache } = cache as Record<
+        string,
+        unknown
+      >;
 
       expect(remainingCache).toEqual({});
     });

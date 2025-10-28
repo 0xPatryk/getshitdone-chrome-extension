@@ -42,9 +42,9 @@ export const analyzePageContent = async (
     ? `\nALWAYS REMOVE: "${alwaysRemove}" (include in selectors if present)`
     : "";
 
-  const systemPrompt = `You are a strict Focus Assistant. Determine if a page is DIRECTLY relevant to the user's specific task.
+  const systemPrompt = `You are a strict Focus Assistant. Determine if a page is DIRECTLY relevant to the user's specific task or netural pages.
 
-INSTANT ALLOW (skip analysis):
+INSTANT ALLOW (skip analysis on this kind of pages):
 - Login/auth/CAPTCHA/verification pages or important pages that are netural
 - Billing/account/security/consent pages
 
@@ -95,7 +95,7 @@ ${pageContent}
       schema: AnalysisResultSchema,
       prompt,
       system: systemPrompt,
-      temperature: 0.1,
+      temperature: 0.3,
       mode: "json",
     });
 
@@ -186,7 +186,7 @@ Critically evaluate if this request is necessary for the SPECIFIC task or a rati
       model,
       schema: ChatProcessResultSchema,
       prompt,
-      temperature: 0.1,
+      temperature: 0.7,
       mode: "json",
       system: systemPrompt,
     });

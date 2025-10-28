@@ -182,7 +182,6 @@ export type InvalidateCacheTask = {
  */
 export type InvalidateCacheAlwaysRemove = Record<string, never>;
 
-
 /**
  * Interface defining the message types and their data structures
  * for type-safe extension messaging
@@ -231,5 +230,4 @@ export interface Messages {
   [Message.INVALIDATE_CACHE_ALWAYS_REMOVE]: (
     data: InvalidateCacheAlwaysRemove,
   ) => void;
-
 }
