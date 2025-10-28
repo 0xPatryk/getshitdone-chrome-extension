@@ -187,37 +187,7 @@ export const useChatMutation = ({
         return response;
       } catch (error) {
         // Handle different types of errors with specific messages
-        if (error instanceof Error) {
-          // Check for authentication errors
-          if (
-            error.message.includes("API key") ||
-            error.message.includes("401")
-          ) {
-            throw new Error(
-              "Authentication failed. Please check your API key in the extension settings.",
-            );
-          }
-          // Check for network errors
-          if (
-            error.message.includes("fetch") ||
-            error.message.includes("network")
-          ) {
-            throw new Error(
-              "Network error. Please check your internet connection and try again.",
-            );
-          }
-          // Check for rate limiting
-          if (
-            error.message.includes("rate limit") ||
-            error.message.includes("429")
-          ) {
-            throw new Error(
-              "Rate limit exceeded. Please wait a moment and try again.",
-            );
-          }
-          // Re-throw the original error for other cases
-          throw error;
-        }
+
         // Handle non-Error objects
         throw new Error("An unexpected error occurred. Please try again.");
       }
