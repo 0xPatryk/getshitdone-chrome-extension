@@ -6,6 +6,7 @@
  */
 
 import { Button } from "@/components/ui/button";
+import { generateAiAvatar } from "~/lib/avatar";
 import { ChatInterface } from "./chat-interface";
 import { TimerDisplay } from "./timer-display";
 
@@ -63,8 +64,12 @@ export const BlockOverlay = ({
         <div className="w-full max-w-2xl mx-auto space-y-6">
           {/* Header with minimal blocking message */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4">
-              <span className="text-2xl">🤖</span>
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4 overflow-hidden">
+              <img
+                src={generateAiAvatar()}
+                alt="AI Assistant"
+                className="w-full h-full object-cover"
+              />
             </div>
             <h1 className="text-2xl font-semibold text-foreground">
               Access Restricted

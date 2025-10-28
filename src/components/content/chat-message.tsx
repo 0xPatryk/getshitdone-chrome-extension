@@ -3,6 +3,7 @@
  * Renders a single chat message with appropriate styling based on role.
  */
 
+import { generateAiAvatar, generateUserAvatar } from "~/lib/avatar";
 import type { ChatMessage as ChatMessageType } from "~/lib/messaging";
 import { cn } from "~/lib/utils";
 
@@ -59,9 +60,19 @@ const formatTime = (timestamp: number) => {
  */
 export const ChatMessage = ({ message }: ChatMessageProps) => {
   const isUser = message.role === "user";
+  const avatarSrc = isUser ? generateUserAvatar() : generateAiAvatar();
 
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
+      {!isUser && (
+        <div className="flex-shrink-0">
+          <img
+            src={avatarSrc}
+            alt="AI Assistant"
+            className="w-8 h-8 rounded-full"
+          />
+        </div>
+      )}
       <div
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2",
@@ -80,6 +91,11 @@ export const ChatMessage = ({ message }: ChatMessageProps) => {
           {formatTime(message.timestamp)}
         </p>
       </div>
+      {isUser && (
+        <div className="flex-shrink-0">
+          <img src={avatarSrc} alt="User" className="w-8 h-8 rounded-full" />
+        </div>
+      )}
     </div>
   );
 };
