@@ -14,17 +14,17 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
 import {
+  type AccessGrant,
   getActiveAccessGrant,
   removeAccessGrant,
   setAccessGrant,
 } from "~/lib/grants";
 import {
   type AnalysisResult,
-  type ChatResponse,
   Message,
   onMessage,
   sendMessage,
@@ -82,52 +82,27 @@ const ContentScriptUI = ({
   initialBlockResult?: AnalysisResult | null;
   originalContent?: string;
 }) => {
-  const timerExpiredRef = useRef(false);
-  const timeoutRef = useRef<number | undefined>(undefined);
   const [blockState, setBlockState] = useState<{
     blockResult: AnalysisResult | null;
     isBlocked: boolean;
-    accessExpiresAt?: number;
-    durationMinutes?: number;
   }>({
     blockResult: initialBlockResult || null,
     isBlocked: initialBlockResult?.decision === "BLOCK_ALL" || false,
-    accessExpiresAt: undefined,
-    durationMinutes: undefined,
   });
+
+  const [activeGrant, setActiveGrant] = useState<AccessGrant | null>(null);
 
   useEffect(() => {
     // Check for active access grant on mount
-    const checkActiveGrant = async () => {
-      const activeGrant = await getActiveAccessGrant(window.location.href);
-      if (activeGrant) {
-        setBlockState((prev) => ({
-          ...prev,
-          isBlocked: false,
-          accessExpiresAt: activeGrant.expiresAt,
-          durationMinutes: activeGrant.durationMinutes,
-        }));
-      }
-    };
-    checkActiveGrant();
+    getActiveAccessGrant(window.location.href).then(setActiveGrant);
 
     // Listen for block results from background script
     const blockResultListener = onMessage(Message.BLOCK_RESULT, (message) => {
       handleBlockResult(message.data);
     });
 
-    // Listen for chat responses from background script
-    const chatResponseListener = onMessage(Message.CHAT_RESPONSE, (message) => {
-      handleChatResponse(message.data);
-    });
-
     return () => {
       blockResultListener();
-      chatResponseListener();
-      // Clear timeout on unmount
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
     };
   }, []);
 
@@ -142,29 +117,24 @@ const ContentScriptUI = ({
    * @param result - The analysis result containing the decision
    */
   const handleBlockResult = (result: AnalysisResult) => {
-    setBlockState((prev) => ({ ...prev, blockResult: result }));
+    setBlockState({
+      blockResult: result,
+      isBlocked: result.decision === "BLOCK_ALL",
+    });
 
-    switch (result.decision) {
-      case "BLOCK_ALL":
-        setBlockState((prev) => ({ ...prev, isBlocked: true }));
-        break;
-      case "REMOVE_ELEMENTS":
-        removeElements(result.selectors || []);
-        break;
-      case "ALLOW":
-        // Even if the page is allowed, we still need to remove any always-remove elements
-        if (result.selectors && result.selectors.length > 0) {
-          removeElements(result.selectors);
-        }
-        break;
+    // Handle element removal for non-blocking decisions
+    if (result.decision === "REMOVE_ELEMENTS" && result.selectors) {
+      removeElements(result.selectors);
+    } else if (result.decision === "ALLOW" && result.selectors) {
+      removeElements(result.selectors);
     }
   };
 
   /**
    * Handles temporary unblocking of the current page
    *
-   * Creates an access grant for the specified duration and sets up
-   * a timer to automatically re-block the page when access expires.
+   * Creates an access grant for the specified duration.
+   * Timer management is handled by the TimerDisplay component.
    *
    * @param durationMinutes - Number of minutes to grant access
    */
@@ -180,80 +150,38 @@ const ContentScriptUI = ({
       durationMinutes,
     });
 
-    setBlockState((prev) => ({
-      ...prev,
-      isBlocked: false,
-      blockResult: null,
-      accessExpiresAt: expiresAt,
+    // Update local grant state for timer display
+    setActiveGrant({
+      url: window.location.href,
+      expiresAt,
+      grantedAt: now,
       durationMinutes,
-    }));
+    });
 
-    // Reset the expired flag
-    timerExpiredRef.current = false;
-
-    // Clear any existing timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-
-    // Set a timeout to re-block when timer expires (backup mechanism)
-    timeoutRef.current = window.setTimeout(
-      () => {
-        handleTimerExpire();
-      },
-      durationMinutes * 60 * 1000,
-    );
+    // Hide overlay
+    setBlockState((prev) => ({ ...prev, isBlocked: false }));
   }, []);
 
   /**
    * Handles the expiration of temporary access
    *
    * Called when the access timer expires to re-block the page
-   * and clean up the access grant. Includes protection against
-   * multiple simultaneous calls.
+   * and clean up the access grant.
    */
   const handleTimerExpire = useCallback(async () => {
-    // Prevent multiple calls
-    if (timerExpiredRef.current) {
-      return;
-    }
-    timerExpiredRef.current = true;
-
-    // Clear timeout
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
-
     // Remove access grant from storage
     await removeAccessGrant(window.location.href);
+    setActiveGrant(null);
 
-    // Re-analyze the page when timer expires
-    setBlockState((prev) => ({
-      ...prev,
-      isBlocked: true,
-      accessExpiresAt: undefined,
-      durationMinutes: undefined,
+    // Re-block the page
+    setBlockState({
       blockResult: {
         decision: "BLOCK_ALL",
         reason:
           "Your temporary access has expired. Request access again if needed.",
       },
-    }));
-  }, []);
-
-  /**
-   * Handles chat responses from the background script
-   *
-   * Dispatches a custom event that the ChatInterface component
-   * can listen for to display the AI response.
-   *
-   * @param response - The chat response containing the AI message
-   */
-  const handleChatResponse = useCallback((response: ChatResponse) => {
-    // This will be handled by the ChatInterface component
-    // We'll dispatch a custom event that the ChatInterface can listen for
-    window.dispatchEvent(new CustomEvent("chatResponse", { detail: response }));
+      isBlocked: true,
+    });
   }, []);
 
   /**
@@ -310,8 +238,8 @@ const ContentScriptUI = ({
     <BlockOverlay
       reason={blockState.blockResult.reason}
       onUnblock={handleUnblock}
-      accessExpiresAt={blockState.accessExpiresAt}
-      durationMinutes={blockState.durationMinutes}
+      accessExpiresAt={activeGrant?.expiresAt}
+      durationMinutes={activeGrant?.durationMinutes}
       onTimerExpire={handleTimerExpire}
     />
   );
