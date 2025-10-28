@@ -17,10 +17,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
-import {
-  usePageAnalysis,
-  useChatAccess,
-} from "~/lib/cache";
+import { useChatAccess, usePageAnalysis } from "~/lib/cache";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 import { createShadowRootUi, defineContentScript } from "#imports";
@@ -72,18 +69,16 @@ const ContentScriptUI = ({
   url,
   task,
   alwaysRemove,
+  onShouldBlock,
 }: {
   url: string;
   task: string;
   alwaysRemove: string | null;
+  onShouldBlock?: (reason: string) => void;
 }) => {
   // Query for page analysis (background handles caching)
-  const { data: analysisResult, isLoading: isAnalysisLoading } = usePageAnalysis(
-    url,
-    task,
-    alwaysRemove,
-    true // Always enabled since background handles caching
-  );
+  const { data: analysisResult, isLoading: isAnalysisLoading } =
+    usePageAnalysis(url, task, alwaysRemove, true);
 
   // Mutation for overwriting cache with chat access
   const chatAccessMutation = useChatAccess(url, task, alwaysRemove);
@@ -105,38 +100,49 @@ const ContentScriptUI = ({
     switch (decision.decision) {
       case "BLOCK_ALL":
         console.log("ContentScript: Page should be blocked - showing overlay");
+        if (onShouldBlock) {
+          onShouldBlock(decision.reason);
+        }
         // Block overlay will be rendered below
         break;
       case "REMOVE_ELEMENTS":
-        console.log("ContentScript: Removing elements with selectors:", decision.selectors);
         // Remove elements based on selectors
         if (decision.selectors) {
           removeElements(decision.selectors);
         }
         break;
       case "ALLOW":
-        console.log("ContentScript: Page allowed - removing always-remove elements if any");
+        console.log(
+          "ContentScript: Page allowed - removing always-remove elements if any",
+        );
         // Remove always-remove elements if any
         if (alwaysRemove) {
-          const selectors = alwaysRemove.split(",").map(s => s.trim()).filter(Boolean);
+          const selectors = alwaysRemove
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
           if (selectors.length > 0) {
-            console.log("ContentScript: Removing always-remove elements:", selectors);
             removeElements(selectors);
           }
         }
         break;
     }
-  }, [analysisResult, alwaysRemove]);
+  }, [analysisResult, alwaysRemove, onShouldBlock]);
 
   // Handle chat access grant
-  const handleUnblock = useCallback(async (durationMinutes: number) => {
-    console.log("ContentScript: Chat access requested for", durationMinutes, "minutes");
-    chatAccessMutation.mutate(durationMinutes);
-  }, [chatAccessMutation]);
+  const handleUnblock = useCallback(
+    async (durationMinutes: number) => {
+      chatAccessMutation.mutate(durationMinutes);
+    },
+    [chatAccessMutation],
+  );
 
   // Don't render anything if still loading, no analysis result, or not blocking
-  if (isAnalysisLoading || !analysisResult || analysisResult.decision !== "BLOCK_ALL") {
-    console.log("ContentScript: Not rendering UI - loading:", isAnalysisLoading, "no result:", !analysisResult, "decision:", analysisResult?.decision);
+  if (
+    isAnalysisLoading ||
+    !analysisResult ||
+    analysisResult.decision !== "BLOCK_ALL"
+  ) {
     return null;
   }
 
@@ -144,13 +150,9 @@ const ContentScriptUI = ({
   const reason = analysisResult.reason;
 
   console.log("ContentScript: Rendering BlockOverlay with reason:", reason);
+  console.log("ContentScript: About to render BlockOverlay component");
 
-  return (
-    <BlockOverlay
-      reason={reason}
-      onUnblock={handleUnblock}
-    />
-  );
+  return <BlockOverlay reason={reason} onUnblock={handleUnblock} />;
 };
 
 export default defineContentScript({
@@ -177,15 +179,30 @@ export default defineContentScript({
      * @param alwaysRemove - The always-remove configuration
      * @returns Promise resolving to the UI instance
      */
-    const createBlockUI = async (currentTask: string, alwaysRemove: string | null) => {
+    const createBlockUI = async (
+      currentTask: string,
+      alwaysRemove: string | null,
+    ) => {
+      console.log(
+        "ContentScript: Creating ShadowRoot UI with task:",
+        currentTask,
+      );
+
       const ui = await createShadowRootUi(ctx, {
         name: "focus-block-ui",
-        position: "inline",
+        position: "overlay",
         anchor: "body",
-        append: "replace",
+        append: "last",
+        inheritStyles: true,
         onMount: (container) => {
           const app = document.createElement("div");
           app.className = "w-full h-full";
+          app.style.position = "fixed";
+          app.style.top = "0";
+          app.style.left = "0";
+          app.style.right = "0";
+          app.style.bottom = "0";
+          app.style.zIndex = "9999";
           container.append(app);
 
           const root = ReactDOM.createRoot(app);
@@ -201,12 +218,14 @@ export default defineContentScript({
           return root;
         },
         onRemove: (root) => {
+          console.log("ContentScript: ShadowRoot UI being removed");
           root?.unmount();
         },
       });
 
       currentUI = ui;
       ui.mount();
+      console.log("ContentScript: ShadowRoot UI mounted successfully");
       return ui;
     };
 
@@ -248,12 +267,31 @@ export default defineContentScript({
      */
     const setupUI = async () => {
       // Get current configuration
-      const currentTask = await storage[StorageKey.CURRENT_TASK].getValue() || "";
+      const currentTask =
+        (await storage[StorageKey.CURRENT_TASK].getValue()) || "";
       const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
 
-      // Create UI if needed
       if (await shouldCreateUI()) {
-        await createBlockUI(currentTask, alwaysRemove);
+        // Create a temporary div to mount ContentScriptUI component
+        // This component will handle the analysis and only create overlay if needed
+        const tempContainer = document.createElement("div");
+        tempContainer.style.display = "none";
+        document.body.appendChild(tempContainer);
+
+        const tempRoot = ReactDOM.createRoot(tempContainer);
+        tempRoot.render(
+          <QueryClientProvider client={queryClient}>
+            <ContentScriptUI
+              url={window.location.href}
+              task={currentTask}
+              alwaysRemove={alwaysRemove}
+              onShouldBlock={async (reason) => {
+                // Create the actual blocking UI
+                await createBlockUI(currentTask, alwaysRemove);
+              }}
+            />
+          </QueryClientProvider>,
+        );
       }
     };
 

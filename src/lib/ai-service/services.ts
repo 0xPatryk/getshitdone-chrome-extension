@@ -80,11 +80,11 @@ ALLOW immediately for:
 
 **IMPORTANT**: If you identify a CAPTCHA, verification, or login page, you MUST return ALLOW immediately without further analysis. These pages are essential for accessing any website.
 
-### Step 2: Task Clarity Check
-ALLOW immediately if user task is vague (e.g., "work", "research", "coding") without specific details.
+### Step 2: Task Clarity and Context Check
+- If user task is vague (e.g., "work", "research", "coding") without specific details, analyze the page content more strictly
 
-### Step 3: Relevance Analysis
-Compare page content to the SPECIFIC user task:
+### Step 3: General Relevance Analysis
+For non-coding tasks, compare page content to the SPECIFIC user task:
 
 **Directly Relevant:** Content that directly helps complete the stated task
 **Productivity Tools:** Tools needed for the task (IDEs, docs, repositories)
@@ -108,31 +108,41 @@ Return exactly this JSON structure:
 
 ## EXAMPLES
 
-**Example 1 - Fake Productivity:**
+**Example 1 - Gaming Site with Coding Task:**
+Task: "Write React components" | Page: Rust game website
+Decision: BLOCK_ALL
+Reason: "Gaming website is a distraction for coding tasks - entertainment content unrelated to programming"
+
+**Example 2 - Fake Productivity:**
 Task: "Build React frontend" | Page: Database optimization tutorial
 Decision: BLOCK_ALL
 Reason: "Fake productivity - database optimization unrelated to frontend development"
 
-**Example 2 - Relevant with Distractions:**
+**Example 3 - Relevant with Distractions:**
 Task: "Research machine learning" | Page: ML article with ads and sidebar
 Decision: REMOVE_ELEMENTS
 Reason: "Relevant content with distracting elements"
 Selectors: [".ads", "#sidebar"]
 
-**Example 3 - Critical CAPTCHA Page:**
+**Example 4 - Critical CAPTCHA Page:**
 Task: "Write code" | Page: "I'm not a robot" CAPTCHA verification
 Decision: ALLOW
 Reason: "Critical CAPTCHA verification page - must allow access"
 
-**Example 4 - Critical Login Page:**
+**Example 5 - Critical Login Page:**
 Task: "Write code" | Page: GitHub login
 Decision: ALLOW
 Reason: "Critical authentication page - must allow access"
 
+**Example 6 - Coding Task with Tech Content:**
+Task: "Debug Python code" | Page: Stack Overflow Python question
+Decision: ALLOW
+Reason: "Programming documentation directly relevant to coding task"
+
 ## EVALUATION CRITERIA
 Before responding, confirm you will:
 1. Analyze only the provided inputs
-2. Focus on detecting fake productivity
+2. Focus on detecting fake productivity and entertainment distractions
 3. Return valid JSON matching the schema
 4. Apply the decision logic consistently - if content is identified as a distraction or fake productivity, use BLOCK_ALL regardless of uncertainty
 5. Only default to ALLOW when the content genuinely doesn't fit any distraction category and you cannot make a clear determination`;
