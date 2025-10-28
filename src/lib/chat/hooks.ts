@@ -2,21 +2,17 @@
  * Chat Hooks Module
  *
  * This module provides React hooks specific to chat functionality in the focus extension.
- * These hooks handle chat message state, mutations with AI integration, and access state management.
+ * These hooks handle chat message state, and access state management.
  *
  * Key features:
  * - Chat message state management
- * - Chat mutations with AI integration
  * - Access state management
  * - Initial message handling
  *
  * @module chat/hooks
  */
 
-import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
-import { Message, sendMessage } from "~/lib/messaging";
-import type { ChatResponse } from "~/lib/messaging";
 import type { ChatMessage } from "./types";
 
 /**
@@ -115,120 +111,6 @@ export const useChatMessages = ({
   };
 };
 
-/**
- * Options for the useChatMutation hook.
- */
-interface UseChatMutationOptions {
-  /** Callback function called when a message is received from the AI */
-  readonly onMessageReceived?: (message: ChatMessage) => void;
-  /** Callback function called when access is granted by the AI */
-  readonly onAccessGranted?: (durationMinutes: number, message: string) => void;
-  /** Callback function called when access is denied by the AI */
-  readonly onAccessDenied?: (reason: string) => void;
-}
-
-/**
- * Manages chat message mutations with TanStack Query.
- *
- * This hook handles sending messages to the AI assistant and processing the responses.
- * It manages the mutation state, handles different types of responses (regular messages,
- * access granted, access denied), and provides error handling.
- *
- * The hook uses the extension's messaging system to communicate with the background script
- * and parses responses to determine the appropriate action.
- *
- * @param options - Configuration options for the hook
- * @param options.onMessageReceived - Callback function called when a message is received from the AI
- * @param options.onAccessGranted - Callback function called when access is granted by the AI
- * @param options.onAccessDenied - Callback function called when access is denied by the AI
- *
- * @returns An object containing:
- * - `sendMessage`: Function to send a message to the AI
- * - `isPending`: Boolean indicating if a message is currently being processed
- *
- * @example
- * ```typescript
- * const { sendMessage, isPending } = useChatMutation({
- *   onMessageReceived: (message) => {
- *     console.log("Received message:", message.content);
- *   },
- *   onAccessGranted: (duration, message) => {
- *     console.log(`Access granted for ${duration} minutes`);
- *     // Unblock the page or update UI
- *   },
- *   onAccessDenied: (reason) => {
- *     console.log("Access denied:", reason);
- *     // Show denial message to user
- *   }
- * });
- *
- * // Send a message to the AI
- * sendMessage("session_123", "Can I have access to social media?");
- * ```
- */
-export const useChatMutation = ({
-  onMessageReceived,
-  onAccessGranted,
-  onAccessDenied,
-}: UseChatMutationOptions = {}) => {
-  const mutation: ReturnType<
-    typeof useMutation<
-      ChatResponse,
-      Error,
-      { sessionId: string; message: string }
-    >
-  > = useMutation<ChatResponse, Error, { sessionId: string; message: string }>({
-    mutationFn: async ({ sessionId, message }): Promise<ChatResponse> => {
-      try {
-        const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
-          sessionId,
-          message,
-        });
-        return response;
-      } catch (error) {
-        // Handle different types of errors with specific messages
-
-        // Handle non-Error objects
-        throw new Error("An unexpected error occurred. Please try again.");
-      }
-    },
-    onSuccess: (response) => {
-      // Add AI response to messages
-      onMessageReceived?.(response.message);
-
-      // Check for access granted
-
-      if (response.accessGranted && response.durationMinutes) {
-        const message = `Access granted for ${response.durationMinutes} minutes! Unblocking page...`;
-        onAccessGranted?.(response.durationMinutes, message);
-      } else if (response.message.content) {
-        // Extract reason from message
-        onAccessDenied?.(response.message.content);
-      }
-    },
-    onError: (error) => {
-      // Add specific error message based on the error type
-      let errorMessageContent =
-        "Sorry, I'm having trouble responding right now. Please try again.";
-
-      if (error instanceof Error) {
-        errorMessageContent = error.message;
-      }
-
-      const errorMessage: ChatMessage = {
-        content: errorMessageContent,
-        role: "assistant",
-        id: `error_${Date.now()}`,
-        timestamp: Date.now(),
-      };
-      onMessageReceived?.(errorMessage);
-    },
-  });
-
-  return {
-    isPending: mutation.isPending,
-  };
-};
 
 /**
  * State object for access status.
