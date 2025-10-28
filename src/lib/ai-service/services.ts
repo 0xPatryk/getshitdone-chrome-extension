@@ -16,7 +16,6 @@ import {
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
 import { getModel } from "./utils";
-
 /**
  * Analyzes if a web page is relevant to the user's current task or a distraction.
  * Blocks fake productivity (work-adjacent but irrelevant content) and entertainment.
@@ -43,40 +42,49 @@ export const analyzePageContent = async (
     ? `\nALWAYS REMOVE: "${alwaysRemove}" (include in selectors if present)`
     : "";
 
-  const systemPrompt = `You're a Focus Assistant. Analyze if pages support the user's SPECIFIC task or represent distractions/fake productivity.
+  const systemPrompt = `You are a strict Focus Assistant. Determine if a page is DIRECTLY relevant to the user's specific task.
 
-### CRITICAL: Always ALLOW these immediately without analysis:
-- Login/authentication/CAPTCHA/verification pages
-- Account/billing/terms/consent pages
+INSTANT ALLOW (skip analysis):
+- Login/auth/CAPTCHA/verification pages or important pages that are netural
+- Billing/account/security/consent pages
 
-### DEFINITIONS:
-- Relevant: Directly helps complete the stated task
-- Fake Productivity: Work content UNRELATED to current task (e.g., database optimization when building frontend)
-- Distraction: Entertainment, social media, news, gaming
+DECISION RULES:
+1. ALLOW: Page directly helps complete the exact stated task
+  Other examples: Login/auth/CAPTCHA/verification pages
+  Other examples: Billing/account/security/consent pages
+2. BLOCK_ALL: Everything else, including:
+   - Fake productivity: Work content unrelated to current task
+   - Adjacent topics not needed for this task
+   - Entertainment, social media, news, forums (unless task-specific)
+   - General learning not applicable to current task
+   
+DEFAULT: When uncertain → BLOCK_ALL
 
-### DECISIONS:
-- BLOCK_ALL: Fake productivity or distractions
-- ALLOW: Directly relevant content
-- REMOVE_ELEMENTS: Relevant content with distracting elements
+FAKE PRODUCTIVITY EXAMPLES:
+- Task: "Build React form" | Page: "Database scaling patterns" → BLOCK_ALL
+- Task: "Fix CSS bug" | Page: "Advanced TypeScript types" → BLOCK_ALL
+- Task: "Research Product X pricing" | Page: "General startup advice" → BLOCK_ALL
 
-### Return JSON:
+ALLOW EXAMPLES:
+- Task: "Debug React hook error" | Page: "React hooks documentation" → ALLOW
+- Task: "Research Product X" | Page: "Product X pricing page" → ALLOW
+
+If page has relevant content + distractions → REMOVE_ELEMENTS with specific selectors.
+
+Return JSON:
 {
   "decision": "ALLOW" | "BLOCK_ALL" | "REMOVE_ELEMENTS",
-  "reason": "Brief explanation",
-  "selectors": ["css.selector"] // only if REMOVE_ELEMENTS
+  "reason": "One sentence explanation",
+  "selectors": ["css.selector", "#someId"] // only for REMOVE_ELEMENTS
 }
 
-### EXAMPLES:
-Task: "Build React frontend" | Page: Database tutorial → BLOCK_ALL (fake productivity)
-Task: "Debug Python" | Page: Stack Overflow Python → ALLOW (directly relevant)
-Task: "ML research" | Page: ML article with ads → REMOVE_ELEMENTS (selectors: [".ads"])
-Task: Any | Page: CAPTCHA → ALLOW (critical access)`;
+Be strict. If reasoning indicates distraction/irrelevance → MUST return BLOCK_ALL.`;
 
   const prompt = `${alwaysRemoveNote}
 
 Task: ${userTask}
 URL: ${url}
-Content in HTML:
+Content:
 \`\`\`html
 ${pageContent}
 \`\`\``;
