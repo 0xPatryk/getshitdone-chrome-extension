@@ -15,6 +15,7 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
+import { Message, sendMessage } from "~/lib/messaging";
 import type { ChatResponse } from "~/lib/messaging";
 import type { ChatMessage } from "./types";
 
@@ -133,8 +134,8 @@ interface UseChatMutationOptions {
  * It manages the mutation state, handles different types of responses (regular messages,
  * access granted, access denied), and provides error handling.
  *
- * The hook integrates with the global window.sendChatMessage function to communicate
- * with the AI service and parses responses to determine the appropriate action.
+ * The hook uses the extension's messaging system to communicate with the background script
+ * and parses responses to determine the appropriate action.
  *
  * @param options - Configuration options for the hook
  * @param options.onMessageReceived - Callback function called when a message is received from the AI
@@ -170,24 +171,56 @@ export const useChatMutation = ({
   onAccessGranted,
   onAccessDenied,
 }: UseChatMutationOptions = {}) => {
-  const mutation = useMutation<
-    ChatResponse,
-    Error,
-    { sessionId: string; message: string }
-  >({
-    mutationFn: async ({ sessionId, message }) => {
-      const windowWithChat = window as Window & {
-        sendChatMessage?: (
-          sessionId: string,
-          message: string,
-        ) => Promise<ChatResponse>;
-      };
-
-      if (!windowWithChat.sendChatMessage) {
-        throw new Error("Chat function not available");
+  const mutation: ReturnType<
+    typeof useMutation<
+      ChatResponse,
+      Error,
+      { sessionId: string; message: string }
+    >
+  > = useMutation<ChatResponse, Error, { sessionId: string; message: string }>({
+    mutationFn: async ({ sessionId, message }): Promise<ChatResponse> => {
+      try {
+        const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
+          sessionId,
+          message,
+        });
+        return response;
+      } catch (error) {
+        // Handle different types of errors with specific messages
+        if (error instanceof Error) {
+          // Check for authentication errors
+          if (
+            error.message.includes("API key") ||
+            error.message.includes("401")
+          ) {
+            throw new Error(
+              "Authentication failed. Please check your API key in the extension settings.",
+            );
+          }
+          // Check for network errors
+          if (
+            error.message.includes("fetch") ||
+            error.message.includes("network")
+          ) {
+            throw new Error(
+              "Network error. Please check your internet connection and try again.",
+            );
+          }
+          // Check for rate limiting
+          if (
+            error.message.includes("rate limit") ||
+            error.message.includes("429")
+          ) {
+            throw new Error(
+              "Rate limit exceeded. Please wait a moment and try again.",
+            );
+          }
+          // Re-throw the original error for other cases
+          throw error;
+        }
+        // Handle non-Error objects
+        throw new Error("An unexpected error occurred. Please try again.");
       }
-
-      return await windowWithChat.sendChatMessage(sessionId, message);
     },
     onSuccess: (response) => {
       // Add AI response to messages
@@ -212,11 +245,17 @@ export const useChatMutation = ({
         onAccessDenied?.(reason);
       }
     },
-    onError: () => {
-      // Add error message
+    onError: (error) => {
+      // Add specific error message based on the error type
+      let errorMessageContent =
+        "Sorry, I'm having trouble responding right now. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessageContent = error.message;
+      }
+
       const errorMessage: ChatMessage = {
-        content:
-          "Sorry, I'm having trouble responding right now. Please try again.",
+        content: errorMessageContent,
         role: "assistant",
         id: `error_${Date.now()}`,
         timestamp: Date.now(),
@@ -225,7 +264,7 @@ export const useChatMutation = ({
     },
   });
 
-  const sendMessage = useCallback(
+  const sendMessage: (sessionId: string, message: string) => void = useCallback(
     (sessionId: string, message: string) => {
       mutation.mutate({ sessionId, message });
     },
