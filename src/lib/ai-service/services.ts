@@ -84,8 +84,6 @@ ALLOW immediately for:
 - If user task is vague (e.g., "work", "research", "coding") without specific details, analyze the page content more strictly
 
 ### Step 3: General Relevance Analysis
-For non-coding tasks, compare page content to the SPECIFIC user task:
-
 **Directly Relevant:** Content that directly helps complete the stated task
 **Productivity Tools:** Tools needed for the task (IDEs, docs, repositories)
 **Fake Productivity:** Work-related content UNRELATED to current task
@@ -170,41 +168,6 @@ ${pageContent}`;
 
     return object;
   } catch (error: unknown) {
-    // Handle specific error types
-    if (error instanceof Error) {
-      // Check for authentication errors
-      if (error.message.includes("401") || error.message.includes("unauthorized") || error.message.includes("API key")) {
-        return {
-          decision: "ALLOW",
-          reason: "Authentication failed. Please check your API key in extension settings.",
-        };
-      }
-      
-      // Check for rate limiting
-      if (error.message.includes("429") || error.message.includes("rate limit")) {
-        return {
-          decision: "ALLOW",
-          reason: "Rate limit exceeded. Please wait a moment and try again.",
-        };
-      }
-      
-      // Check for network errors
-      if (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("ENOTFOUND")) {
-        return {
-          decision: "ALLOW",
-          reason: "Network error. Please check your internet connection and try again.",
-        };
-      }
-      
-      // Check for quota exceeded
-      if (error.message.includes("quota") || error.message.includes("exceeded")) {
-        return {
-          decision: "ALLOW",
-          reason: "API quota exceeded. Please check your billing and try again later.",
-        };
-      }
-    }
-    
     // Generic fallback
     return {
       decision: "ALLOW",
@@ -379,29 +342,11 @@ ${message}
       timestamp: new Date().toISOString(),
       context: "AI service chat processing",
     });
-    
+
     // Handle specific error types
-    let errorMessage = "I'm having trouble processing your request right now. Please try again.";
-    
-    if (error instanceof Error) {
-      // Check for authentication errors
-      if (error.message.includes("401") || error.message.includes("unauthorized") || error.message.includes("API key")) {
-        errorMessage = "Authentication failed. Please check your API key in the extension settings.";
-      }
-      // Check for rate limiting
-      else if (error.message.includes("429") || error.message.includes("rate limit")) {
-        errorMessage = "Rate limit exceeded. Please wait a moment and try again.";
-      }
-      // Check for network errors
-      else if (error.message.includes("fetch") || error.message.includes("network") || error.message.includes("ENOTFOUND")) {
-        errorMessage = "Network error. Please check your internet connection and try again.";
-      }
-      // Check for quota exceeded
-      else if (error.message.includes("quota") || error.message.includes("exceeded")) {
-        errorMessage = "API quota exceeded. Please check your billing and try again later.";
-      }
-    }
-    
+    const errorMessage =
+      "I'm having trouble processing your request right now. Please try again.";
+
     // Fallback response
     return {
       message: {

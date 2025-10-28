@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useEffect, useRef, useState } from "react";
 import { useAccessState, useChatMessages, useChatMutation } from "~/lib/chat";
 import { useAutoScroll } from "~/lib/hooks";
+import { Message, sendMessage } from "~/lib/messaging";
 import { ChatAccessStatus } from "./chat-access-status";
 import { ChatLoadingIndicator } from "./chat-loading-indicator";
 import { ChatMessage } from "./chat-message";
@@ -66,8 +67,8 @@ export const ChatInterface = ({
   const { messages, addMessage, addUserMessage } = useChatMessages({
     initialMessage,
     sessionId,
-    onInitialized: (sid, msg) => {
-      chatMutation.sendMessage(sid, msg);
+    onInitialized: async (sid, msg) => {
+      sendMessage(Message.SEND_CHAT_MESSAGE, { sessionId: sid, message: msg });
     },
   });
 
@@ -106,7 +107,7 @@ export const ChatInterface = ({
     const message = inputMessage.trim();
     setInputMessage("");
     addUserMessage(message);
-    chatMutation.sendMessage(sessionId, message);
+    sendMessage(Message.SEND_CHAT_MESSAGE, { sessionId, message });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

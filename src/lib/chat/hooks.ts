@@ -227,22 +227,13 @@ export const useChatMutation = ({
       onMessageReceived?.(response.message);
 
       // Check for access granted
-      const chatResponse = response as ChatResponse & {
-        accessGranted?: boolean;
-        durationMinutes?: number;
-      };
 
-      if (chatResponse.accessGranted && chatResponse.durationMinutes) {
-        const message = `Access granted for ${chatResponse.durationMinutes} minutes! Unblocking page...`;
-        onAccessGranted?.(chatResponse.durationMinutes, message);
-      } else if (response.message.content.includes("ACCESS_DENIED")) {
+      if (response.accessGranted && response.durationMinutes) {
+        const message = `Access granted for ${response.durationMinutes} minutes! Unblocking page...`;
+        onAccessGranted?.(response.durationMinutes, message);
+      } else if (response.message.content) {
         // Extract reason from message
-        const reasonMatch = response.message.content.match(
-          /ACCESS_DENIED:? *(.*)/,
-        );
-        const reason =
-          reasonMatch?.[1]?.trim() || "Access denied by AI assistant";
-        onAccessDenied?.(reason);
+        onAccessDenied?.(response.message.content);
       }
     },
     onError: (error) => {
@@ -264,15 +255,7 @@ export const useChatMutation = ({
     },
   });
 
-  const sendMessage: (sessionId: string, message: string) => void = useCallback(
-    (sessionId: string, message: string) => {
-      mutation.mutate({ sessionId, message });
-    },
-    [mutation],
-  );
-
   return {
-    sendMessage,
     isPending: mutation.isPending,
   };
 };
