@@ -18,31 +18,16 @@ import type { AIProvider } from "./types";
 import { getModel } from "./utils";
 
 /**
- * Analyzes web page content to determine if it's relevant to the user's task or a potential distraction.
- * Uses AI to make decisions about blocking the entire page, removing specific elements, or allowing access.
+ * Analyzes if a web page is relevant to the user's current task or a distraction.
+ * Blocks fake productivity (work-adjacent but irrelevant content) and entertainment.
  *
- * @param apiKey - The API key for the specified AI provider
- * @param userTask - The current task the user is working on
- * @param pageContent - The text content of the web page to analyze
- * @param url - The URL of the page being analyzed
- * @param provider - The AI provider to use for analysis (default: "gemini")
- * @param alwaysRemove - Optional CSS selectors for elements that should always be removed
- * @returns A promise that resolves to an AnalysisResult containing the decision and reasoning
- *
- * @example
- * ```typescript
- * const result = await analyzePageContent(
- *   "api-key",
- *   "Write a research paper on climate change",
- *   "<html>Page content here</html>",
- *   "https://example.com",
- *   "gemini",
- *   ".ads,.sidebar"
- * );
- * console.log(result.decision); // "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW"
- * ```
- *
- * @see {@link AnalysisResult} for the structure of the returned object
+ * @param apiKey - AI provider API key
+ * @param userTask - User's current specific task
+ * @param pageContent - Web page HTML content
+ * @param url - Page URL
+ * @param provider - AI provider (default: "gemini")
+ * @param alwaysRemove - CSS selectors to always remove
+ * @returns Decision: BLOCK_ALL, REMOVE_ELEMENTS, or ALLOW
  */
 export const analyzePageContent = async (
   apiKey: string,
@@ -54,107 +39,47 @@ export const analyzePageContent = async (
 ): Promise<AnalysisResult> => {
   const model = getModel(provider, apiKey);
 
-  const alwaysRemoveSection = alwaysRemove
-    ? `\n\n## ALWAYS REMOVE ELEMENTS\nThe user specified these elements to ALWAYS remove: "${alwaysRemove}"\nInclude these selectors in your response if they exist on the page.`
+  const alwaysRemoveNote = alwaysRemove
+    ? `\nALWAYS REMOVE: "${alwaysRemove}" (include in selectors if present)`
     : "";
 
-  const systemPrompt = `You are a Focus Assistant AI. Your task is to analyze web pages and determine if they help users complete their specific task or represent fake productivity.
+  const systemPrompt = `You're a Focus Assistant. Analyze if pages support the user's SPECIFIC task or represent distractions/fake productivity.
 
-## TASK
-Produce a JSON analysis of whether a web page is relevant to the user's specific task or a distraction.
+### CRITICAL: Always ALLOW these immediately without analysis:
+- Login/authentication/CAPTCHA/verification pages
+- Account/billing/terms/consent pages
 
-## INPUT
-- User task: The specific work the user should be doing
-- Page URL: The website address being analyzed
-- Page content: HTML content of the page
-- Always remove selectors: CSS elements to always remove if present
+### DEFINITIONS:
+- Relevant: Directly helps complete the stated task
+- Fake Productivity: Work content UNRELATED to current task (e.g., database optimization when building frontend)
+- Distraction: Entertainment, social media, news, gaming
 
-## ANALYSIS FRAMEWORK
+### DECISIONS:
+- BLOCK_ALL: Fake productivity or distractions
+- ALLOW: Directly relevant content
+- REMOVE_ELEMENTS: Relevant content with distracting elements
 
-### Step 1: Critical Pages Check
-ALLOW immediately for:
-- Login/authentication pages
-- CAPTCHA or verification pages
-- Account/billing management
-- Terms of service or consent pages
-
-**IMPORTANT**: If you identify a CAPTCHA, verification, or login page, you MUST return ALLOW immediately without further analysis. These pages are essential for accessing any website.
-
-### Step 2: Task Clarity and Context Check
-- If user task is vague (e.g., "work", "research", "coding") without specific details, analyze the page content more strictly
-
-### Step 3: General Relevance Analysis
-**Directly Relevant:** Content that directly helps complete the stated task
-**Productivity Tools:** Tools needed for the task (IDEs, docs, repositories)
-**Fake Productivity:** Work-related content UNRELATED to current task
-**Distractions:** Entertainment, social media, news, gaming, etc.
-
-### Step 4: Decision Logic
-- BLOCK_ALL for fake productivity or clear distractions
-- ALLOW for directly relevant content with no distractions
-- REMOVE_ELEMENTS for relevant content with distractions
-
-## OUTPUT FORMAT
-Return exactly this JSON structure:
-\`\`\`json
+### Return JSON:
 {
   "decision": "ALLOW" | "BLOCK_ALL" | "REMOVE_ELEMENTS",
-  "reason": "Brief explanation of decision",
-  "selectors": ["css.selector.one", "css.selector.two"]
+  "reason": "Brief explanation",
+  "selectors": ["css.selector"] // only if REMOVE_ELEMENTS
 }
-\`\`\`
 
-## EXAMPLES
+### EXAMPLES:
+Task: "Build React frontend" | Page: Database tutorial → BLOCK_ALL (fake productivity)
+Task: "Debug Python" | Page: Stack Overflow Python → ALLOW (directly relevant)
+Task: "ML research" | Page: ML article with ads → REMOVE_ELEMENTS (selectors: [".ads"])
+Task: Any | Page: CAPTCHA → ALLOW (critical access)`;
 
-**Example 1 - Gaming Site with Coding Task:**
-Task: "Write React components" | Page: Rust game website
-Decision: BLOCK_ALL
-Reason: "Gaming website is a distraction for coding tasks - entertainment content unrelated to programming"
+  const prompt = `${alwaysRemoveNote}
 
-**Example 2 - Fake Productivity:**
-Task: "Build React frontend" | Page: Database optimization tutorial
-Decision: BLOCK_ALL
-Reason: "Fake productivity - database optimization unrelated to frontend development"
-
-**Example 3 - Relevant with Distractions:**
-Task: "Research machine learning" | Page: ML article with ads and sidebar
-Decision: REMOVE_ELEMENTS
-Reason: "Relevant content with distracting elements"
-Selectors: [".ads", "#sidebar"]
-
-**Example 4 - Critical CAPTCHA Page:**
-Task: "Write code" | Page: "I'm not a robot" CAPTCHA verification
-Decision: ALLOW
-Reason: "Critical CAPTCHA verification page - must allow access"
-
-**Example 5 - Critical Login Page:**
-Task: "Write code" | Page: GitHub login
-Decision: ALLOW
-Reason: "Critical authentication page - must allow access"
-
-**Example 6 - Coding Task with Tech Content:**
-Task: "Debug Python code" | Page: Stack Overflow Python question
-Decision: ALLOW
-Reason: "Programming documentation directly relevant to coding task"
-
-## EVALUATION CRITERIA
-Before responding, confirm you will:
-1. Analyze only the provided inputs
-2. Focus on detecting fake productivity and entertainment distractions
-3. Return valid JSON matching the schema
-4. Apply the decision logic consistently - if content is identified as a distraction or fake productivity, use BLOCK_ALL regardless of uncertainty
-5. Only default to ALLOW when the content genuinely doesn't fit any distraction category and you cannot make a clear determination`;
-
-  const prompt = `${alwaysRemoveSection}
-
-## User Task
-${userTask}
-
-## Page URL
-${url}
-
-## Page Content (HTML)
-${pageContent}`;
+Task: ${userTask}
+URL: ${url}
+Content in HTML:
+\`\`\`html
+${pageContent}
+\`\`\``;
 
   try {
     const { object } = await generateObject({
@@ -168,38 +93,23 @@ ${pageContent}`;
 
     return object;
   } catch (error: unknown) {
-    // Generic fallback
     return {
       decision: "ALLOW",
-      reason: `AI analysis failed. Page allowed as fallback. Reason: ${error instanceof Error ? error.message : String(error)}`,
+      reason: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
     };
   }
 };
 
 /**
- * Processes a chat message from the user and determines if access should be granted.
- * The AI evaluates whether the user's request aligns with their current task and provides
- * a response with either granted access (with duration) or a denial with reason.
+ * Processes user requests to access blocked content. AI evaluates if the request
+ * aligns with the current task and grants/denies access with time limits.
  *
- * @param apiKey - The API key for the specified AI provider
- * @param userTask - The current task the user is working on
- * @param message - The user's chat message requesting access
- * @param chatHistory - Previous messages in the chat session for context
- * @param provider - The AI provider to use for processing (default: "gemini")
- * @returns A promise that resolves to an object containing the AI response, access decision, and duration
- *
- * @example
- * ```typescript
- * const response = await processChatMessage(
- *   "api-key",
- *   "Write a research paper",
- *   "I need to check social media for 5 minutes",
- *   [{ id: "1", content: "Hello", role: "user", timestamp: Date.now() }],
- *   "gemini"
- * );
- * console.log(response.accessGranted); // boolean
- * console.log(response.durationMinutes); // number if granted
- * ```
+ * @param apiKey - AI provider API key
+ * @param userTask - User's current specific task
+ * @param message - User's access request message
+ * @param chatHistory - Previous chat messages for context
+ * @param provider - AI provider (default: "gemini")
+ * @returns Response with access decision and optional duration
  */
 export const processChatMessage = async (
   apiKey: string,
@@ -214,105 +124,54 @@ export const processChatMessage = async (
 }> => {
   const model = getModel(provider, apiKey);
 
-  // Build conversation history for context
   const historyContext = chatHistory
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
 
-  const systemPrompt = `You are a Focus Assistant AI. Your task is to help users stay productive while negotiating reasonable access to content.
+  const systemPrompt = `You're a Focus Assistant that critically evaluates access requests to blocked content.
 
-## TASK
-Produce a JSON response that either grants or denies user requests with clear reasoning and negotiation.
+CORE PRINCIPLE: Deny fake productivity and distractions. Only grant access with strong task alignment.
 
-## INPUT
-- User task: The specific work user should be doing
-- User request: What user wants to access or do
-- Conversation history: Previous messages for context
+GRANT CONDITIONS (with strict time limits):
+- Direct task relevance: Directly needed for current task (15-45min max)
+- Essential tools: Authentication, critical APIs, blocked tools (10-30min)
+- Health breaks: Physical/mental health needs (5-15min max)
 
-## ANALYSIS FRAMEWORK
+DENY CONDITIONS:
+- Fake productivity: Work-related but irrelevant to current task
+- Distractions: Entertainment, social media, news, gaming
+- Vague justifications: "Might help", "just in case", "research" without specifics
+- Excessive durations: Requests over 60 minutes
+- Repeated denials: Same request denied before
 
-### Step 1: Context Assessment
-- Review the user's current task
-- Understand the specific request
-- Consider conversation history
+CRITICAL EVALUATION:
+- Challenge vague requests: Require specific task connection
+- Question timing: Why needed NOW for THIS task?
+- Detect rationalization: Users justifying distractions as "research"
+- Be skeptical: Default to DENY unless clear necessity
 
-### Step 2: Request Classification
-**Task-Relevant:** Directly helps complete the current task
-**Productivity Support:** Indirectly supports task completion
-**Well-being:** Supports mental/physical health
-**Distraction:** Unrelated entertainment or time-wasting
-**Negotiable:** Could be reasonable with limits
-
-### Step 3: Decision Logic
-**GRANT** for:
-- Task-relevant content (15-60 minutes)
-- Productivity support with justification (10-30 minutes)
-- Well-being needs (5-20 minutes)
-- Short reasonable breaks (5-15 minutes)
-
-**NEGOTIATE** for:
-- Partially relevant requests with time limits
-- Longer breaks with task completion conditions
-- Mixed content with selective access
-
-**DENY** for:
-- Clear distractions without justification
-- Excessive time requests
-- Harmful or inappropriate content
-
-### Step 4: Response Strategy
-- Acknowledge the user's request
-- Explain your reasoning clearly
-- Offer alternatives when denying
-- Set reasonable time limits
-- Maintain supportive, collaborative tone
-
-## OUTPUT FORMAT
-Return exactly this JSON structure:
-\`\`\`json
+Return JSON:
 {
-  "response": "Your conversational response to the user",
+  "response": "Your conversational response (supportive but firm)",
   "decision": "GRANT" | "DENY",
-  "durationMinutes": number (only include if decision is GRANT)
+  "durationMinutes": number (only if GRANT, max 60)
 }
-\`\`\`
 
-## EXAMPLES
+EXAMPLES:
+Task: "Build React app" | Request: "Check Reddit for inspiration" → DENY (distraction disguised as research)
+Task: "Debug Python" | Request: "Stack Overflow 20min" → GRANT 20min (directly relevant)
+Task: "Write report" | Request: "YouTube tutorial on productivity" → DENY (fake productivity)
+Task: "Code frontend" | Request: "5min walk" → GRANT 5min (health break)`;
 
-**Example 1 - Task-Relevant Grant:**
-Task: "Write React documentation" | Request: "Check React docs for 25 minutes"
-Response: "Access granted to React documentation. This directly supports your documentation writing task."
-Decision: GRANT | Duration: 25
+  const prompt = `User Task: ${userTask}
 
-**Example 2 - Negotiation:**
-Task: "Complete project proposal" | Request: "Browse social media for 30 minutes"
-Response: "I understand you need a break, but 30 minutes on social media might disrupt your focus. How about a 15-minute break to stretch and grab a coffee, then we can tackle that proposal with fresh energy?"
-Decision: DENY
-
-**Example 3 - Well-being Grant:**
-Task: "Debug code issue" | Request: "Take a 10-minute walk to clear my head"
-Response: "Taking a walk is a great way to solve coding problems! Fresh air often helps with debugging. Enjoy your 10-minute break."
-Decision: GRANT | Duration: 10
-
-## EVALUATION CRITERIA
-Before responding, confirm you will:
-1. Provide helpful, conversational responses
-2. Negotiate reasonable alternatives when denying
-3. Set appropriate time limits based on request type
-4. Maintain supportive, collaborative tone
-5. Focus on long-term productivity over short-term satisfaction`;
-
-  const prompt = `Analyze the following user request based on the system rules.
-
-## User Task
-${userTask}
-
-## Previous Conversation
+Previous Conversation:
 ${historyContext}
 
-## User's Request
+User's Request:
 ${message}
-`;
+
+Critically evaluate if this request is necessary for the SPECIFIC task or a rationalized distraction.`;
 
   try {
     const { object } = await generateObject({
@@ -337,21 +196,10 @@ ${message}
       durationMinutes: object.durationMinutes,
     };
   } catch (error: unknown) {
-    console.error("Chat message processing failed:", {
-      error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString(),
-      context: "AI service chat processing",
-    });
-
-    // Handle specific error types
-    const errorMessage =
-      "I'm having trouble processing your request right now. Please try again.";
-
-    // Fallback response
     return {
       message: {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        content: errorMessage,
+        content: "Unable to process request. Please try again.",
         role: "assistant",
         timestamp: Date.now(),
       },
