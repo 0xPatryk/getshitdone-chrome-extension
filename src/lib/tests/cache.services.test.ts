@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, it, mock } from "bun:test";
-import type { DecisionCacheEntry } from "~/lib/cache/types";
+import type { AnalysisResultCache } from "~/lib/cache/types";
 import { CACHE_TTL } from "~/lib/cache/types";
 import type { AnalysisResult } from "~/lib/messaging/types";
 
@@ -23,41 +23,21 @@ const mockAnalysisResult: AnalysisResult = {
   selectors: [".ads", ".sidebar", ".popups"],
 };
 
-const mockCacheEntry: DecisionCacheEntry = {
-  result: mockAnalysisResult,
-  createdAt: Date.now(),
-  expiresAt: Date.now() + CACHE_TTL.AI_DECISION,
-  type: "ai_decision",
-  metadata: {
-    provider: "gemini",
-    isFallback: false,
-  },
+const mockCacheEntry: AnalysisResultCache = {
+  ...mockAnalysisResult,
+  expiresAt: Date.now() + CACHE_TTL.DEFAULT,
 };
 
 describe("Cache Services", () => {
   describe("Cache TTL and Expiration", () => {
-    it("should use correct TTL for AI decisions", () => {
+    it("should use correct TTL for cache entries", () => {
       const now = Date.now();
-      const entry: DecisionCacheEntry = {
-        result: mockAnalysisResult,
-        createdAt: now,
-        expiresAt: now + CACHE_TTL.AI_DECISION,
-        type: "ai_decision",
+      const entry: AnalysisResultCache = {
+        ...mockAnalysisResult,
+        expiresAt: now + CACHE_TTL.DEFAULT,
       };
 
-      expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.AI_DECISION);
-    });
-
-    it("should use correct TTL for user unblocks", () => {
-      const now = Date.now();
-      const entry: DecisionCacheEntry = {
-        result: mockAnalysisResult,
-        createdAt: now,
-        expiresAt: now + CACHE_TTL.USER_UNBLOCK,
-        type: "user_unblock",
-      };
-
-      expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.USER_UNBLOCK);
+      expect(entry.expiresAt - now).toBe(CACHE_TTL.DEFAULT);
     });
 
     it("should correctly identify expired entries", () => {
@@ -77,99 +57,48 @@ describe("Cache Services", () => {
   });
 
   describe("Cache Entry Structure", () => {
-    it("should create valid cache entry for AI decision", () => {
+    it("should create valid cache entry", () => {
       const now = Date.now();
-      const entry: DecisionCacheEntry = {
-        result: mockAnalysisResult,
-        createdAt: now,
-        expiresAt: now + CACHE_TTL.AI_DECISION,
-        type: "ai_decision",
-        metadata: {
-          provider: "gemini",
-          isFallback: false,
-        },
+      const entry: AnalysisResultCache = {
+        ...mockAnalysisResult,
+        expiresAt: now + CACHE_TTL.DEFAULT,
       };
 
-      expect(entry.result).toEqual(mockAnalysisResult);
-      expect(entry.type).toBe("ai_decision");
-      expect(entry.metadata?.provider).toBe("gemini");
-      expect(entry.metadata?.isFallback).toBe(false);
-      expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.AI_DECISION);
-    });
-
-    it("should create valid cache entry for user unblock", () => {
-      const now = Date.now();
-      const entry: DecisionCacheEntry = {
-        result: mockAnalysisResult,
-        createdAt: now,
-        expiresAt: now + CACHE_TTL.USER_UNBLOCK,
-        type: "user_unblock",
-      };
-
-      expect(entry.result).toEqual(mockAnalysisResult);
-      expect(entry.type).toBe("user_unblock");
-      expect(entry.expiresAt - entry.createdAt).toBe(CACHE_TTL.USER_UNBLOCK);
-    });
-
-    it("should handle optional metadata", () => {
-      const now = Date.now();
-      const entry: DecisionCacheEntry = {
-        result: mockAnalysisResult,
-        createdAt: now,
-        expiresAt: now + CACHE_TTL.AI_DECISION,
-        type: "ai_decision",
-      };
-
-      expect(entry.metadata).toBeUndefined();
+      expect(entry.decision).toEqual(mockAnalysisResult.decision);
+      expect(entry.reason).toEqual(mockAnalysisResult.reason);
+      expect(entry.selectors).toEqual(mockAnalysisResult.selectors);
+      expect(entry.expiresAt - now).toBe(CACHE_TTL.DEFAULT);
     });
   });
 
   describe("Cache Statistics", () => {
     it("should calculate correct statistics for mixed cache", () => {
       const now = Date.now();
-      const aiDecisionEntry = {
+      const validEntry = {
         ...mockCacheEntry,
-        type: "ai_decision" as const,
-        expiresAt: now + CACHE_TTL.AI_DECISION,
-      };
-      const userUnblockEntry = {
-        ...mockCacheEntry,
-        type: "user_unblock" as const,
-        expiresAt: now + CACHE_TTL.USER_UNBLOCK,
+        expiresAt: now + 1000, // Expires in 1 second
       };
       const expiredEntry = {
         ...mockCacheEntry,
-        type: "ai_decision" as const,
-        expiresAt: now - 1000, // Expired
+        expiresAt: now - 1000, // Expired 1 second ago
       };
       const cache = {
-        "ai-decision-key": aiDecisionEntry,
-        "user-unblock-key": userUnblockEntry,
+        "valid-key": validEntry,
         "expired-key": expiredEntry,
       };
 
       // Calculate stats manually
       let totalEntries = 0;
-      let aiDecisionEntries = 0;
-      let userUnblockEntries = 0;
       let expiredEntries = 0;
 
       for (const entry of Object.values(cache)) {
         totalEntries++;
-        if (entry.type === "ai_decision") {
-          aiDecisionEntries++;
-        } else if (entry.type === "user_unblock") {
-          userUnblockEntries++;
-        }
-
         if (now >= entry.expiresAt) {
           expiredEntries++;
         }
       }
 
-      expect(totalEntries).toBe(3);
-      expect(aiDecisionEntries).toBe(2);
-      expect(userUnblockEntries).toBe(1);
+      expect(totalEntries).toBe(2);
       expect(expiredEntries).toBe(1);
     });
 
@@ -186,7 +115,7 @@ describe("Cache Services", () => {
       const now = Date.now();
       const validEntry = {
         ...mockCacheEntry,
-        expiresAt: now + CACHE_TTL.AI_DECISION,
+        expiresAt: now + 1000, // Expires in 1 second
       };
       const expiredEntry = {
         ...mockCacheEntry,
@@ -205,7 +134,7 @@ describe("Cache Services", () => {
           }
           return acc;
         },
-        {} as Record<string, DecisionCacheEntry>,
+        {} as Record<string, AnalysisResultCache>,
       );
 
       expect(validEntries).toHaveProperty("valid-key");
@@ -236,7 +165,7 @@ describe("Cache Services", () => {
           }
           return acc;
         },
-        {} as Record<string, DecisionCacheEntry>,
+        {} as Record<string, AnalysisResultCache>,
       );
 
       expect(Object.keys(validEntries)).toHaveLength(0);
@@ -273,7 +202,7 @@ describe("Cache Services", () => {
           }
           return acc;
         },
-        {} as Record<string, DecisionCacheEntry>,
+        {} as Record<string, AnalysisResultCache>,
       );
 
       expect(validEntries).not.toHaveProperty(
@@ -307,17 +236,17 @@ describe("Cache Services", () => {
       const cache = { "other-key": mockCacheEntry };
 
       // Simulate removal logic from removeCachedDecision
-      const { [cacheKey]: _, ...remainingCache } = cache;
+      const { [cacheKey]: _, ...remainingCache } = cache as Record<string, unknown>;
 
       expect(remainingCache).toEqual(cache);
     });
 
     it("should handle empty cache removal", () => {
       const cacheKey = "test-key";
-      const cache = {};
+      const cache: Record<string, AnalysisResultCache> = {};
 
       // Simulate removal logic from removeCachedDecision
-      const { [cacheKey]: _, ...remainingCache } = cache;
+      const { [cacheKey]: _, ...remainingCache } = cache as Record<string, unknown>;
 
       expect(remainingCache).toEqual({});
     });

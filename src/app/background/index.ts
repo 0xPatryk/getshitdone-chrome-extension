@@ -101,10 +101,9 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       data.url,
       currentTask || "",
       data.alwaysRemove || null,
-      analysisResult,
-      "ai_decision",
-      aiProvider,
-      false,
+      analysisResult.decision,
+      analysisResult.selectors || null,
+      analysisResult.reason,
     );
 
     // Validate and return the result
@@ -235,10 +234,10 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         data.sessionId, // URL
         currentTask || "",
         null, // alwaysRemove not relevant for chat unblocks
-        allowResult,
-        "user_unblock",
-        aiProvider,
-        false,
+        allowResult.decision,
+        null, // no selectors for ALLOW
+        allowResult.reason,
+        aiResponse.durationMinutes * 60 * 1000, // custom TTL based on duration
       );
 
       // Mark session as completed and clear messages to free memory

@@ -8,7 +8,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { DecisionCacheEntry } from "~/lib/cache";
+import type { AnalysisResultCache } from "~/lib/cache";
 import type { ChatSession } from "~/lib/messaging";
 import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
@@ -163,7 +163,7 @@ export const storage = {
    * Decision cache storage
    */
   [StorageKey.DECISION_CACHE]: browserStorage.defineItem<
-    Record<string, DecisionCacheEntry>
+    Record<string, AnalysisResultCache>
   >(StorageKey.DECISION_CACHE, {
     fallback: {},
   }),

@@ -1,36 +1,37 @@
 /**
  * Cache Services Module
  *
- * This module provides main cache service functions for storing, retrieving,
- * and managing cached AI analysis results. It implements a secure, time-based
- * cache with automatic cleanup and invalidation strategies.
+ * This module provides cache service functions for storing, retrieving,
+ * and managing cached page decisions. It implements a secure, time-based
+ * cache with automatic cleanup and unified decision storage.
  *
  * Key features:
+ * - Cache structure with unified decision storage
  * - Time-to-live (TTL) based expiration
  * - Automatic cleanup of expired entries
  * - Cache invalidation on task changes
- * - Statistics and monitoring
  *
  * @module cache.services
  */
 
-import type { DecisionCacheEntry } from "~/lib/cache/types";
+import type { AnalysisResultCache } from "~/lib/cache/types";
 import { CACHE_TTL } from "~/lib/cache/types";
 import { createSecureHash, generateCacheKey } from "~/lib/cache/utils";
-import type { AnalysisResult } from "~/lib/messaging";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 
-// Cache lookup function
+/**
+ * Get cached decision for a page
+ */
 export const getCachedDecision = async (
   url: string,
   task: string,
   alwaysRemove: string | null,
-): Promise<AnalysisResult | null> => {
+): Promise<AnalysisResultCache | null> => {
   const cacheKey = generateCacheKey(url, task, alwaysRemove);
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
 
   const entry = cache[cacheKey];
@@ -45,72 +46,69 @@ export const getCachedDecision = async (
     return null;
   }
 
-  return entry.result;
+  return entry;
 };
 
-// Cache storage function
+/**
+ * Set cached decision for a page
+ */
 export const setCachedDecision = async (
   url: string,
   task: string,
   alwaysRemove: string | null,
-  result: AnalysisResult,
-  type: "ai_decision" | "user_unblock" = "ai_decision",
-  provider?: "gemini" | "openai",
-  isFallback?: boolean,
+  decision: "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW",
+  selectors: string[] | null,
+  reason: string,
+  customTTL?: number,
 ): Promise<void> => {
   const cacheKey = generateCacheKey(url, task, alwaysRemove);
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
-
+  
   const now = Date.now();
-  let expiresAt: number;
-
-  if (type === "ai_decision") {
-    expiresAt = now + CACHE_TTL.AI_DECISION;
-  } else {
-    // For user unblocks, use a shorter TTL (1 hour minimum)
-    expiresAt = now + CACHE_TTL.USER_UNBLOCK;
-  }
-
-  const entry: DecisionCacheEntry = {
-    result,
-    createdAt: now,
-    expiresAt,
-    type,
-    metadata: {
-      provider,
-      isFallback,
-    },
+  const ttl = customTTL || CACHE_TTL.DEFAULT;
+  
+  const entry: AnalysisResultCache = {
+    decision,
+    reason,
+    selectors: selectors || undefined,
+    expiresAt: now + ttl,
   };
-
+  
   await storage[StorageKey.DECISION_CACHE].setValue({
     ...cache,
     [cacheKey]: entry,
   });
 };
 
-// Remove specific cache entry
+/**
+ * Remove specific cache entry
+ */
 export const removeCachedDecision = async (cacheKey: string): Promise<void> => {
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
   const { [cacheKey]: _, ...remainingCache } = cache;
   await storage[StorageKey.DECISION_CACHE].setValue(remainingCache);
 };
 
-// Clear all cache entries
+/**
+ * Clear all cache entries
+ */
 export const clearDecisionCache = async (): Promise<void> => {
   await storage[StorageKey.DECISION_CACHE].setValue({});
 };
 
-// Clean up expired cache entries
+/**
+ * Clean up expired cache entries
+ */
 export const cleanupExpiredCacheEntries = async (): Promise<void> => {
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
   const now = Date.now();
 
@@ -121,7 +119,7 @@ export const cleanupExpiredCacheEntries = async (): Promise<void> => {
       }
       return acc;
     },
-    {} as Record<string, DecisionCacheEntry>,
+    {} as Record<string, AnalysisResultCache>,
   );
 
   await storage[StorageKey.DECISION_CACHE].setValue(validEntries);
@@ -130,14 +128,16 @@ export const cleanupExpiredCacheEntries = async (): Promise<void> => {
   await storage[StorageKey.CACHE_LAST_CLEANUP].setValue(now);
 };
 
-// Invalidate cache entries when current task changes
+/**
+ * Invalidate cache entries when current task changes
+ */
 export const invalidateCacheForTaskChange = async (
   oldTask: string,
   newTask: string,
 ): Promise<void> => {
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
   const oldTaskHash = createSecureHash(oldTask);
 
@@ -158,41 +158,35 @@ export const invalidateCacheForTaskChange = async (
       }
       return acc;
     },
-    {} as Record<string, DecisionCacheEntry>,
+    {} as Record<string, AnalysisResultCache>,
   );
 
   await storage[StorageKey.DECISION_CACHE].setValue(validEntries);
 };
 
-// Invalidate cache entries when alwaysRemove settings change
+/**
+ * Invalidate cache entries when alwaysRemove settings change
+ */
 export const invalidateCacheForAlwaysRemoveChange = async (): Promise<void> => {
   await storage[StorageKey.DECISION_CACHE].setValue({});
 };
 
-// Get cache statistics
+/**
+ * Get cache statistics
+ */
 export const getCacheStats = async (): Promise<{
   totalEntries: number;
-  aiDecisionEntries: number;
-  userUnblockEntries: number;
   expiredEntries: number;
 }> => {
   const cache = (await storage[StorageKey.DECISION_CACHE].getValue()) as Record<
     string,
-    DecisionCacheEntry
+    AnalysisResultCache
   >;
   const now = Date.now();
 
-  let aiDecisionEntries = 0;
-  let userUnblockEntries = 0;
   let expiredEntries = 0;
 
   for (const entry of Object.values(cache)) {
-    if (entry.type === "ai_decision") {
-      aiDecisionEntries++;
-    } else if (entry.type === "user_unblock") {
-      userUnblockEntries++;
-    }
-
     if (now >= entry.expiresAt) {
       expiredEntries++;
     }
@@ -200,8 +194,6 @@ export const getCacheStats = async (): Promise<{
 
   return {
     totalEntries: Object.keys(cache).length,
-    aiDecisionEntries,
-    userUnblockEntries,
     expiredEntries,
   };
 };

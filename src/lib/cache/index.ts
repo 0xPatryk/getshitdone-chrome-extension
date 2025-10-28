@@ -1,22 +1,22 @@
 /**
  * Cache Module
  *
- * This module provides caching functionality for AI analysis results to improve performance
+ * This module provides caching functionality for page decisions to improve performance
  * and reduce API costs. It implements a secure, time-based cache with automatic cleanup
- * and invalidation strategies.
+ * and unified decision storage.
  *
  * Key features:
+ * - Cache structure with unified decision storage
  * - Secure hash-based cache keys
  * - Time-to-live (TTL) based expiration
  * - Automatic cleanup of expired entries
  * - Cache invalidation on task changes
- * - Statistics and monitoring
  *
  * @module cache
  */
 
 // Re-export types
-export type { DecisionCacheEntry, CacheKeyData } from "./types";
+export type { AnalysisResultCache, CacheKeyData } from "./types";
 export { CACHE_TTL } from "./types";
 
 // Re-export utilities
@@ -33,3 +33,11 @@ export {
   invalidateCacheForAlwaysRemoveChange,
   getCacheStats,
 } from "./services";
+
+// Re-export hooks
+export {
+  useCachedDecision,
+  usePageAnalysis,
+  useChatAccess,
+  useCacheInvalidation,
+} from "./hooks";
