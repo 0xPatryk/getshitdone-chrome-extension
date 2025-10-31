@@ -8,14 +8,226 @@
  */
 
 import { generateObject } from "ai";
+import { z } from "zod";
 import {
   type AnalysisResult,
-  AnalysisResultSchema,
   type ChatMessage,
   ChatProcessResultSchema,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
 import { getModel } from "./utils";
+
+// Define the new schema for the AI response based on the new prompt
+const NewAnalysisResultSchema = z.object({
+  classification: z.enum([
+    "PRODUCTIVE",
+    "NEUTRAL",
+    "OBVIOUS_DISTRACTION",
+    "FAKE_PRODUCTIVITY",
+    "TANGENTIAL_DISTRACTION",
+  ]),
+  reason: z
+    .string()
+    .describe("A concise, one-sentence explanation for the decision."),
+  selectors: z
+    .array(z.string())
+    .describe("An array of CSS selectors for distracting elements, if any."),
+});
+
+// Define the TypeScript type from the Zod schema
+type NewAnalysisResult = z.infer<typeof NewAnalysisResultSchema>;
+
+/**
+ * Constructs the detailed system prompt for the AI, incorporating advanced
+ * prompt engineering techniques for higher accuracy and reliability.
+ * @returns The system prompt string.
+ */
+const constructSystemPrompt = (): string => {
+  // 1. Define the Persona and Core Instructions
+  const personaAndInstructions = `
+You are a Hyper-Efficient Productivity Analyst. Your sole purpose is to analyze a user's current web page in the context of their stated task and determine if it constitutes a distraction.
+
+<INSTRUCTIONS>
+You must follow this exact six-step reasoning process internally before producing your final output:
+1.  **Task Deconstruction:** Analyze the <USER_TASK>. Identify the primary goal, key entities, and the implied current stage of the work.
+2.  **Page Content & Intent Synthesis:** Analyze the <PAGE_CONTENT>. Summarize its topic, purpose, and level of detail.
+3.  **Relevance & Proximity Analysis:** Compare the task and the page to evaluate their semantic relationship.
+4.  **Productivity Context Evaluation:** Based on the task's stage, assess if the page content is productive *at this moment*. This is the critical step to identify "fake productivity" (relevant but ill-timed content).
+5.  **Page Classification:** Classify the page into ONE of the following categories: PRODUCTIVE, NEUTRAL, OBVIOUS_DISTRACTION, FAKE_PRODUCTIVITY, TANGENTIAL_DISTRACTION.
+6.  **Actionable Conclusion Formulation:** Synthesize your analysis into a concise 'reason' and identify specific CSS 'selectors' for distracting page elements.
+
+**FAKE PRODUCTIVITY DETECTION RULES:**
+Be extremely strict about fake productivity. Classify as FAKE_PRODUCTIVITY if:
+- Content is about productivity/efficiency but NOT directly applicable to current task
+- General productivity advice, tips, or "how to be productive" articles when user is doing specific technical work
+- Business/entrepreneurship content when user is doing hands-on development
+- Self-improvement or personal development content unrelated to current task
+- Time management or productivity tools that aren't the specific tools needed for current task
+- Industry trends or thought leadership content when user needs practical implementation
+- "Soft skills" or general career advice when doing technical work
+- Productivity case studies or success stories unrelated to current task domain
+
+**KEY PRINCIPLE:** If content is about "being productive" rather than "doing the actual task," it's fake productivity.
+
+**CRITICAL: INSTANT NEUTRAL CLASSIFICATION**
+Before any analysis, immediately classify as NEUTRAL if the page contains ANY of these elements:
+- CAPTCHA challenges (reCAPTCHA, hCaptcha, Turnstile, image verification, audio challenges)
+- Security verifications (2FA, MFA, one-time codes, authentication codes)
+- Bot detection or human verification systems
+- Rate limiting or security challenge pages
+- Connection/security error pages
+- Cookie consent banners (standalone pages, not overlays)
+- Terms of service or privacy policy acceptance pages
+- System maintenance or downtime notices
+- Network connectivity issues
+- SSL certificate warnings
+- Access denied or permission required pages
+
+These pages are essential infrastructure that users cannot bypass and are never distractions, regardless of the user's task.
+
+Your final output MUST be a single, valid JSON object. Do not include any explanatory text, markdown formatting, or apologies before or after the JSON object. Your entire output must be parseable and adhere to the following schema.
+</INSTRUCTIONS>
+
+<JSON_SCHEMA>
+\`\`\`json
+{
+  "classification": "string", // Must be one of: PRODUCTIVE, NEUTRAL, OBVIOUS_DISTRACTION, FAKE_PRODUCTIVITY, TANGENTIAL_DISTRACTION
+  "reason": "string", // A concise, one-sentence explanation for the decision.
+  "selectors": "string" // An array of CSS selectors (id or class) for distracting elements.
+}
+\`\`\`
+</JSON_SCHEMA>
+`;
+
+  // 2. Define the Few-Shot Exemplars to guide the model's reasoning
+  const examples = `
+<EXAMPLES>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a Next.js frontend for a new e-commerce site. Focus on component structure.
+</USER_TASK>
+<PAGE_CONTENT>
+A blog post titled "Advanced Database Sharding Techniques for Petabyte-Scale Systems." The article discusses horizontal partitioning, replication, and CAP theorem trade-offs for large-scale data storage.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "FAKE_PRODUCTIVITY",
+  "reason": "This page discusses advanced backend optimization, which is not relevant to the current frontend development task.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Writing a research paper on the impact of Roman aqueducts on urban development.
+</USER_TASK>
+<PAGE_CONTENT>
+An Instagram feed with photos of friends, sponsored posts for clothing, and short video reels.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "OBVIOUS_DISTRACTION",
+  "reason": "Social media is unrelated to the academic research task.",
+  "selectors": ["#main-feed", ".stories-tray"]
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a Next.js frontend for a new e-commerce site.
+</USER_TASK>
+<PAGE_CONTENT>
+The official documentation page for React Hooks on the react.dev website. It explains useState, useEffect, and custom hooks with code examples.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "PRODUCTIVE",
+  "reason": "The page provides essential documentation for React, the library Next.js is built upon.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create a social media marketing plan for a new brand of coffee.
+</USER_TASK>
+<PAGE_CONTENT>
+A standard login page for Google accounts, asking for an email and password.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "NEUTRAL",
+  "reason": "This is a neutral login page, likely required to access work-related tools.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create an n8n pipeline for outreach automation.
+</USER_TASK>
+<PAGE_CONTENT>
+A CAPTCHA challenge page with reCAPTCHA widget asking the user to verify they are human by selecting images containing traffic lights.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "NEUTRAL",
+  "reason": "This is a CAPTCHA verification page, which is essential infrastructure that cannot be bypassed.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+</EXAMPLES>
+`;
+
+  return `${personaAndInstructions}\n${examples}`;
+};
+
+/**
+ * Constructs the user-facing prompt containing the specific data for analysis.
+ * @param userTask - The user's current task.
+ * @param pageContent - The HTML content of the page.
+ * @param url - The URL of the page.
+ * @param alwaysRemove - Optional CSS selectors to always include for removal.
+ * @returns The user prompt string.
+ */
+const constructUserPrompt = (
+  userTask: string,
+  pageContent: string,
+  url: string,
+  alwaysRemove?: string | null,
+): string => {
+  const alwaysRemoveSection = alwaysRemove
+    ? `<ALWAYS_REMOVE_SELECTORS>
+You must identify this projects and extract the CSS classes/IDs: "${alwaysRemove}"
+</ALWAYS_REMOVE_SELECTORS>`
+    : "";
+
+  return `
+<ANALYSIS_TASK>
+Now, perform your analysis on the following user task and page content.
+<USER_TASK>
+${userTask}
+</USER_TASK>
+<URL>
+${url}
+</URL>
+${alwaysRemoveSection}
+<PAGE_CONTENT>
+\`\`\`html
+${pageContent}
+\`\`\`
+</PAGE_CONTENT>
+<OUTPUT>
+`;
+};
+
 /**
  * Analyzes if a web page is relevant to the user's current task or a distraction.
  * Blocks fake productivity (work-adjacent but irrelevant content) and entertainment.
@@ -38,72 +250,53 @@ export const analyzePageContent = async (
 ): Promise<AnalysisResult> => {
   const model = getModel(provider, apiKey);
 
-  const alwaysRemoveNote = alwaysRemove
-    ? `\nALWAYS REMOVE: "${alwaysRemove}" (include in selectors if present)`
-    : "";
-
-  const systemPrompt = `You are a strict Focus Assistant. Determine if a page is DIRECTLY relevant to the user's specific task or netural pages.
-
-INSTANT ALLOW (skip analysis on this kind of pages):
-- Login/auth/CAPTCHA/verification pages or important pages that are netural
-- Billing/account/security/consent pages
-
-DECISION RULES:
-1. ALLOW: Page directly helps complete the exact stated task
-  Other examples: Login/auth/CAPTCHA/verification pages
-  Other examples: Billing/account/security/consent pages
-2. BLOCK_ALL: Everything else, including:
-   - Fake productivity: Work content unrelated to current task
-   - Adjacent topics not needed for this task
-   - Entertainment, social media, news, forums (unless task-specific)
-   - General learning not applicable to current task
-   
-DEFAULT: When uncertain → BLOCK_ALL
-
-FAKE PRODUCTIVITY EXAMPLES:
-- Task: "Build React form" | Page: "Database scaling patterns" → BLOCK_ALL
-- Task: "Fix CSS bug" | Page: "Advanced TypeScript types" → BLOCK_ALL
-- Task: "Research Product X pricing" | Page: "General startup advice" → BLOCK_ALL
-
-ALLOW EXAMPLES:
-- Task: "Debug React hook error" | Page: "React hooks documentation" → ALLOW
-- Task: "Research Product X" | Page: "Product X pricing page" → ALLOW
-
-If page has relevant content + distractions → REMOVE_ELEMENTS with specific selectors.
-
-Return JSON:
-{
-  "decision": "ALLOW" | "BLOCK_ALL" | "REMOVE_ELEMENTS",
-  "reason": "One sentence explanation",
-  "selectors": ["css.selector", "#someId"] // only for REMOVE_ELEMENTS
-}
-
-Be strict. If reasoning indicates distraction/irrelevance → MUST return BLOCK_ALL.`;
-
-  const prompt = `${alwaysRemoveNote}
-
-Task: ${userTask}
-URL: ${url}
-Content:
-\`\`\`html
-${pageContent}
-\`\`\``;
+  // Construct the two parts of the prompt
+  const systemPrompt = constructSystemPrompt();
+  const userPrompt = constructUserPrompt(
+    userTask,
+    pageContent,
+    url,
+    alwaysRemove,
+  );
 
   try {
+    // The `generateObject` function from your SDK handles the JSON parsing
     const { object } = await generateObject({
       model,
-      schema: AnalysisResultSchema,
-      prompt,
+      schema: NewAnalysisResultSchema,
+      prompt: userPrompt,
       system: systemPrompt,
-      temperature: 0.3,
+      temperature: 0.2, // Lower temperature for more deterministic, rule-based output
       mode: "json",
     });
 
-    return object;
+    // Type the object as NewAnalysisResult to access classification property
+    const newResult = object as NewAnalysisResult;
+
+    // The original code returned a different structure for REMOVE_ELEMENTS.
+    // To maintain compatibility, we will adapt the new output to the old decision types.
+    // This logic can be simplified if you update the consuming code.
+    const decision =
+      newResult.selectors && newResult.selectors.length > 0
+        ? "REMOVE_ELEMENTS"
+        : newResult.classification === "PRODUCTIVE" ||
+            newResult.classification === "NEUTRAL"
+          ? "ALLOW"
+          : "BLOCK_ALL";
+
+    // The original code expected a different final JSON structure.
+    // This part is adapted to return a structure that matches the original function's intent.
+    return {
+      decision: decision,
+      reason: newResult.reason,
+      selectors: newResult.selectors || [],
+    };
   } catch (error: unknown) {
+    // Fallback in case of an API or parsing error
     return {
       decision: "ALLOW",
       reason: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+      selectors: [],
     };
   }
 };
