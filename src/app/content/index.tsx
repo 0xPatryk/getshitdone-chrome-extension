@@ -196,14 +196,20 @@ export default defineContentScript({
         inheritStyles: true,
         onMount: (container) => {
           const app = document.createElement("div");
-          app.className = "w-full h-full";
+          app.className = "w-full h-full overflow-hidden";
           app.style.position = "fixed";
           app.style.top = "0";
           app.style.left = "0";
           app.style.right = "0";
           app.style.bottom = "0";
           app.style.zIndex = "9999";
+          app.style.overscrollBehavior = "none";
+          app.style.touchAction = "none";
           container.append(app);
+          
+          // Prevent background page scrolling when overlay is active
+          document.body.style.overflow = "hidden";
+          document.documentElement.style.overflow = "hidden";
 
           const root = ReactDOM.createRoot(app);
           root.render(
@@ -220,6 +226,9 @@ export default defineContentScript({
         onRemove: (root) => {
           console.log("ContentScript: ShadowRoot UI being removed");
           root?.unmount();
+          // Restore background page scrolling when overlay is removed
+          document.body.style.overflow = "";
+          document.documentElement.style.overflow = "";
         },
       });
 

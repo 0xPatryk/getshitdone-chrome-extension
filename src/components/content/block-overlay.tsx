@@ -59,9 +59,9 @@ export const BlockOverlay = ({
   onTimerExpire,
 }: BlockOverlayProps) => {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-2xl mx-auto space-y-6">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <div className="flex-1 p-4 overflow-hidden">
+        <div className="w-full max-w-2xl mx-auto h-full flex flex-col space-y-4 sm:space-y-6 py-4">
           {/* Header with minimal blocking message */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4 overflow-hidden">
@@ -95,7 +95,7 @@ export const BlockOverlay = ({
           )}
 
           {/* Chat interface as the main interaction point */}
-          <div className="bg-card border border-border rounded-lg p-4 shadow-sm">
+          <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm flex-1 flex flex-col min-h-0">
             <div className="mb-3">
               <h2 className="text-lg font-medium text-foreground">
                 Explain why you need access
@@ -105,19 +105,21 @@ export const BlockOverlay = ({
                 to grant access.
               </p>
             </div>
-            <ChatInterface
-              initialMessage="I need access to this page. Can you help me understand why it's blocked?"
-              onUnblock={onUnblock}
-              onAccessDenied={(deniedReason) => {
-                // Access denied callback - no logging needed
-              }}
-            />
+            <div className="flex-1 min-h-0">
+              <ChatInterface
+                initialMessage="I need access to this page. Can you help me understand why it's blocked?"
+                onUnblock={onUnblock}
+                onAccessDenied={(deniedReason) => {
+                  // Access denied callback - no logging needed
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
       {/* Footer with navigation */}
-      <div className="border-t border-border p-4 bg-card/50">
+      <div className="border-t border-border p-3 sm:p-4 bg-card/50">
         <div className="max-w-2xl mx-auto">
           <Button
             variant="ghost"

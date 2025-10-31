@@ -158,7 +158,7 @@ export const ChatInterface = ({
   return (
     <div className="flex flex-col h-full space-y-3">
       <ScrollArea ref={scrollAreaRef} className="flex-1 pr-3">
-        <div className="space-y-3">
+        <div className="space-y-3 pb-2">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
@@ -174,7 +174,7 @@ export const ChatInterface = ({
         </div>
       </ScrollArea>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2 border-t border-border">
         <Input
           ref={inputRef}
           value={inputMessage}
