@@ -9,10 +9,12 @@
 
 import { generateObject } from "ai";
 import { z } from "zod";
+import type { AccessGrant } from "~/lib/grants";
 import {
   type AnalysisResult,
   type ChatMessage,
   ChatProcessResultSchema,
+  type ChatSession,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
 import { getModel } from "./utils";
@@ -207,11 +209,48 @@ A Medium article titled "How to Become the Most Productive Effective Version of 
 };
 
 /**
+ * Formats grants and chat context for the AI prompt
+ * @param activeGrants - Record of active access grants
+ * @param chatContexts - Record of chat sessions for grant URLs
+ * @returns Formatted string containing grants context
+ */
+const formatGrantsContext = (
+  activeGrants: Record<string, AccessGrant>,
+  chatContexts: Record<string, ChatSession>,
+): string => {
+  if (Object.keys(activeGrants).length === 0) {
+    return "No active access grants.";
+  }
+
+  const grantsInfo = Object.entries(activeGrants).map(([url, grant]) => {
+    const chatContext = chatContexts[url];
+    const remainingMinutes = Math.ceil(
+      (grant.expiresAt - Date.now()) / (60 * 1000),
+    );
+
+    let contextInfo = "";
+    if (chatContext && chatContext.messages.length > 0) {
+      const userMessages = chatContext.messages
+        .filter((msg) => msg.role === "user")
+        .map((msg) => msg.content)
+        .join(" | ");
+      contextInfo = `\n  Chat Context: "${userMessages}"`;
+    }
+
+    return `- ${url} (${remainingMinutes} minutes remaining)${contextInfo}`;
+  });
+
+  return `Active Access Grants:\n${grantsInfo.join("\n")}`;
+};
+
+/**
  * Constructs the user-facing prompt containing the specific data for analysis.
  * @param userTask - The user's current task.
  * @param pageContent - The HTML content of the page.
  * @param url - The URL of the page.
  * @param alwaysRemove - Optional CSS selectors to always include for removal.
+ * @param activeGrants - Optional record of active access grants
+ * @param chatContexts - Optional record of chat sessions for grant URLs
  * @returns The user prompt string.
  */
 const constructUserPrompt = (
@@ -219,12 +258,27 @@ const constructUserPrompt = (
   pageContent: string,
   url: string,
   alwaysRemove?: string | null,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
 ): string => {
   const alwaysRemoveSection = alwaysRemove
     ? `<ALWAYS_REMOVE_SELECTORS>
-You must identify this projects and extract the CSS classes/IDs: "${alwaysRemove}"
+You must identify this components and extract the CSS classes/IDs. The components:"${alwaysRemove}"
 </ALWAYS_REMOVE_SELECTORS>`
     : "";
+
+  const grantsSection =
+    activeGrants && chatContexts
+      ? `<ACTIVE_GRANTS_CONTEXT>
+${formatGrantsContext(activeGrants, chatContexts)}
+
+CONSIDER THIS CONTEXT:
+- The user has been granted temporary access to specific URLs with chat context showing why
+- Use this context to understand the user's current work patterns and intentions
+- Similar requests or URLs should be evaluated in light of existing grants
+- The chat context reveals the user's stated needs and reasoning for access
+</ACTIVE_GRANTS_CONTEXTS>`
+      : "";
 
   return `
 <ANALYSIS_TASK>
@@ -236,6 +290,7 @@ ${userTask}
 ${url}
 </URL>
 ${alwaysRemoveSection}
+${grantsSection}
 <PAGE_CONTENT>
 \`\`\`html
 ${pageContent}
@@ -264,6 +319,8 @@ export const analyzePageContent = async (
   url: string,
   provider: AIProvider = "gemini",
   alwaysRemove?: string | null,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
 ): Promise<AnalysisResult> => {
   const model = getModel(provider, apiKey);
 
@@ -274,6 +331,8 @@ export const analyzePageContent = async (
     pageContent,
     url,
     alwaysRemove,
+    activeGrants,
+    chatContexts,
   );
 
   try {

@@ -9,7 +9,7 @@
  */
 
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import type { ChatMessage } from "~/lib/messaging";
+import type { ChatMessage, ChatSession } from "~/lib/messaging";
 import { AnalysisResultSchema } from "~/lib/messaging";
 import { mockData } from "./utils";
 
@@ -337,6 +337,199 @@ describe("AI Service - analyzePageContent", () => {
 
     // Assert
     expect(mockGetModel).toHaveBeenCalledWith("gemini", apiKey);
+  });
+
+  it("should analyze page content with grants context", async () => {
+    // Arrange
+    const apiKey = "test-api-key";
+    const userTask = "Build Angular frontend for n8n pipeline";
+    const pageContent = "<html>Angular documentation page</html>";
+    const url = "https://angular.io/docs";
+    const provider = "gemini" as const;
+    
+    const activeGrants = {
+      "https://react.dev": {
+        url: "https://react.dev",
+        expiresAt: Date.now() + 30 * 60 * 1000, // 30 minutes from now
+        grantedAt: Date.now() - 10 * 60 * 1000,
+        durationMinutes: 60,
+      },
+      "https://vuejs.org": {
+        url: "https://vuejs.org",
+        expiresAt: Date.now() + 45 * 60 * 1000, // 45 minutes from now
+        grantedAt: Date.now() - 20 * 60 * 1000,
+        durationMinutes: 90,
+      },
+    };
+    
+    const chatContexts = {
+      "https://react.dev": {
+        id: "https://react.dev",
+        messages: [
+          {
+            id: "msg-1",
+            content: "I need access to React docs for component development",
+            role: "user",
+            timestamp: Date.now() - 15 * 60 * 1000,
+          },
+          {
+            id: "msg-2",
+            content: "Access granted for 60 minutes",
+            role: "assistant",
+            timestamp: Date.now() - 14 * 60 * 1000,
+          },
+        ],
+        createdAt: Date.now() - 20 * 60 * 1000,
+        status: "completed" as const,
+      },
+      "https://vuejs.org": {
+        id: "https://vuejs.org",
+        messages: [
+          {
+            id: "msg-3",
+            content: "Need Vue documentation for comparison",
+            role: "user",
+            timestamp: Date.now() - 25 * 60 * 1000,
+          },
+        ],
+        createdAt: Date.now() - 30 * 60 * 1000,
+        status: "active" as const,
+      },
+    };
+
+    const mockAnalysisResult = {
+      decision: "ALLOW" as const,
+      reason: "Angular docs are relevant for frontend development task, similar to previously granted React docs",
+    };
+
+    mockGenerateObject.mockResolvedValue({
+      object: mockAnalysisResult,
+    });
+
+    // Act
+    const result = await analyzePageContent(
+      apiKey,
+      userTask,
+      pageContent,
+      url,
+      provider,
+      undefined, // alwaysRemove
+      activeGrants,
+      chatContexts,
+    );
+
+    // Assert
+    expect(mockGenerateObject).toHaveBeenCalledWith({
+      model: {},
+      schema: AnalysisResultSchema,
+      prompt: expect.stringContaining("Active Access Grants:"),
+      temperature: 0.1,
+      mode: "json",
+    });
+    expect(result).toEqual(mockAnalysisResult);
+    expect(result.decision).toBe("ALLOW");
+  });
+
+  it("should analyze page content without grants context", async () => {
+    // Arrange
+    const apiKey = "test-api-key";
+    const userTask = "Write research paper";
+    const pageContent = "<html>Social media content</html>";
+    const url = "https://twitter.com";
+    const provider = "openai" as const;
+
+    const mockAnalysisResult = {
+      decision: "BLOCK_ALL" as const,
+      reason: "Social media is distracting for research paper writing",
+    };
+
+    mockGenerateObject.mockResolvedValue({
+      object: mockAnalysisResult,
+    });
+
+    // Act
+    const result = await analyzePageContent(
+      apiKey,
+      userTask,
+      pageContent,
+      url,
+      provider,
+    );
+
+    // Assert
+    expect(mockGenerateObject).toHaveBeenCalledWith({
+      model: {},
+      schema: AnalysisResultSchema,
+      prompt: expect.stringContaining("No active access grants."),
+      temperature: 0.1,
+      mode: "json",
+    });
+    expect(result).toEqual(mockAnalysisResult);
+    expect(result.decision).toBe("BLOCK_ALL");
+  });
+
+  it("should include grants context in AI prompt correctly", async () => {
+    // Arrange
+    const apiKey = "test-api-key";
+    const userTask = "Test task";
+    const pageContent = "<html>Test content</html>";
+    const url = "https://example.com";
+    const provider = "gemini" as const;
+    
+    const activeGrants = {
+      "https://example.com": {
+        url: "https://example.com",
+        expiresAt: Date.now() + 15 * 60 * 1000,
+        grantedAt: Date.now() - 5 * 60 * 1000,
+        durationMinutes: 30,
+      },
+    };
+    
+    const chatContexts = {
+      "https://example.com": {
+        id: "https://example.com",
+        messages: [
+          {
+            id: "msg-1",
+            content: "I need this site for research",
+            role: "user",
+            timestamp: Date.now() - 10 * 60 * 1000,
+          },
+        ],
+        createdAt: Date.now() - 15 * 60 * 1000,
+        status: "completed" as const,
+      },
+    };
+
+    mockGenerateObject.mockResolvedValue({
+      object: {
+        decision: "ALLOW" as const,
+        reason: "Test",
+      },
+    });
+
+    // Act
+    await analyzePageContent(
+      apiKey,
+      userTask,
+      pageContent,
+      url,
+      provider,
+      undefined,
+      activeGrants,
+      chatContexts,
+    );
+
+    // Assert
+    const calls = mockGenerateObject.mock.calls;
+    expect(calls).toHaveLength(1);
+    const promptCall = calls[0][0];
+    expect(promptCall.model).toEqual({});
+    expect(promptCall.schema).toEqual(AnalysisResultSchema);
+    expect(promptCall.prompt).toContain("https://example.com (15 minutes remaining)");
+    expect(promptCall.prompt).toContain("Chat Context: \"I need this site for research\"");
+    expect(promptCall.temperature).toBe(0.1);
+    expect(promptCall.mode).toBe("json");
   });
 });
 
