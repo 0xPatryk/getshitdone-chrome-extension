@@ -82,6 +82,7 @@ Before any analysis, immediately classify as NEUTRAL if the page contains ANY of
 - Network connectivity issues
 - SSL certificate warnings
 - Access denied or permission required pages
+- Or similiar
 
 These pages are essential infrastructure that users cannot bypass and are never distractions, regardless of the user's task.
 
@@ -183,6 +184,22 @@ A CAPTCHA challenge page with reCAPTCHA widget asking the user to verify they ar
 </OUTPUT>
 </EXAMPLE>
 ---
+<EXAMPLE>
+<USER_TASK>
+Build an n8n pipeline for data processing.
+</USER_TASK>
+<PAGE_CONTENT>
+A Medium article titled "How to Become the Most Productive Effective Version of Yourself" with general productivity tips and time management advice.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "FAKE_PRODUCTIVITY",
+  "reason": "This is general productivity advice unrelated to building an n8n pipeline - classic fake productivity.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
 </EXAMPLES>
 `;
 
@@ -277,12 +294,16 @@ export const analyzePageContent = async (
     // To maintain compatibility, we will adapt the new output to the old decision types.
     // This logic can be simplified if you update the consuming code.
     const decision =
-      newResult.selectors && newResult.selectors.length > 0
-        ? "REMOVE_ELEMENTS"
-        : newResult.classification === "PRODUCTIVE" ||
-            newResult.classification === "NEUTRAL"
-          ? "ALLOW"
-          : "BLOCK_ALL";
+      newResult.classification === "PRODUCTIVE" ||
+      newResult.classification === "NEUTRAL"
+        ? "ALLOW"
+        : newResult.classification === "OBVIOUS_DISTRACTION" ||
+            newResult.classification === "FAKE_PRODUCTIVITY" ||
+            newResult.classification === "TANGENTIAL_DISTRACTION"
+          ? "BLOCK_ALL"
+          : newResult.selectors && newResult.selectors.length > 0
+            ? "REMOVE_ELEMENTS"
+            : "ALLOW";
 
     // The original code expected a different final JSON structure.
     // This part is adapted to return a structure that matches the original function's intent.
