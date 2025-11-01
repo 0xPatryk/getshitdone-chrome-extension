@@ -21,6 +21,8 @@ import type { ChatMessage } from "./types";
 interface UseChatMessagesOptions {
   /** Optional initial message to send when the hook initializes */
   readonly initialMessage?: string;
+  /** Optional initial AI message to display as the reason for blocking */
+  readonly initialAiMessage?: string;
   /** Unique session identifier for the chat session */
   readonly sessionId: string;
   /** Callback function called when the initial message is sent */
@@ -68,6 +70,7 @@ interface UseChatMessagesOptions {
  */
 export const useChatMessages = ({
   initialMessage,
+  initialAiMessage,
   sessionId,
   onInitialized,
 }: UseChatMessagesOptions) => {
@@ -77,17 +80,35 @@ export const useChatMessages = ({
   // Initialize with initial message if provided
   useEffect(() => {
     if (!isInitialized && initialMessage) {
-      const userMessage: ChatMessage = {
-        id: `user_${Date.now()}`,
-        content: initialMessage,
-        role: "user",
+      // Start with AI message first (use the reason if provided)
+      const aiMessage: ChatMessage = {
+        id: `ai_${Date.now()}`,
+        content:
+          initialAiMessage ||
+          "I understand you need access to this page. Can you please explain why you need it so I can help you stay focused?",
+        role: "assistant",
         timestamp: Date.now(),
       };
-      setMessages([userMessage]);
+
+      // Then add the user message
+      const userMessage: ChatMessage = {
+        id: `user_${Date.now() + 1}`,
+        content: initialMessage,
+        role: "user",
+        timestamp: Date.now() + 1,
+      };
+
+      setMessages([aiMessage, userMessage]);
       setIsInitialized(true);
       onInitialized?.(sessionId, initialMessage);
     }
-  }, [initialMessage, isInitialized, sessionId, onInitialized]);
+  }, [
+    initialMessage,
+    initialAiMessage,
+    isInitialized,
+    sessionId,
+    onInitialized,
+  ]);
 
   const addMessage = useCallback((message: ChatMessage) => {
     setMessages((prev) => [...prev, message]);

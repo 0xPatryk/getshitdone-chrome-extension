@@ -7,10 +7,10 @@
  * @module grants/services
  */
 
+import type { ChatSession } from "~/lib/messaging";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 import type { AccessGrant } from "./types";
-import type { ChatSession } from "~/lib/messaging";
 
 /**
  * Gets the active access grant for a specific URL

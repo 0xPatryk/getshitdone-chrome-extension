@@ -1,18 +1,19 @@
 /**
- * Chat message display component.
- * Renders a single chat message with appropriate styling based on role.
+ * Message item component for displaying individual chat messages.
+ * This component renders user and assistant messages with avatars,
+ * timestamps, and role-based styling following design patterns.
  */
 
 import { generateAiAvatar, generateUserAvatar } from "~/lib/avatar";
-import type { ChatMessage as ChatMessageType } from "~/lib/messaging";
+import type { ChatMessage } from "~/lib/messaging";
 import { cn } from "~/lib/utils";
 
 /**
- * Props for the ChatMessage component.
+ * Props for MessageItem component
  */
-interface ChatMessageProps {
-  /** The chat message to display, including content, role, and timestamp */
-  readonly message: ChatMessageType;
+interface MessageItemProps {
+  /** The chat message to display */
+  readonly message: ChatMessage;
 }
 
 /**
@@ -20,12 +21,6 @@ interface ChatMessageProps {
  *
  * @param timestamp - The timestamp in milliseconds to format
  * @returns A formatted time string in HH:MM format
- *
- * @example
- * ```typescript
- * const timeString = formatTime(Date.now());
- * console.log(timeString); // "14:30"
- * ```
  */
 const formatTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleTimeString([], {
@@ -35,30 +30,15 @@ const formatTime = (timestamp: number) => {
 };
 
 /**
- * Displays a single chat message with role-based styling.
+ * Message item component for displaying individual chat messages.
+ * Renders user and assistant messages with appropriate styling,
+ * avatars, and timestamps. Responsive design with consistent spacing.
  *
- * This component renders chat messages with different styling based on the sender's role:
- * - User messages: Blue background, right-aligned
- * - Assistant messages: Gray background, left-aligned
- *
- * Each message displays the content and a timestamp.
- *
- * @param props - The component props
+ * @param props - Component props
  * @param props.message - The chat message to display
- *
- * @example
- * ```typescript
- * const message: ChatMessage = {
- *   id: "msg_1",
- *   content: "Hello, how can I help you?",
- *   role: "assistant",
- *   timestamp: Date.now()
- * };
- *
- * <ChatMessage message={message} />
- * ```
+ * @returns A React element containing the message item
  */
-export const ChatMessage = ({ message }: ChatMessageProps) => {
+export const MessageItem = ({ message }: MessageItemProps) => {
   const isUser = message.role === "user";
   const avatarSrc = isUser ? generateUserAvatar() : generateAiAvatar();
 

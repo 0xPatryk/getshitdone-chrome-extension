@@ -17,7 +17,6 @@ import {
   type ChatSession,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
-import { getModel } from "./utils";
 
 // Define the new schema for the AI response based on the new prompt
 const NewAnalysisResultSchema = z.object({
@@ -490,42 +489,74 @@ Critically evaluate if this request is necessary for the SPECIFIC task or a rati
 };
 
 /**
- * Utility function to extract main text content from a page
+ * Utility function to extract main content from a page using DOMParser
+ * Preserves HTML structure and CSS classes/IDs but removes styling elements
  * @param content - The raw HTML content
- * @returns Cleaned text content with scripts, styles, and tags removed
+ * @param maxLength - Optional maximum character limit (default: 50000 for ~1M token context)
+ * @returns Cleaned HTML content with scripts, styles, and non-content elements removed
  */
-export const extractMainContent = (content: string): string => {
-  return (
-    content
-      // Remove head section (contains meta tags, title, styles, scripts, etc.)
-      .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, "")
-      // Handle malformed head tags - remove any remaining head content up to body tag
-      .replace(/<head\b[^>]*>[\s\S]*?(?=<body)/gi, "")
-      // Remove script tags and their content
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-      // Remove style tags and their content
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
-      // Remove comments
-      .replace(/<!--[\s\S]*?-->/g, "")
-      // Remove CDATA sections
-      .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "")
-      // Remove inline style attributes
-      .replace(/\s+style\s*=\s*(['"])[\s\S]*?\1/gi, "")
-      // Remove common non-content elements (nav, header, footer, aside, etc.)
-      .replace(
-        /<(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)\b[^>]*>[\s\S]*?<\/(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)>/gi,
-        "",
-      )
-      // Remove self-closing non-content elements
-      .replace(
-        /<(?:img|br|hr|input|meta|link|base|col|command|embed|keygen|param|source|track|wbr)\b[^>]*>/gi,
-        " ",
-      )
-      // Remove all remaining HTML tags, preserving the text content
-      .replace(/<[^>]+>/g, " ")
-      // Normalize whitespace (replace multiple spaces, tabs, and newlines with a single space)
-      .replace(/\s+/g, " ")
-      // Trim leading and trailing whitespace
-      .trim()
-  );
+export const extractMainContent = (
+  content: string,
+  maxLength = 500000,
+): string => {
+  try {
+    // 1. Parse the HTML string into a DOM
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+
+    // 2. Remove non-content elements
+    const unwantedElements = doc.querySelectorAll(
+      "script, style, img, svg, video, audio, iframe, embed, object, canvas, picture, source, track, map, area, link, meta",
+    );
+
+    // 3. Remove unwanted elements
+    for (const element of unwantedElements) {
+      element.remove();
+    }
+
+    // 4. Remove styling attributes from remaining elements
+    for (const element of doc.querySelectorAll("*")) {
+      if (element.hasAttribute("style")) {
+        element.removeAttribute("style");
+      }
+    }
+
+    // 5. Get cleaned content and apply length limit
+    const cleanedHTML = doc.body.innerHTML.trim();
+
+    // 6. Apply length limit to fit within context window
+    if (cleanedHTML.length > maxLength) {
+      // Try to truncate at a sentence boundary or tag to avoid breaking content
+      const truncated = cleanedHTML.substring(0, maxLength);
+
+      // Find the last complete sentence or tag
+      const lastSentence = truncated.lastIndexOf(". ");
+      const lastTag = Math.max(
+        truncated.lastIndexOf(">"),
+        truncated.lastIndexOf("<"),
+      );
+
+      if (lastSentence > maxLength * 0.9) {
+        return truncated.substring(0, lastSentence + 1);
+      }
+
+      return `${truncated}...`;
+    }
+
+    return cleanedHTML;
+  } catch (error) {
+    // Simple fallback - just remove scripts and styles
+    const fallback = content
+      .replace(/<(script|style)[^>]*>.*?<\/\1>/gi, "")
+      .replace(/<link[^>]*>/gi, "")
+      .replace(/<meta[^>]*>/gi, "")
+      .trim();
+
+    // Apply length limit to fallback as well
+    if (fallback.length > maxLength) {
+      return `${fallback.substring(0, maxLength)}...`;
+    }
+
+    return fallback;
+  }
 };

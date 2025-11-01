@@ -69,6 +69,121 @@ export const getOpenAIProvider = (apiKey: string) => {
  * // Returns a Gemini 2.5 Flash Lite model
  * ```
  */
+/**
+ * Removes unwanted elements from a DOM document
+ * @param doc - The DOM document to clean
+ */
+const removeUnwantedElements = (doc: Document): void => {
+  const unwantedSelectors = [
+    "script",
+    "style",
+    "img",
+    "svg",
+    "video",
+    "audio",
+    "iframe",
+    "embed",
+    "object",
+    "canvas",
+    "picture",
+    "source",
+    "track",
+    "map",
+    "area",
+    "link",
+    "meta",
+  ];
+
+  const unwantedElements = doc.querySelectorAll(unwantedSelectors.join(","));
+  for (const element of unwantedElements) {
+    element.remove();
+  }
+};
+
+/**
+ * Removes styling attributes from all elements in a DOM document
+ * @param doc - The DOM document to clean
+ */
+const removeStylingAttributes = (doc: Document): void => {
+  const allElements = doc.querySelectorAll("*");
+  for (const element of allElements) {
+    if (element.hasAttribute("style")) {
+      element.removeAttribute("style");
+    }
+  }
+};
+
+/**
+ * Truncates content to fit within specified length limit
+ * Tries to break at sentence boundaries or HTML tags to avoid breaking content
+ * @param content - The content to truncate
+ * @param maxLength - Maximum allowed length
+ * @returns Truncated content with "..." indicator if needed
+ */
+const truncateContent = (content: string, maxLength: number): string => {
+  if (content.length <= maxLength) {
+    return content;
+  }
+
+  const truncated = content.substring(0, maxLength);
+  const lastSentence = truncated.lastIndexOf(". ");
+  const lastTag = Math.max(
+    truncated.lastIndexOf(">"),
+    truncated.lastIndexOf("<"),
+  );
+
+  if (lastSentence > maxLength * 0.9) {
+    return truncated.substring(0, lastSentence + 1);
+  }
+
+  return `${truncated}...`;
+};
+
+/**
+ * Simple regex-based fallback for content extraction
+ * @param content - The raw HTML content
+ * @param maxLength - Maximum allowed length
+ * @returns Cleaned content
+ */
+const fallbackContentExtraction = (content: string, maxLength: number): string => {
+  const cleaned = content
+    .replace(/<(script|style)[^>]*>.*?<\/\1>/gi, "")
+    .replace(/<link[^>]*>/gi, "")
+    .replace(/<meta[^>]*>/gi, "")
+    .trim();
+
+  return truncateContent(cleaned, maxLength);
+};
+
+/**
+ * Utility function to extract main content from a page using DOMParser
+ * Preserves HTML structure and CSS classes/IDs but removes styling elements
+ * @param content - The raw HTML content
+ * @param maxLength - Optional maximum character limit (default: 50000 for ~1M token context)
+ * @returns Cleaned HTML content with scripts, styles, and non-content elements removed
+ */
+export const extractMainContent = (
+  content: string,
+  maxLength = 50000,
+): string => {
+  try {
+    // 1. Parse HTML string into a DOM
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+
+    // 2. Remove unwanted elements and styling
+    removeUnwantedElements(doc);
+    removeStylingAttributes(doc);
+
+    // 3. Get cleaned content and apply length limit
+    const cleanedHTML = doc.body.innerHTML.trim();
+    return truncateContent(cleanedHTML, maxLength);
+  } catch (error) {
+    // 4. Fallback to simple regex-based extraction
+    return fallbackContentExtraction(content, maxLength);
+  }
+};
+
 export const getModel = (provider: AIProvider, apiKey: string) => {
   switch (provider) {
     case "gemini":

@@ -721,6 +721,8 @@ describe("getChatContextForGrants", () => {
     const { getChatContextForGrants } = await import("~/lib/grants/services");
 
     // Assert
-    await expect(getChatContextForGrants(grantUrls)).rejects.toThrow(errorMessage);
+    await expect(getChatContextForGrants(grantUrls)).rejects.toThrow(
+      errorMessage,
+    );
   });
 });

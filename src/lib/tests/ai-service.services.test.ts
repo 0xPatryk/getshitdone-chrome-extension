@@ -9,7 +9,7 @@
  */
 
 import { beforeEach, describe, expect, it, mock } from "bun:test";
-import type { ChatMessage, ChatSession } from "~/lib/messaging";
+import type { ChatMessage } from "~/lib/messaging";
 import { AnalysisResultSchema } from "~/lib/messaging";
 import { mockData } from "./utils";
 
@@ -346,7 +346,7 @@ describe("AI Service - analyzePageContent", () => {
     const pageContent = "<html>Angular documentation page</html>";
     const url = "https://angular.io/docs";
     const provider = "gemini" as const;
-    
+
     const activeGrants = {
       "https://react.dev": {
         url: "https://react.dev",
@@ -361,7 +361,7 @@ describe("AI Service - analyzePageContent", () => {
         durationMinutes: 90,
       },
     };
-    
+
     const chatContexts = {
       "https://react.dev": {
         id: "https://react.dev",
@@ -399,7 +399,8 @@ describe("AI Service - analyzePageContent", () => {
 
     const mockAnalysisResult = {
       decision: "ALLOW" as const,
-      reason: "Angular docs are relevant for frontend development task, similar to previously granted React docs",
+      reason:
+        "Angular docs are relevant for frontend development task, similar to previously granted React docs",
     };
 
     mockGenerateObject.mockResolvedValue({
@@ -475,7 +476,7 @@ describe("AI Service - analyzePageContent", () => {
     const pageContent = "<html>Test content</html>";
     const url = "https://example.com";
     const provider = "gemini" as const;
-    
+
     const activeGrants = {
       "https://example.com": {
         url: "https://example.com",
@@ -484,7 +485,7 @@ describe("AI Service - analyzePageContent", () => {
         durationMinutes: 30,
       },
     };
-    
+
     const chatContexts = {
       "https://example.com": {
         id: "https://example.com",
@@ -526,8 +527,12 @@ describe("AI Service - analyzePageContent", () => {
     const promptCall = calls[0][0];
     expect(promptCall.model).toEqual({});
     expect(promptCall.schema).toEqual(AnalysisResultSchema);
-    expect(promptCall.prompt).toContain("https://example.com (15 minutes remaining)");
-    expect(promptCall.prompt).toContain("Chat Context: \"I need this site for research\"");
+    expect(promptCall.prompt).toContain(
+      "https://example.com (15 minutes remaining)",
+    );
+    expect(promptCall.prompt).toContain(
+      'Chat Context: "I need this site for research"',
+    );
     expect(promptCall.temperature).toBe(0.1);
     expect(promptCall.mode).toBe("json");
   });

@@ -6,8 +6,9 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { generateAiAvatar } from "~/lib/avatar";
-import { ChatInterface } from "./chat-interface";
+import { Card, CardContent } from "@/components/ui/card";
+import { Lock } from "lucide-react";
+import { FullScreenChatContainer } from "./chat/full-screen-chat-container";
 import { TimerDisplay } from "./timer-display";
 
 /**
@@ -59,57 +60,49 @@ export const BlockOverlay = ({
   onTimerExpire,
 }: BlockOverlayProps) => {
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <div className="flex-1 p-4 overflow-hidden">
-        <div className="w-full max-w-2xl mx-auto h-full flex flex-col space-y-4 sm:space-y-6 py-4">
-          {/* Header with minimal blocking message */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 mb-4 overflow-hidden">
-              <img
-                src={generateAiAvatar()}
-                alt="AI Assistant"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h1 className="text-2xl font-semibold text-foreground">
-              Access Restricted
-            </h1>
-            <p className="text-muted-foreground">
-              Your AI assistant has blocked this page to help you stay focused.
-            </p>
-          </div>
+    <div className="h-screen w-screen bg-background flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <div className="w-full h-full p-2 sm:p-3 md:p-4 flex justify-end">
+          <div className="h-full w-full flex flex-col gap-3 sm:gap-4">
+            {/* Access Restricted Header */}
+            <Card className="shadow-sm border-destructive/20 bg-destructive/5">
+              <CardContent className="p-4 sm:p-6">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="flex-shrink-0">
+                    <Lock className="h-8 w-8 sm:h-10 sm:w-10 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-base sm:text-lg font-bold text-destructive">
+                      Access Restricted
+                    </h1>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                      This page has been blocked to help you stay focused
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          {/* Reason display with subtle styling */}
-          <div className="bg-muted/50 border border-border rounded-lg p-4">
-            <p className="text-sm text-muted-foreground mb-1">AI Analysis:</p>
-            <p className="text-foreground">{reason}</p>
-          </div>
+            {/* Timer display if temporary access is granted */}
+            {accessExpiresAt && durationMinutes && onTimerExpire && (
+              <Card className="shadow-sm">
+                <CardContent className="p-3 sm:p-4">
+                  <TimerDisplay
+                    expiresAt={accessExpiresAt}
+                    durationMinutes={durationMinutes}
+                    onExpire={onTimerExpire}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-          {/* Timer display if temporary access is granted */}
-          {accessExpiresAt && durationMinutes && onTimerExpire && (
-            <TimerDisplay
-              expiresAt={accessExpiresAt}
-              durationMinutes={durationMinutes}
-              onExpire={onTimerExpire}
-            />
-          )}
-
-          {/* Chat interface as the main interaction point */}
-          <div className="bg-card border border-border rounded-lg p-3 sm:p-4 shadow-sm flex-1 flex flex-col min-h-0">
-            <div className="mb-3">
-              <h2 className="text-lg font-medium text-foreground">
-                Explain why you need access
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                Your AI assistant will evaluate your request and decide whether
-                to grant access.
-              </p>
-            </div>
+            {/* Full-screen chat container */}
             <div className="flex-1 min-h-0">
-              <ChatInterface
+              <FullScreenChatContainer
                 initialMessage="I need access to this page. Can you help me understand why it's blocked?"
+                initialAiMessage={reason}
                 onUnblock={onUnblock}
-                onAccessDenied={(deniedReason) => {
+                onAccessDenied={(deniedReason: string) => {
                   // Access denied callback - no logging needed
                 }}
               />
@@ -119,12 +112,12 @@ export const BlockOverlay = ({
       </div>
 
       {/* Footer with navigation */}
-      <div className="border-t border-border p-3 sm:p-4 bg-card/50">
-        <div className="max-w-2xl mx-auto">
+      <div className="border-t border-border bg-card/50 p-3 sm:p-4 flex justify-end">
+        <div className="w-full">
           <Button
-            variant="ghost"
+            variant="outline"
             onClick={() => window.history.back()}
-            className="w-full"
+            className="w-full h-12 sm:h-14 text-sm sm:text-base font-medium"
           >
             Go Back
           </Button>

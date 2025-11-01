@@ -19,7 +19,11 @@ import {
   invalidateCacheForAlwaysRemoveChange,
   invalidateCacheForTaskChange,
 } from "~/lib/cache";
-import { setAccessGrant, getAllActiveAccessGrants, getChatContextForGrants } from "~/lib/grants";
+import {
+  getAllActiveAccessGrants,
+  getChatContextForGrants,
+  setAccessGrant,
+} from "~/lib/grants";
 import { Message, onMessage } from "~/lib/messaging";
 import { type AnalysisResult, AnalysisResultSchema } from "~/lib/messaging";
 import type { ChatMessage, ChatSession } from "~/lib/messaging";
@@ -88,7 +92,9 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
 
     // Get active grants and their chat context for enhanced AI analysis
     const activeGrants = await getAllActiveAccessGrants();
-    const chatContexts = await getChatContextForGrants(Object.keys(activeGrants));
+    const chatContexts = await getChatContextForGrants(
+      Object.keys(activeGrants),
+    );
 
     // Analyze the page content using the AI service with grants context
     const analysisResult = await analyzePageContent(

@@ -83,10 +83,10 @@ export const TimerDisplay = ({
     <div className="flex items-center gap-4 bg-primary/5 border border-primary/20 rounded-lg p-4">
       <div className="flex-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-primary">
+          <span className="text-xs sm:text-sm font-medium text-primary">
             Time Remaining
           </span>
-          <span className="text-2xl font-bold text-primary font-mono">
+          <span className="text-base sm:text-lg font-bold text-primary font-mono">
             {formatTime(timeRemaining)}
           </span>
         </div>

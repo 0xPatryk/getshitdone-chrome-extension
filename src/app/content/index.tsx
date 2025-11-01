@@ -206,7 +206,7 @@ export default defineContentScript({
           app.style.overscrollBehavior = "none";
           app.style.touchAction = "none";
           container.append(app);
-          
+
           // Prevent background page scrolling when overlay is active
           document.body.style.overflow = "hidden";
           document.documentElement.style.overflow = "hidden";
