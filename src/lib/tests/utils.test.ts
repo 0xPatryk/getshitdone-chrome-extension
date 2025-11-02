@@ -93,13 +93,19 @@ describe("Utils - cn function", () => {
 
     it("should handle mixed truthy/falsy values", () => {
       // Arrange
+      const zeroValue = 0;
+      const emptyString = "";
+      const nullValue: null = null;
+      const undefinedValue: undefined = undefined;
+      const truthyString = "truthy-string";
+      
       const values = [
         "always-present",
-        0 && "zero-value", // falsy
-        "" && "empty-string", // falsy
-        null && "null-value", // falsy
-        undefined && "undefined-value", // falsy
-        "truthy-string" && "conditional-class", // truthy
+        zeroValue && "zero-value", // falsy
+        emptyString && "empty-string", // falsy
+        nullValue && "null-value", // falsy
+        undefinedValue && "undefined-value", // falsy
+        truthyString && "conditional-class", // truthy
       ];
 
       // Act
@@ -421,11 +427,11 @@ describe("Utils - cn function", () => {
       // Act
       const result = cn(
         "base-component",
-        size === "sm" && "px-2 py-1 text-sm",
-        size === "md" && "px-4 py-2 text-md",
-        size === "lg" && "px-6 py-3 text-lg",
-        variant === "primary" && "bg-blue-500 text-white",
-        variant === "secondary" && "bg-gray-200 text-gray-800",
+        size === "sm" ? "px-2 py-1 text-sm" : undefined,
+        size === "md" ? "px-4 py-2 text-md" : undefined,
+        size === "lg" ? "px-6 py-3 text-lg" : undefined,
+        variant === "primary" ? "bg-blue-500 text-white" : undefined,
+        variant === "secondary" ? "bg-gray-200 text-gray-800" : undefined,
       );
 
       // Assert

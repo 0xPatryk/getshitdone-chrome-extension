@@ -13,6 +13,7 @@
  */
 
 import { analyzePageContent, processChatMessage } from "~/lib/ai-service";
+import { extractMainContent } from "~/lib/ai-service/utils";
 import { getCachedDecision, setCachedDecision } from "~/lib/cache";
 import {
   cleanupExpiredCacheEntries,
@@ -96,11 +97,14 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       Object.keys(activeGrants),
     );
 
+    // Extract the main content from the raw HTML before analysis
+    const extractedContent = extractMainContent(data.content);
+
     // Analyze the page content using the AI service with grants context
     const analysisResult = await analyzePageContent(
       apiKey,
       currentTask,
-      data.content,
+      extractedContent,
       data.url,
       aiProvider,
       data.alwaysRemove,

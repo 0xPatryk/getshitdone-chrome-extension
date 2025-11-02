@@ -63,7 +63,7 @@ export const testConfig: TestConfig = {
   // Test environment setup
   setup: async () => {
     // Set up global test environment
-    global.testConfig = defaultTestConfig;
+    (global as typeof global & { testConfig: TestEnvironmentConfig }).testConfig = defaultTestConfig;
 
     // Configure console for tests
     if (defaultTestConfig.verbose) {
@@ -213,7 +213,7 @@ export const testScripts = {
 export const globalTestUtils = {
   // Get current test configuration
   getConfig: (): TestEnvironmentConfig => {
-    return global.testConfig as TestEnvironmentConfig;
+    return (global as typeof global & { testConfig: TestEnvironmentConfig }).testConfig;
   },
 
   // Check if running in test environment

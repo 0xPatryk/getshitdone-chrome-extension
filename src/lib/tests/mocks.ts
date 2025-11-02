@@ -15,7 +15,6 @@
  */
 
 import type { Message, Messages } from "~/lib/messaging/types";
-import type { StorageKey } from "~/lib/storage/types";
 
 // Enhanced storage mock with WXT-specific features
 export class MockStorage {
@@ -141,11 +140,11 @@ export class MockStorage {
   }
 
   // WXT-specific storage key helpers
-  getTypedValue<T>(key: StorageKey<T>): T | undefined {
+  getTypedValue<T>(key: string): T | undefined {
     return this.data[key] as T;
   }
 
-  setTypedValue<T>(key: StorageKey<T>, value: T): void {
+  setTypedValue<T>(key: string, value: T): void {
     this.data[key] = value;
   }
 }
@@ -247,7 +246,7 @@ export class MockMessaging {
     return new Promise<T>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         const index = this.listeners.findIndex(
-          ({ message }) => message === listener,
+          ({ message }) => message === (listener as (message: unknown) => void),
         );
         if (index > -1) {
           this.listeners.splice(index, 1);
@@ -382,7 +381,7 @@ export class MockRuntime {
 
     for (const handler of this.messageHandlers) {
       const response = await new Promise<unknown>((resolve) => {
-        handler(message, { id: "test-sender" }, resolve);
+        handler(message, { id: "test-sender" }, resolve as (response?: unknown) => void);
       });
       responses.push(response);
     }
@@ -440,8 +439,8 @@ export function createMockChromeAPI() {
 
   return {
     storage: {
-      local: storage,
-      sync: storage, // Use same instance for simplicity
+      local: storage as unknown as chrome.storage.StorageArea,
+      sync: storage as unknown as chrome.storage.StorageArea, // Use same instance for simplicity
     },
     runtime,
     tabs,

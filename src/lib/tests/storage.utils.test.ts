@@ -13,7 +13,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
-import { StorageKey } from "~/lib/storage/types";
+import { StorageKey, type StorageKeyType } from "~/lib/storage/types";
 import {
   getStorage,
   getStorageValue,
@@ -21,15 +21,19 @@ import {
 } from "~/lib/storage/utils";
 import { MockStorage } from "./mocks";
 
-// Mock WxtStorageItem type
-interface MockWxtStorageItem<T = unknown> {
+// Mock WxtStorageItem type matching the complete WxtStorageItem interface
+interface MockWxtStorageItem<T = unknown, M = Record<string, unknown>> {
   getValue: () => Promise<T>;
   setValue: (value: T) => Promise<void>;
+  removeValue: () => Promise<void>;
+  watch: (callback: (newValue: T, oldValue: T | undefined) => void) => () => void;
   key: string;
+  fallback?: T;
+  init?: () => T;
 }
 
 describe("Storage Utils", () => {
-  let mockStorageConfig: Record<string, MockWxtStorageItem>;
+  let mockStorageConfig: Record<StorageKeyType, MockWxtStorageItem<unknown, Record<string, unknown>>>;
   let mockStorage: MockStorage;
 
   beforeEach(() => {
@@ -46,6 +50,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.THEME]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.THEME);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: "system" as unknown,
       },
       [StorageKey.GEMINI_API_KEY]: {
         key: StorageKey.GEMINI_API_KEY,
@@ -54,6 +65,12 @@ describe("Storage Utils", () => {
         }),
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.GEMINI_API_KEY]: value });
+        }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.GEMINI_API_KEY);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
         }),
       },
       [StorageKey.OPENAI_API_KEY]: {
@@ -64,6 +81,12 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.OPENAI_API_KEY]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.OPENAI_API_KEY);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
       },
       [StorageKey.AI_PROVIDER]: {
         key: StorageKey.AI_PROVIDER,
@@ -73,6 +96,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.AI_PROVIDER]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.AI_PROVIDER);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: "gemini" as unknown,
       },
       [StorageKey.CURRENT_TASK]: {
         key: StorageKey.CURRENT_TASK,
@@ -81,6 +111,12 @@ describe("Storage Utils", () => {
         }),
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.CURRENT_TASK]: value });
+        }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.CURRENT_TASK);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
         }),
       },
       [StorageKey.EXTENSION_ENABLED]: {
@@ -92,6 +128,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.EXTENSION_ENABLED]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.EXTENSION_ENABLED);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: false as unknown,
       },
       [StorageKey.CHAT_SESSIONS]: {
         key: StorageKey.CHAT_SESSIONS,
@@ -102,6 +145,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.CHAT_SESSIONS]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.CHAT_SESSIONS);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: {} as unknown,
       },
       [StorageKey.ACTIVE_CHAT_SESSION]: {
         key: StorageKey.ACTIVE_CHAT_SESSION,
@@ -111,6 +161,12 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.ACTIVE_CHAT_SESSION]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.ACTIVE_CHAT_SESSION);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
       },
       [StorageKey.ALWAYS_REMOVE]: {
         key: StorageKey.ALWAYS_REMOVE,
@@ -119,6 +175,12 @@ describe("Storage Utils", () => {
         }),
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.ALWAYS_REMOVE]: value });
+        }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.ALWAYS_REMOVE);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
         }),
       },
       [StorageKey.ACCESS_GRANTS]: {
@@ -130,6 +192,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.ACCESS_GRANTS]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.ACCESS_GRANTS);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: {} as unknown,
       },
       [StorageKey.DECISION_CACHE]: {
         key: StorageKey.DECISION_CACHE,
@@ -140,6 +209,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.DECISION_CACHE]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.DECISION_CACHE);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: {} as unknown,
       },
       [StorageKey.CACHE_LAST_CLEANUP]: {
         key: StorageKey.CACHE_LAST_CLEANUP,
@@ -150,6 +226,13 @@ describe("Storage Utils", () => {
         setValue: mock(async (value: unknown) => {
           await mockStorage.set({ [StorageKey.CACHE_LAST_CLEANUP]: value });
         }),
+        removeValue: mock(async () => {
+          await mockStorage.remove(StorageKey.CACHE_LAST_CLEANUP);
+        }),
+        watch: mock((callback: (newValue: unknown, oldValue: unknown | undefined) => void) => {
+          return () => {}; // Return unwatch function
+        }),
+        fallback: 0 as unknown,
       },
     };
   });
@@ -309,9 +392,13 @@ describe("Storage Utils", () => {
 
     it("should handle storage errors gracefully", async () => {
       const errorMessage = "Storage read error";
-      mockStorageConfig[StorageKey.THEME].getValue.mockRejectedValueOnce(
-        new Error(errorMessage),
-      );
+      const themeStorageItem = mockStorageConfig[StorageKey.THEME];
+      if (themeStorageItem) {
+        // Bun's mock doesn't have mockRejectedValueOnce, so we'll replace the mock
+        themeStorageItem.getValue = mock(async () => {
+          throw new Error(errorMessage);
+        });
+      }
 
       await expect(
         getStorageValue(StorageKey.THEME, mockStorageConfig),
@@ -418,9 +505,13 @@ describe("Storage Utils", () => {
 
     it("should handle storage errors gracefully", async () => {
       const errorMessage = "Storage write error";
-      mockStorageConfig[StorageKey.THEME].setValue.mockRejectedValueOnce(
-        new Error(errorMessage),
-      );
+      const themeStorageItem = mockStorageConfig[StorageKey.THEME];
+      if (themeStorageItem) {
+        // Bun's mock doesn't have mockRejectedValueOnce, so we'll replace the mock
+        themeStorageItem.setValue = mock(async () => {
+          throw new Error(errorMessage);
+        });
+      }
 
       await expect(
         setStorageValue(StorageKey.THEME, "dark", mockStorageConfig),
@@ -457,13 +548,13 @@ describe("Storage Utils", () => {
 
       // Set all values
       for (const [key, value] of Object.entries(testValues)) {
-        await setStorageValue(key as StorageKey, value, mockStorageConfig);
+        await setStorageValue(key as StorageKeyType, value, mockStorageConfig);
       }
 
       // Get all values and verify
       for (const [key, expectedValue] of Object.entries(testValues)) {
         const actualValue = await getStorageValue(
-          key as StorageKey,
+          key as StorageKeyType,
           mockStorageConfig,
         );
         expect(actualValue).toEqual(expectedValue);

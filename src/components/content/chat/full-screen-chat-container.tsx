@@ -48,8 +48,8 @@ export const FullScreenChatContainer = ({
       onUnblock={onUnblock}
       onAccessDenied={onAccessDenied}
     >
-      <div className="h-full w-full flex flex-col overflow-hidden">
-        <Card className="flex-1 flex flex-col m-0 sm:m-2 sm:rounded-lg shadow-none sm:shadow-sm border-0 sm:border min-h-0">
+      <div className="h-full w-full flex items-center justify-center p-4 overflow-hidden">
+        <Card className="flex flex-col w-full max-w-2xl h-[80vh] sm:h-[85vh] rounded-2xl shadow-lg border bg-background/95 backdrop-blur-sm min-h-0">
           <ChatHeader />
           <ChatMessagesList />
           <ChatInputForm />

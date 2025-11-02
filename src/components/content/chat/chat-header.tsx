@@ -5,7 +5,9 @@
  */
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CardHeader } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
 import { generateAiAvatar } from "~/lib/avatar";
 import { useChatContext } from "./chat-provider";
 
@@ -37,6 +39,15 @@ export const ChatHeader = () => {
     <CardHeader className="pb-3 sm:pb-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3 justify-center sm:justify-start w-full">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => window.history.back()}
+            className="h-8 w-8 p-0 rounded-full hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <img
             src={generateAiAvatar()}
             alt="AI Assistant"

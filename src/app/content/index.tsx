@@ -88,15 +88,6 @@ const ContentScriptUI = ({
     const decision = analysisResult;
     if (!decision) return;
 
-    // Debug logging
-    console.log("ContentScript: Analysis result received:", {
-      decision: decision.decision,
-      reason: decision.reason,
-      selectors: decision.selectors,
-      url: window.location.href,
-      timestamp: new Date().toISOString(),
-    });
-
     switch (decision.decision) {
       case "BLOCK_ALL":
         console.log("ContentScript: Page should be blocked - showing overlay");
