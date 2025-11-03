@@ -15,11 +15,6 @@
  */
 export const StorageKey = {
   /**
-   * User's preferred theme (light, dark, or system)
-   */
-  THEME: "local:theme",
-
-  /**
    * API key for Google Gemini AI service
    */
   GEMINI_API_KEY: "local:geminiApiKey",

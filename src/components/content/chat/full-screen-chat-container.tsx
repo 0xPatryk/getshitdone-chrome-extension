@@ -9,6 +9,7 @@ import { ChatHeader } from "./chat-header";
 import { ChatInputForm } from "./chat-input-form";
 import { ChatMessagesList } from "./chat-messages-list";
 import { ChatProvider } from "./chat-provider";
+import { useEffect } from "react";
 
 /**
  * Props for FullScreenChatContainer component
@@ -41,6 +42,14 @@ export const FullScreenChatContainer = ({
   onUnblock,
   onAccessDenied,
 }: FullScreenChatContainerProps) => {
+  // Debug logs to validate current dimensions
+  useEffect(() => {
+    console.log("DEBUG: FullScreenChatContainer mounted");
+    console.log("DEBUG: Viewport height:", window.innerHeight);
+    console.log("DEBUG: 85vh in pixels:", window.innerHeight * 0.85);
+    console.log("DEBUG: Available container height:", document.documentElement.clientHeight);
+  }, []);
+
   return (
     <ChatProvider
       initialMessage={initialMessage}
@@ -48,8 +57,8 @@ export const FullScreenChatContainer = ({
       onUnblock={onUnblock}
       onAccessDenied={onAccessDenied}
     >
-      <div className="h-full w-full flex items-center justify-center p-4 overflow-hidden">
-        <Card className="flex flex-col w-full max-w-2xl h-[80vh] sm:h-[85vh] rounded-2xl shadow-lg border bg-background/95 backdrop-blur-sm min-h-0">
+      <div className="h-full w-full flex items-center justify-center p-2 sm:p-3 md:p-4 overflow-hidden">
+        <Card className="flex flex-col w-full h-full max-h-[85vh] rounded-2xl shadow-lg border bg-background/95 backdrop-blur-sm min-h-0">
           <ChatHeader />
           <ChatMessagesList />
           <ChatInputForm />

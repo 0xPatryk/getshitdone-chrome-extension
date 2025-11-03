@@ -69,7 +69,13 @@ Be extremely strict about fake productivity. Classify as FAKE_PRODUCTIVITY if:
 - "Soft skills" or general career advice when doing technical work
 - Productivity case studies or success stories unrelated to current task domain
 
-**KEY PRINCIPLE:** If content is about "being productive" rather than "doing the actual task," it's fake productivity.
+**EXCEPTIONS - NOT FAKE PRODUCTIVITY:**
+- AI helper tools (ChatGPT, Gemini, Claude, Copilot) are task-enablers, not fake productivity
+- Code assistants and development tools directly help with current work
+- Notes sites provide essential technical information, to take notes
+- Todo Lists
+
+**KEY PRINCIPLE:** If content is about "being productive" rather than "doing the actual task," it's fake productivity. However, AI tools and helper applications actively assist with task completion.
 
 **CRITICAL: INSTANT NEUTRAL CLASSIFICATION**
 Before any analysis, immediately classify as NEUTRAL if the page contains ANY of these elements:
@@ -84,9 +90,12 @@ Before any analysis, immediately classify as NEUTRAL if the page contains ANY of
 - Network connectivity issues
 - SSL certificate warnings
 - Access denied or permission required pages
+- AI helper tools and LLM interfaces (ChatGPT, Claude, Gemini, Copilot, Bard, etc.)
+- Code assistants and development helpers (GitHub Copilot, CodeWhisperer, Tabnine, etc.)
+- Note Taking apps/Task Management (Clickup, Todo)
 - Or similiar
 
-These pages are essential infrastructure that users cannot bypass and are never distractions, regardless of the user's task.
+These pages are essential infrastructure or productive helper tools that users cannot bypass and are never distractions, regardless of the user's task. AI tools specifically help users accomplish their tasks more efficiently.
 
 Your final output MUST be a single, valid JSON object. Do not include any explanatory text, markdown formatting, or apologies before or after the JSON object. Your entire output must be parseable and adhere to the following schema.
 </INSTRUCTIONS>
@@ -197,6 +206,38 @@ A Medium article titled "How to Become the Most Productive Effective Version of 
 {
   "classification": "FAKE_PRODUCTIVITY",
   "reason": "This is general productivity advice unrelated to building an n8n pipeline - classic fake productivity.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create an n8n pipeline for outreach automation.
+</USER_TASK>
+<PAGE_CONTENT>
+Google Gemini interface with chat input and conversation history. The page shows a conversational AI interface where users can ask questions and get AI-generated responses.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "NEUTRAL",
+  "reason": "This is an AI helper tool that assists users in accomplishing their tasks more efficiently.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Debug a React component issue.
+</USER_TASK>
+<PAGE_CONTENT>
+Stack Overflow page with programming questions and answers about React hooks and state management.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "classification": "NEUTRAL",
+  "reason": "This is a documentation and reference site that provides essential technical help for the current task.",
   "selectors": []
 }
 </OUTPUT>
@@ -390,6 +431,9 @@ export const analyzePageContent = async (
  * @param message - User's access request message
  * @param chatHistory - Previous chat messages for context
  * @param provider - AI provider (default: "gemini")
+ * @param pageContent - Optional page content the user wants to access
+ * @param activeGrants - Optional record of active access grants
+ * @param chatContexts - Optional record of chat sessions for grant URLs
  * @returns Response with access decision and optional duration
  */
 export const processChatMessage = async (
@@ -398,6 +442,9 @@ export const processChatMessage = async (
   message: string,
   chatHistory: ChatMessage[],
   provider: AIProvider = "gemini",
+  pageContent?: string,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
 ): Promise<{
   message: ChatMessage;
   accessGranted: boolean;
@@ -409,40 +456,220 @@ export const processChatMessage = async (
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
 
-  const systemPrompt = `You're a Focus Assistant that critically evaluates access requests to blocked content.
+  const grantsSection =
+    activeGrants && chatContexts
+      ? `<ACTIVE_GRANTS_CONTEXT>
+${formatGrantsContext(activeGrants, chatContexts)}
 
-CORE PRINCIPLE: Deny fake productivity and distractions. Only grant access with strong task alignment.
+CONSIDER THIS CONTEXT:
+- The user has been granted temporary access to specific URLs with chat context showing why
+- Use this context to understand the user's current work patterns and intentions
+- Similar requests or URLs should be evaluated in light of existing grants
+- The chat context reveals the user's stated needs and reasoning for access
+</ACTIVE_GRANTS_CONTEXTS>`
+      : "";
 
-GRANT CONDITIONS (with strict time limits):
-- Direct task relevance: Directly needed for current task (15-45min max)
-- Essential tools: Authentication, critical APIs, blocked tools (10-30min)
-- Health breaks: Physical/mental health needs (5-15min max)
+  const pageContentSection = pageContent
+    ? `<PAGE_CONTENT_CONTEXT>
+The user is requesting access to a page with the following content:
+\`\`\`html
+${pageContent}
+\`\`\`
+</PAGE_CONTENT_CONTEXT>`
+    : "";
 
-DENY CONDITIONS:
-- Fake productivity: Work-related but irrelevant to current task
-- Distractions: Entertainment, social media, news, gaming
-- Vague justifications: "Might help", "just in case", "research" without specifics
-- Excessive durations: Requests over 60 minutes
-- Repeated denials: Same request denied before
+  const systemPrompt = `You are a Collaborative Focus Assistant that helps users make mindful decisions about accessing content while staying productive.
 
-CRITICAL EVALUATION:
-- Challenge vague requests: Require specific task connection
-- Question timing: Why needed NOW for THIS task?
-- Detect rationalization: Users justifying distractions as "research"
-- Be skeptical: Default to DENY unless clear necessity
+Your role is to guide users toward better focus habits through thoughtful evaluation and education, not strict enforcement.
 
-Return JSON:
+<STRUCTURED_REASONING_PROCESS>
+Follow this six-step reasoning process before making your decision:
+
+1. **Task Analysis**: Understand the user's current task, its requirements, and current progress stage
+2. **Request Intent**: Analyze what the user specifically wants to access and why they think it's needed
+3. **Content Relevance**: Evaluate how the requested content relates to the current task (if page content provided)
+4. **Pattern Recognition**: Consider the user's access patterns from existing grants and chat history
+5. **Timing Assessment**: Determine if this is the right time for this type of access
+6. **Balanced Decision**: Make a decision that supports both productivity and user autonomy
+</STRUCTURED_REASONING_PROCESS>
+
+<GRANTING_PRINCIPLES>
+Grant access when:
+- Direct task relevance: Content is specifically needed for the current task (15-45min)
+- Essential tools: Authentication, critical APIs, blocked development tools (10-30min)
+- Well-being needs: Physical/mental health breaks, stress relief (5-15min)
+- Learning resources: Documentation, tutorials directly applicable to current work (20-40min)
+- Contextual patterns: Similar access has been productive before based on grant history
+
+Consider shorter durations for:
+- First-time requests for new content types
+- Content with borderline relevance
+- Requests during high-focus work periods
+</GRANTING_PRINCIPLES>
+
+<DENYING_PRINCIPLES>
+Deny access when:
+- Clear distractions: Entertainment, social media, news, gaming unrelated to task
+- Fake productivity: General productivity advice, business content when doing technical work
+- Vague requests: "Might help", "just in case", "research" without specific connection
+- Excessive durations: Requests over 60 minutes without strong justification
+- Pattern issues: Similar requests have led to distraction before
+
+When denying, provide:
+- Clear explanation of why it doesn't align with current focus
+- Alternative suggestions that might be more productive
+- Encouragement for maintaining focus
+</DENYING_PRINCIPLES>
+
+<COLLABORATIVE_APPROACH>
+- Be supportive and educational, not adversarial
+- Acknowledge the user's perspective and needs
+- Explain your reasoning clearly and transparently
+- Offer alternatives when denying requests
+- Help users develop better focus habits over time
+- Consider the user's autonomy and ability to self-regulate
+</COLLABORATIVE_APPROACH>
+
+Your response must be a single, valid JSON object. Do not include any explanatory text, markdown formatting, or apologies before or after the JSON object.
+
+<JSON_SCHEMA>
+\`\`\`json
 {
-  "response": "Your conversational response (supportive but firm)",
-  "decision": "GRANT" | "DENY",
-  "durationMinutes": number (only if GRANT, max 60)
+  "response": "string", // Your conversational response (supportive, educational, collaborative)
+  "decision": "GRANT" | "DENY", // Your decision based on the structured reasoning
+  "durationMinutes": number // Only if GRANT, maximum 60 minutes
 }
+\`\`\`
+</JSON_SCHEMA>`;
 
-EXAMPLES:
-Task: "Build React app" | Request: "Check Reddit for inspiration" → DENY (distraction disguised as research)
-Task: "Debug Python" | Request: "Stack Overflow 20min" → GRANT 20min (directly relevant)
-Task: "Write report" | Request: "YouTube tutorial on productivity" → DENY (fake productivity)
-Task: "Code frontend" | Request: "5min walk" → GRANT 5min (health break)`;
+  const examples = `
+<EXAMPLES>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a Next.js frontend for a new e-commerce site. Focus on component structure.
+</USER_TASK>
+<USER_REQUEST>
+I need to check Reddit's r/webdev for some inspiration on component design patterns
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "I understand you're looking for inspiration, but Reddit might not be the most focused source for component design patterns. Consider checking official React documentation, component libraries like Material-UI or Chakra UI, or curated resources like UI.dev. These will provide more targeted inspiration without the potential for distraction. Would you like me to suggest some specific resources?",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Debug a React component state issue in the shopping cart
+</USER_TASK>
+<USER_REQUEST>
+I need to access Stack Overflow to find solutions for React state management bugs
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Stack Overflow is an excellent resource for debugging React state issues. Since you're facing a specific technical problem, I'll grant you 25 minutes to find a solution. Focus on threads that directly address your state management issue rather than browsing generally.",
+  "decision": "GRANT",
+  "durationMinutes": 25
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Write a research paper on the impact of Roman aqueducts on urban development
+</USER_TASK>
+<USER_REQUEST>
+I need a 5-minute break to stretch and rest my eyes
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Taking regular breaks is essential for maintaining focus and productivity, especially during intensive research work. I'll grant you 5 minutes for a quick stretch and eye rest. When you return, you'll likely find yourself more focused on your aqueduct research.",
+  "decision": "GRANT",
+  "durationMinutes": 5
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Build an n8n pipeline for data processing
+</USER_TASK>
+<USER_REQUEST>
+I want to watch a YouTube video about "How to Become the Most Productive Person"
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "I notice you're requesting general productivity content while working on a specific technical task. This type of content often leads to distraction without directly helping with your n8n pipeline. Instead, consider taking a focused 10-minute break to review your pipeline requirements or documentation. Would that be more helpful for your current task?",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create a social media marketing plan for a new coffee brand
+</USER_TASK>
+<USER_REQUEST>
+I need to access Instagram to research competitor strategies and current trends
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Since you're creating a social media marketing plan, researching competitor strategies on Instagram is directly relevant to your task. I'll grant you 30 minutes to gather insights on competitor approaches and current trends. Try to stay focused on business-related content rather than personal browsing.",
+  "decision": "GRANT",
+  "durationMinutes": 30
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Debug a Python script for data analysis
+</USER_TASK>
+<USER_REQUEST>
+I need to access ChatGPT to help me understand this error message
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Using AI assistants like ChatGPT is a great way to debug code and understand error messages. Since this directly helps with your current Python debugging task, I'll grant you 20 minutes. Focus specifically on getting help with your error message rather than general conversation.",
+  "decision": "GRANT",
+  "durationMinutes": 20
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Write documentation for a new API endpoint
+</USER_TASK>
+<USER_REQUEST>
+I need to check Twitter for the latest tech news to stay updated
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "While staying updated on tech news is valuable, Twitter might not be the most focused resource while you're writing API documentation. Consider scheduling tech news reading for a dedicated break time. For now, would it help to take a 10-minute break to clear your mind before continuing with the documentation?",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a React Native mobile app
+</USER_TASK>
+<USER_REQUEST>
+I need to access the official React Native documentation for navigation patterns
+</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "The official React Native documentation is an essential resource for implementing navigation patterns in your app. Since this is directly relevant to your development task, I'll grant you 35 minutes to study the documentation and implement the navigation patterns you need.",
+  "decision": "GRANT",
+  "durationMinutes": 35
+}
+</OUTPUT>
+</EXAMPLE>
+</EXAMPLES>`;
 
   const prompt = `User Task: ${userTask}
 
@@ -451,17 +678,18 @@ ${historyContext}
 
 User's Request:
 ${message}
+${grantsSection}
+${pageContentSection}
 
-Critically evaluate if this request is necessary for the SPECIFIC task or a rationalized distraction.`;
+Please evaluate this request using the structured reasoning process and provide a collaborative, educational response.`;
 
   try {
     const { object } = await generateObject({
       model,
       schema: ChatProcessResultSchema,
-      prompt,
-      temperature: 0.7,
+      prompt: `${systemPrompt}\n\n${examples}\n\n${prompt}`,
+      temperature: 0.3, // Lower temperature for more consistent decisions
       mode: "json",
-      system: systemPrompt,
     });
 
     const accessGranted = object.decision === "GRANT";

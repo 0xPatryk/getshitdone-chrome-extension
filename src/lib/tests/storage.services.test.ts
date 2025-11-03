@@ -14,7 +14,6 @@
 
 import { afterEach, beforeEach, describe, expect, it, mock } from "bun:test";
 import { StorageKey } from "~/lib/storage/types";
-import { Theme } from "~/types";
 import { MockStorage } from "./mocks";
 
 // Mock environment variables
@@ -127,7 +126,6 @@ describe("Storage Services", () => {
   describe("Storage Configuration", () => {
     it("should define all required storage keys", () => {
       const expectedKeys = [
-        StorageKey.THEME,
         StorageKey.GEMINI_API_KEY,
         StorageKey.OPENAI_API_KEY,
         StorageKey.AI_PROVIDER,
@@ -149,10 +147,10 @@ describe("Storage Services", () => {
       }
     });
 
-    it("should define theme storage with correct fallback", () => {
-      const themeStorage = storage[StorageKey.THEME];
-      expect(themeStorage.key).toBe(StorageKey.THEME);
-      expect(themeStorage.fallback).toBe(Theme.SYSTEM);
+    it("should define API key storage with correct fallback", () => {
+      const apiKeyStorage = storage[StorageKey.GEMINI_API_KEY];
+      expect(apiKeyStorage.key).toBe(StorageKey.GEMINI_API_KEY);
+      expect(apiKeyStorage.fallback).toBe(null);
     });
 
     it("should define API key storage with null fallback", () => {
@@ -412,10 +410,10 @@ describe("Storage Services", () => {
 
   describe("Value Type Helper", () => {
     it("should infer correct types for storage values", () => {
-      // Test theme type
-      type ThemeValue = Value<typeof StorageKey.THEME>;
-      const themeTest: ThemeValue = Theme.DARK;
-      expect(themeTest).toBe(Theme.DARK);
+      // Test API key type
+      type ApiKeyValue = Value<typeof StorageKey.GEMINI_API_KEY>;
+      const apiKeyTest: ApiKeyValue = "test-api-key";
+      expect(apiKeyTest).toBe("test-api-key");
 
       // Test API key type
       type ApiKeyValue = Value<typeof StorageKey.GEMINI_API_KEY>;

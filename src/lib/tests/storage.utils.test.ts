@@ -273,7 +273,6 @@ describe("Storage Utils", () => {
 
     it("should work with all storage key types", () => {
       const keys = [
-        StorageKey.THEME,
         StorageKey.GEMINI_API_KEY,
         StorageKey.OPENAI_API_KEY,
         StorageKey.AI_PROVIDER,
@@ -297,12 +296,12 @@ describe("Storage Utils", () => {
 
   describe("getStorageValue", () => {
     it("should return stored value for existing key", async () => {
-      await mockStorage.set({ [StorageKey.THEME]: "dark" });
+      await mockStorage.set({ [StorageKey.GEMINI_API_KEY]: "test-api-key" });
 
-      const value = await getStorageValue(StorageKey.THEME, mockStorageConfig);
+      const value = await getStorageValue(StorageKey.GEMINI_API_KEY, mockStorageConfig);
 
-      expect(value).toBe("dark");
-      expect(mockStorageConfig[StorageKey.THEME].getValue).toHaveBeenCalled();
+      expect(value).toBe("test-api-key");
+      expect(mockStorageConfig[StorageKey.GEMINI_API_KEY].getValue).toHaveBeenCalled();
     });
 
     it("should return undefined for non-existent key", async () => {
@@ -410,12 +409,12 @@ describe("Storage Utils", () => {
     it("should set value for valid key", async () => {
       const theme = "dark";
 
-      await setStorageValue(StorageKey.THEME, theme, mockStorageConfig);
+      await setStorageValue(StorageKey.GEMINI_API_KEY, theme, mockStorageConfig);
 
-      expect(mockStorageConfig[StorageKey.THEME].setValue).toHaveBeenCalledWith(
+      expect(mockStorageConfig[StorageKey.GEMINI_API_KEY].setValue).toHaveBeenCalledWith(
         theme,
       );
-      expect(mockStorage.getValue(StorageKey.THEME)).toBe(theme);
+      expect(mockStorage.getValue(StorageKey.GEMINI_API_KEY)).toBe(theme);
     });
 
     it("should set null value for API key", async () => {
@@ -495,12 +494,12 @@ describe("Storage Utils", () => {
 
     it("should update existing value", async () => {
       // Set initial value
-      await setStorageValue(StorageKey.THEME, "dark", mockStorageConfig);
-      expect(mockStorage.getValue(StorageKey.THEME)).toBe("dark");
+      await setStorageValue(StorageKey.GEMINI_API_KEY, "dark", mockStorageConfig);
+      expect(mockStorage.getValue(StorageKey.GEMINI_API_KEY)).toBe("dark");
 
       // Update value
-      await setStorageValue(StorageKey.THEME, "light", mockStorageConfig);
-      expect(mockStorage.getValue(StorageKey.THEME)).toBe("light");
+      await setStorageValue(StorageKey.GEMINI_API_KEY, "light", mockStorageConfig);
+      expect(mockStorage.getValue(StorageKey.GEMINI_API_KEY)).toBe("light");
     });
 
     it("should handle storage errors gracefully", async () => {
@@ -535,7 +534,6 @@ describe("Storage Utils", () => {
   describe("Storage Key Management", () => {
     it("should handle all storage key types consistently", async () => {
       const testValues = {
-        [StorageKey.THEME]: "dark",
         [StorageKey.GEMINI_API_KEY]: "test-api-key",
         [StorageKey.OPENAI_API_KEY]: "test-openai-key",
         [StorageKey.AI_PROVIDER]: "openai",
@@ -694,37 +692,37 @@ describe("Storage Utils", () => {
     it("should handle missing storage configuration", async () => {
       const emptyConfig = {};
 
-      const value = await getStorageValue(StorageKey.THEME, emptyConfig);
+      const value = await getStorageValue(StorageKey.GEMINI_API_KEY, emptyConfig);
       expect(value).toBeUndefined();
 
       await expect(
-        setStorageValue(StorageKey.THEME, "dark", emptyConfig),
+        setStorageValue(StorageKey.GEMINI_API_KEY, "dark", emptyConfig),
       ).rejects.toThrow();
     });
 
     it("should handle storage item without getValue method", async () => {
       const invalidConfig = {
-        [StorageKey.THEME]: {
-          key: StorageKey.THEME,
+        [StorageKey.GEMINI_API_KEY]: {
+          key: StorageKey.GEMINI_API_KEY,
           setValue: mock(),
         },
       };
 
       await expect(
-        getStorageValue(StorageKey.THEME, invalidConfig),
+        getStorageValue(StorageKey.GEMINI_API_KEY, invalidConfig),
       ).rejects.toThrow();
     });
 
     it("should handle storage item without setValue method", async () => {
       const invalidConfig = {
-        [StorageKey.THEME]: {
-          key: StorageKey.THEME,
+        [StorageKey.GEMINI_API_KEY]: {
+          key: StorageKey.GEMINI_API_KEY,
           getValue: mock(),
         },
       };
 
       await expect(
-        setStorageValue(StorageKey.THEME, "dark", invalidConfig),
+        setStorageValue(StorageKey.GEMINI_API_KEY, "dark", invalidConfig),
       ).rejects.toThrow();
     });
 

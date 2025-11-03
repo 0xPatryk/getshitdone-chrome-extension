@@ -285,6 +285,9 @@ beforeEach(() => {
   if (!chromeMocks.runtime.id) {
     chromeMocks.runtime.id = "test-extension-id";
   }
+  
+  // Set chrome.runtime.id directly on global chrome object
+  (global as typeof global & { chrome: typeof chrome }).chrome.runtime.id = "test-extension-id";
 
   // Reset storage data
   mockStorageData.local = {};

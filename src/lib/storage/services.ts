@@ -10,7 +10,6 @@
 import { useEffect, useState } from "react";
 import type { AnalysisResultCache } from "~/lib/cache";
 import type { ChatSession } from "~/lib/messaging";
-import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 import { StorageKey, type StorageKeyType } from "./types";
 
@@ -22,12 +21,6 @@ import { StorageKey, type StorageKeyType } from "./types";
  * @constant
  */
 export const storage = {
-  /**
-   * User theme preference with system default
-   */
-  [StorageKey.THEME]: browserStorage.defineItem<Theme>(StorageKey.THEME, {
-    fallback: Theme.SYSTEM,
-  }),
 
   /**
    * Gemini API key with environment variable initialization

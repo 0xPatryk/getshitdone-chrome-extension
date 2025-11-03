@@ -204,13 +204,37 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     // Get chat history for AI context
     const chatHistory = session.messages;
 
-    // Process the chat message using the AI service
+    // Get active grants and their chat context for enhanced AI analysis
+    const activeGrants = await getAllActiveAccessGrants();
+    const chatContexts = await getChatContextForGrants(
+      Object.keys(activeGrants),
+    );
+
+    // Try to get page content from cache if available (sessionId is the URL)
+    const cachedResult = await getCachedDecision(
+      data.sessionId, // sessionId is the URL
+      currentTask || "",
+      null, // alwaysRemove not relevant for chat
+    );
+
+    let pageContent = "";
+    if (cachedResult?.reason) {
+      // Extract page content from cache if available
+      // Note: This is a simplified approach - in a real implementation,
+      // you might want to store page content separately in cache
+      pageContent = `Page content analysis: ${cachedResult.reason}`;
+    }
+
+    // Process the chat message using the AI service with enhanced context
     const aiResponse = await processChatMessage(
       apiKey,
       currentTask || "No task set",
       data.message,
       chatHistory,
       aiProvider,
+      pageContent,
+      activeGrants,
+      chatContexts,
     );
 
     // Add both user message and AI response to session

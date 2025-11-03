@@ -6,7 +6,6 @@
 
 import { Button } from "@/components/ui/button";
 import { CardFooter } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Send } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -46,6 +45,13 @@ export const ChatInputForm = () => {
 
   const isDisabled = isProcessing || accessState.isGranted;
 
+  // Debug logs for input validation
+  useEffect(() => {
+    console.log("DEBUG: ChatInputForm mounted");
+    console.log("DEBUG: Input message length:", inputMessage.length);
+    console.log("DEBUG: Textarea ref current:", textareaRef.current);
+  }, [inputMessage]);
+
   // Auto-focus textarea when not disabled
   useEffect(() => {
     if (textareaRef.current && !isDisabled) {
@@ -54,42 +60,31 @@ export const ChatInputForm = () => {
   }, [isDisabled]);
 
   return (
-    <CardFooter className="p-3 sm:p-4 lg:p-6">
-      <div className="space-y-3 sm:space-y-4 w-full">
-        <div className="space-y-2">
-          <Label
-            htmlFor="chat-input"
-            className="text-xs sm:text-sm font-medium"
+    <CardFooter className="p-2 sm:p-3 md:p-4">
+      <div className="space-y-2 sm:space-y-3 w-full">
+        <div className="relative w-full">
+          <Textarea
+            ref={textareaRef}
+            id="chat-input"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder="Explain why you need access..."
+            className="min-h-[80px] sm:min-h-[100px] resize-none text-sm pr-14 w-full"
+            rows={2}
+            disabled={isDisabled}
+          />
+          <Button
+            size="sm"
+            className="absolute bottom-2 right-2 h-8 w-8 p-0 rounded-full transition-all duration-200 hover:scale-105"
+            onClick={handleSubmit}
+            disabled={!inputMessage.trim() || isDisabled}
+            variant={
+              inputMessage.trim() && !isDisabled ? "default" : "secondary"
+            }
           >
-            Your Message
-          </Label>
-          <div className="relative">
-            <Textarea
-              ref={textareaRef}
-              id="chat-input"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="Explain why you need access..."
-              className="min-h-[100px] sm:min-h-[120px] resize-none text-xs sm:text-sm pr-12"
-              rows={3}
-              disabled={isDisabled}
-            />
-            <Button
-              size="sm"
-              className="absolute bottom-3 right-3 h-8 w-8 p-0 rounded-full transition-all duration-200 hover:scale-105"
-              onClick={handleSubmit}
-              disabled={!inputMessage.trim() || isDisabled}
-              variant={
-                inputMessage.trim() && !isDisabled ? "default" : "secondary"
-              }
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Be specific about why you need access to this page
-          </p>
+            <Send className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </CardFooter>

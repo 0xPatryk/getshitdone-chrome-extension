@@ -7,7 +7,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { FullScreenChatContainer } from "./chat/full-screen-chat-container";
 import { TimerDisplay } from "./timer-display";
 
@@ -66,19 +66,28 @@ export const BlockOverlay = ({
           <div className="h-full w-full flex flex-col gap-3 sm:gap-4">
             {/* Access Restricted Header */}
             <Card className="shadow-sm border-destructive/20 bg-destructive/5">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center gap-3 sm:gap-4">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
                   <div className="flex-shrink-0">
-                    <Lock className="h-8 w-8 sm:h-10 sm:w-10 text-destructive" />
+                    <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
                   </div>
                   <div className="flex-1">
-                    <h1 className="text-base sm:text-lg font-bold text-destructive">
+                    <h1 className="text-sm sm:text-base font-bold text-destructive">
                       Access Restricted
                     </h1>
-                    <p className="text-xs sm:text-sm text-muted-foreground mt-2">
+                    <p className="text-xs text-muted-foreground mt-1">
                       This page has been blocked to help you stay focused
                     </p>
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.history.back()}
+                    className="h-6 w-6 p-0 rounded hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
+                    aria-label="Go back"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -111,16 +120,10 @@ export const BlockOverlay = ({
         </div>
       </div>
 
-      {/* Footer with navigation */}
-      <div className="border-t border-border bg-card/50 p-3 sm:p-4 flex justify-end">
-        <div className="w-full">
-          <Button
-            variant="outline"
-            onClick={() => window.history.back()}
-            className="w-full h-12 sm:h-14 text-sm sm:text-base font-medium"
-          >
-            Go Back
-          </Button>
+      {/* Minimal footer */}
+      <div className="border-t border-border bg-card/50 p-1 sm:p-2 flex justify-center">
+        <div className="text-xs text-muted-foreground">
+          Focus Mode Extension
         </div>
       </div>
     </div>

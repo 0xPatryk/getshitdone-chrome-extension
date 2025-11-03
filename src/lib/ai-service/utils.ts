@@ -140,22 +140,6 @@ const truncateContent = (content: string, maxLength: number): string => {
 };
 
 /**
- * Simple regex-based fallback for content extraction
- * @param content - The raw HTML content
- * @param maxLength - Maximum allowed length
- * @returns Cleaned content
- */
-const fallbackContentExtraction = (content: string, maxLength: number): string => {
-  const cleaned = content
-    .replace(/<(script|style)[^>]*>.*?<\/\1>/gi, "")
-    .replace(/<link[^>]*>/gi, "")
-    .replace(/<meta[^>]*>/gi, "")
-    .trim();
-
-  return truncateContent(cleaned, maxLength);
-};
-
-/**
  * Utility function to extract main content from a page using DOMParser
  * Preserves HTML structure and CSS classes/IDs but removes styling elements
  * @param content - The raw HTML content
@@ -164,7 +148,7 @@ const fallbackContentExtraction = (content: string, maxLength: number): string =
  */
 export const extractMainContent = (
   content: string,
-  maxLength = 50000,
+  maxLength = 700000,
 ): string => {
   try {
     // 1. Parse HTML string into a DOM
@@ -180,7 +164,7 @@ export const extractMainContent = (
     return truncateContent(cleanedHTML, maxLength);
   } catch (error) {
     // 4. Fallback to simple regex-based extraction
-    return fallbackContentExtraction(content, maxLength);
+    return content;
   }
 };
 
