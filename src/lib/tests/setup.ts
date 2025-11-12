@@ -254,22 +254,39 @@ const setupDOM = () => {
     resources: "usable",
   });
 
-  (global as typeof global & { window: Window & typeof globalThis }).window = dom.window as Window & typeof globalThis;
-  (global as typeof global & { document: Document }).document = dom.window.document;
-  (global as typeof global & { navigator: Navigator }).navigator = dom.window.navigator;
-  (global as typeof global & { HTMLElement: typeof HTMLElement }).HTMLElement = dom.window.HTMLElement;
-  (global as typeof global & { Element: typeof Element }).Element = dom.window.Element;
+  (global as typeof global & { window: Window & typeof globalThis }).window =
+    dom.window as Window & typeof globalThis;
+  (global as typeof global & { document: Document }).document =
+    dom.window.document;
+  (global as typeof global & { navigator: Navigator }).navigator =
+    dom.window.navigator;
+  (global as typeof global & { HTMLElement: typeof HTMLElement }).HTMLElement =
+    dom.window.HTMLElement;
+  (global as typeof global & { Element: typeof Element }).Element =
+    dom.window.Element;
   (global as typeof global & { Node: typeof Node }).Node = dom.window.Node;
-  (global as typeof global & { NodeList: typeof NodeList }).NodeList = dom.window.NodeList;
-  (global as typeof global & { HTMLCollection: typeof HTMLCollection }).HTMLCollection = dom.window.HTMLCollection;
-  (global as typeof global & { MouseEvent: typeof MouseEvent }).MouseEvent = dom.window.MouseEvent;
-  (global as typeof global & { KeyboardEvent: typeof KeyboardEvent }).KeyboardEvent = dom.window.KeyboardEvent;
+  (global as typeof global & { NodeList: typeof NodeList }).NodeList =
+    dom.window.NodeList;
+  (
+    global as typeof global & { HTMLCollection: typeof HTMLCollection }
+  ).HTMLCollection = dom.window.HTMLCollection;
+  (global as typeof global & { MouseEvent: typeof MouseEvent }).MouseEvent =
+    dom.window.MouseEvent;
+  (
+    global as typeof global & { KeyboardEvent: typeof KeyboardEvent }
+  ).KeyboardEvent = dom.window.KeyboardEvent;
   (global as typeof global & { Event: typeof Event }).Event = dom.window.Event;
-  (global as typeof global & { EventTarget: typeof EventTarget }).EventTarget = dom.window.EventTarget;
-  (global as typeof global & { CustomEvent: typeof CustomEvent }).CustomEvent = dom.window.CustomEvent;
-  (global as typeof global & { DOMParser: typeof DOMParser }).DOMParser = dom.window.DOMParser;
-  (global as typeof global & { XMLHttpRequest: typeof XMLHttpRequest }).XMLHttpRequest = dom.window.XMLHttpRequest;
-  (global as typeof global & { fetch: typeof fetch }).fetch = dom.window.fetch as typeof fetch;
+  (global as typeof global & { EventTarget: typeof EventTarget }).EventTarget =
+    dom.window.EventTarget;
+  (global as typeof global & { CustomEvent: typeof CustomEvent }).CustomEvent =
+    dom.window.CustomEvent;
+  (global as typeof global & { DOMParser: typeof DOMParser }).DOMParser =
+    dom.window.DOMParser;
+  (
+    global as typeof global & { XMLHttpRequest: typeof XMLHttpRequest }
+  ).XMLHttpRequest = dom.window.XMLHttpRequest;
+  (global as typeof global & { fetch: typeof fetch }).fetch = dom.window
+    .fetch as typeof fetch;
 };
 
 // Global test setup
@@ -279,15 +296,17 @@ beforeEach(() => {
 
   // Create and assign Chrome mocks
   const chromeMocks = createChromeMocks();
-  (global as typeof global & { chrome: typeof chrome }).chrome = chromeMocks as unknown as typeof chrome;
+  (global as typeof global & { chrome: typeof chrome }).chrome =
+    chromeMocks as unknown as typeof chrome;
 
   // Ensure chrome.runtime.id exists to prevent extension errors
   if (!chromeMocks.runtime.id) {
     chromeMocks.runtime.id = "test-extension-id";
   }
-  
+
   // Set chrome.runtime.id directly on global chrome object
-  (global as typeof global & { chrome: typeof chrome }).chrome.runtime.id = "test-extension-id";
+  (global as typeof global & { chrome: typeof chrome }).chrome.runtime.id =
+    "test-extension-id";
 
   // Reset storage data
   mockStorageData.local = {};
@@ -314,7 +333,9 @@ beforeEach(() => {
   } as typeof chrome;
 
   // Mock WebExtension polyfill if needed
-  (global as typeof global & { WebExtensionPolyfill: new () => typeof chrome }).WebExtensionPolyfill = class WebExtensionPolyfill {
+  (
+    global as typeof global & { WebExtensionPolyfill: new () => typeof chrome }
+  ).WebExtensionPolyfill = class WebExtensionPolyfill {
     constructor() {
       // biome-ignore lint/correctness/noConstructorReturn: This is intentional for mocking
       return (global as typeof global & { browser: typeof chrome }).browser;
@@ -333,12 +354,19 @@ afterEach(() => {
   }
 
   // Reset globals
-  (global as typeof global & { window: Window & typeof globalThis }).window = undefined as unknown as Window & typeof globalThis;
-  (global as typeof global & { document: Document }).document = undefined as unknown as Document;
-  (global as typeof global & { navigator: Navigator }).navigator = undefined as unknown as Navigator;
-  (global as typeof global & { chrome: typeof chrome }).chrome = undefined as unknown as typeof chrome;
-  (global as typeof global & { browser: typeof chrome }).browser = undefined as unknown as typeof chrome;
-  (global as typeof global & { WebExtensionPolyfill: new () => typeof chrome }).WebExtensionPolyfill = undefined as unknown as new () => typeof chrome;
+  (global as typeof global & { window: Window & typeof globalThis }).window =
+    undefined as unknown as Window & typeof globalThis;
+  (global as typeof global & { document: Document }).document =
+    undefined as unknown as Document;
+  (global as typeof global & { navigator: Navigator }).navigator =
+    undefined as unknown as Navigator;
+  (global as typeof global & { chrome: typeof chrome }).chrome =
+    undefined as unknown as typeof chrome;
+  (global as typeof global & { browser: typeof chrome }).browser =
+    undefined as unknown as typeof chrome;
+  (
+    global as typeof global & { WebExtensionPolyfill: new () => typeof chrome }
+  ).WebExtensionPolyfill = undefined as unknown as new () => typeof chrome;
 });
 
 // Export utilities for test files

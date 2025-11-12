@@ -98,7 +98,7 @@ describe("Utils - cn function", () => {
       const nullValue: null = null;
       const undefinedValue: undefined = undefined;
       const truthyString = "truthy-string";
-      
+
       const values = [
         "always-present",
         zeroValue && "zero-value", // falsy

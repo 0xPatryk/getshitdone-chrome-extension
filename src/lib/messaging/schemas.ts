@@ -17,7 +17,7 @@ export const AnalysisResultSchema = z.object({
   /**
    * The decision about what to do with the page
    */
-  decision: z.enum(["BLOCK_ALL", "REMOVE_ELEMENTS", "ALLOW"]),
+  decision: z.enum(["BLOCK_ALL", "ALLOW"]),
 
   /**
    * Explanation for the decision

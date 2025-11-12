@@ -415,10 +415,10 @@ describe("Storage Services", () => {
       const apiKeyTest: ApiKeyValue = "test-api-key";
       expect(apiKeyTest).toBe("test-api-key");
 
-      // Test API key type
-      type ApiKeyValue = Value<typeof StorageKey.GEMINI_API_KEY>;
-      const apiKeyTest: ApiKeyValue = null;
-      expect(apiKeyTest).toBe(null);
+      // Test API key type with null value
+      type ApiKeyValueNull = Value<typeof StorageKey.GEMINI_API_KEY>;
+      const apiKeyTestNull: ApiKeyValueNull = null;
+      expect(apiKeyTestNull).toBe(null);
 
       // Test AI provider type
       type AiProviderValue = Value<typeof StorageKey.AI_PROVIDER>;

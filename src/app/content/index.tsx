@@ -84,6 +84,7 @@ const ContentScriptUI = ({
   const chatAccessMutation = useChatAccess(url, task, alwaysRemove);
 
   // Apply decision to page
+  // biome-ignore lint/correctness/useExhaustiveDependencies: It needs to update when always remove updates
   useEffect(() => {
     const decision = analysisResult;
     if (!decision) return;
@@ -91,30 +92,23 @@ const ContentScriptUI = ({
     switch (decision.decision) {
       case "BLOCK_ALL":
         console.log("ContentScript: Page should be blocked - showing overlay");
+        // Remove distracting elements before showing the overlay
+
         if (onShouldBlock) {
           onShouldBlock(decision.reason);
-        }
-        // Block overlay will be rendered below
-        break;
-      case "REMOVE_ELEMENTS":
-        // Remove elements based on selectors
-        if (decision.selectors) {
+        } else if (decision.selectors) {
           removeElements(decision.selectors);
         }
+
+        // Block overlay will be rendered below
         break;
       case "ALLOW":
         console.log(
           "ContentScript: Page allowed - removing always-remove elements if any",
         );
         // Remove always-remove elements if any
-        if (alwaysRemove) {
-          const selectors = alwaysRemove
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean);
-          if (selectors.length > 0) {
-            removeElements(selectors);
-          }
+        if (decision.selectors) {
+          removeElements(decision.selectors);
         }
         break;
     }

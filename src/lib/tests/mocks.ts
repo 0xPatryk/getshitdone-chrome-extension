@@ -381,7 +381,11 @@ export class MockRuntime {
 
     for (const handler of this.messageHandlers) {
       const response = await new Promise<unknown>((resolve) => {
-        handler(message, { id: "test-sender" }, resolve as (response?: unknown) => void);
+        handler(
+          message,
+          { id: "test-sender" },
+          resolve as (response?: unknown) => void,
+        );
       });
       responses.push(response);
     }

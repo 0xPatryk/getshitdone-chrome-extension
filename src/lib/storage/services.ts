@@ -21,7 +21,6 @@ import { StorageKey, type StorageKeyType } from "./types";
  * @constant
  */
 export const storage = {
-
   /**
    * Gemini API key with environment variable initialization
    */

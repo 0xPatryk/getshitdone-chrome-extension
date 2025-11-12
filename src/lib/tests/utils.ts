@@ -281,7 +281,8 @@ export const testContext = {
         }),
         querySelector: () => null,
       };
-      (global as typeof globalThis & { document: Document }).document = mockDocument;
+      (global as typeof globalThis & { document: Document }).document =
+        mockDocument;
     }
 
     document.body.innerHTML = html;
@@ -298,23 +299,47 @@ export const assertions = {
   // Assert that storage contains specific key/value
   storageContains: async (key: string, expectedValue: unknown) => {
     const actualValue = await chrome.storage.local.get(key);
-    (global as typeof global & { expect: (value: unknown) => { toEqual: (value: unknown) => void } }).expect(actualValue[key]).toEqual(expectedValue);
+    (
+      global as typeof global & {
+        expect: (value: unknown) => { toEqual: (value: unknown) => void };
+      }
+    )
+      .expect(actualValue[key])
+      .toEqual(expectedValue);
   },
 
   // Assert that element exists in DOM
   elementExists: (selector: string) => {
-    (global as typeof global & { expect: (value: unknown) => { toBeTruthy: () => void } }).expect(document.querySelector(selector)).toBeTruthy();
+    (
+      global as typeof global & {
+        expect: (value: unknown) => { toBeTruthy: () => void };
+      }
+    )
+      .expect(document.querySelector(selector))
+      .toBeTruthy();
   },
 
   // Assert that element has specific text
   elementHasText: (selector: string, expectedText: string) => {
     const element = document.querySelector(selector);
-    (global as typeof global & { expect: (value: unknown) => { toContain: (value: unknown) => void } }).expect(element?.textContent).toContain(expectedText);
+    (
+      global as typeof global & {
+        expect: (value: unknown) => { toContain: (value: unknown) => void };
+      }
+    )
+      .expect(element?.textContent)
+      .toContain(expectedText);
   },
 
   // Assert that element has specific class
   elementHasClass: (selector: string, className: string) => {
     const element = document.querySelector(selector);
-    (global as typeof global & { expect: (value: unknown) => { toBe: (value: unknown) => void } }).expect(element?.classList.contains(className)).toBe(true);
+    (
+      global as typeof global & {
+        expect: (value: unknown) => { toBe: (value: unknown) => void };
+      }
+    )
+      .expect(element?.classList.contains(className))
+      .toBe(true);
   },
 };

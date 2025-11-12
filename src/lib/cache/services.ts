@@ -56,7 +56,7 @@ export const setCachedDecision = async (
   url: string,
   task: string,
   alwaysRemove: string | null,
-  decision: "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW",
+  decision: "BLOCK_ALL" | "ALLOW",
   selectors: string[] | null,
   reason: string,
   customTTL?: number,

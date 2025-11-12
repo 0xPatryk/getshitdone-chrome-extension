@@ -21,13 +21,9 @@ import { getModel } from "./utils";
 
 // Define the new schema for the AI response based on the new prompt
 const NewAnalysisResultSchema = z.object({
-  classification: z.enum([
-    "PRODUCTIVE",
-    "NEUTRAL",
-    "OBVIOUS_DISTRACTION",
-    "FAKE_PRODUCTIVITY",
-    "TANGENTIAL_DISTRACTION",
-  ]),
+  decision: z
+    .enum(["ALLOW", "BLOCK_ALL"])
+    .describe("The final decision based on the analysis."),
   reason: z
     .string()
     .describe("A concise, one-sentence explanation for the decision."),
@@ -35,10 +31,6 @@ const NewAnalysisResultSchema = z.object({
     .array(z.string())
     .describe("An array of CSS selectors for distracting elements, if any."),
 });
-
-// Define the TypeScript type from the Zod schema
-type NewAnalysisResult = z.infer<typeof NewAnalysisResultSchema>;
-
 /**
  * Constructs the detailed system prompt for the AI, incorporating advanced
  * prompt engineering techniques for higher accuracy and reliability.
@@ -47,65 +39,88 @@ type NewAnalysisResult = z.infer<typeof NewAnalysisResultSchema>;
 const constructSystemPrompt = (): string => {
   // 1. Define the Persona and Core Instructions
   const personaAndInstructions = `
-You are a Hyper-Efficient Productivity Analyst. Your sole purpose is to analyze a user's current web page in the context of their stated task and determine if it constitutes a distraction.
+You are an Expert Web Content Analyzer specializing in distraction detection. Your purpose is to critically evaluate whether a web page supports or hinders a user's stated task by examining both obvious and subtle distractions across all content domains.
 
-<INSTRUCTIONS>
-You must follow this exact six-step reasoning process internally before producing your final output:
-1.  **Task Deconstruction:** Analyze the <USER_TASK>. Identify the primary goal, key entities, and the implied current stage of the work.
-2.  **Page Content & Intent Synthesis:** Analyze the <PAGE_CONTENT>. Summarize its topic, purpose, and level of detail.
-3.  **Relevance & Proximity Analysis:** Compare the task and the page to evaluate their semantic relationship.
-4.  **Productivity Context Evaluation:** Based on the task's stage, assess if the page content is productive *at this moment*. This is the critical step to identify "fake productivity" (relevant but ill-timed content).
-5.  **Page Classification:** Classify the page into ONE of the following categories: PRODUCTIVE, NEUTRAL, OBVIOUS_DISTRACTION, FAKE_PRODUCTIVITY, TANGENTIAL_DISTRACTION.
-6.  **Actionable Conclusion Formulation:** Synthesize your analysis into a concise 'reason' and identify specific CSS 'selectors' for distracting page elements.
+<ANALYSIS_CHECKLIST>
+Before generating output, you must complete these steps:
+1. **CHECK ACTIVE GRANTS FIRST:** If <ACTIVE_GRANTS_CONTEXT> exists, verify if current URL or content matches granted access patterns
+2. Parse and internalize the user's task objective and the page's primary purpose
+3. Cross-reference page content against task requirements using domain knowledge
+4. Identify both explicit distractions (off-task) and implicit ones (fake productivity, tangential content)
+5. Detect distracting UI elements and extract their CSS selectors from page structure
+6. Apply exception rules for always-necessary content (auth flows, AI tools, documentation)
+7. Formulate decision (ALLOW or BLOCK_ALL) with supporting one-sentence justification
+8. Validate output against schema: decision field, reason field, selectors array in exact order
+</ANALYSIS_CHECKLIST>
 
-**FAKE PRODUCTIVITY DETECTION RULES:**
-Be extremely strict about fake productivity. Classify as FAKE_PRODUCTIVITY if:
-- Content is about productivity/efficiency but NOT directly applicable to current task
-- General productivity advice, tips, or "how to be productive" articles when user is doing specific technical work
-- Business/entrepreneurship content when user is doing hands-on development
-- Self-improvement or personal development content unrelated to current task
-- Time management or productivity tools that aren't the specific tools needed for current task
-- Industry trends or thought leadership content when user needs practical implementation
-- "Soft skills" or general career advice when doing technical work
-- Productivity case studies or success stories unrelated to current task domain
+<CORE_INSTRUCTIONS>
+**REASONING FRAMEWORK:**
+Execute this four-phase analysis before producing output:
 
-**EXCEPTIONS - NOT FAKE PRODUCTIVITY:**
-- AI helper tools (ChatGPT, Gemini, Claude, Copilot) are task-enablers, not fake productivity
-- Code assistants and development tools directly help with current work
-- Notes sites provide essential technical information, to take notes
-- Todo Lists
+**Phase 1 - Context Synthesis:**
+- **PRIORITY CHECK:** If <ACTIVE_GRANTS_CONTEXT> is present, examine it FIRST before other analysis
+- Extract the user's core objective from <USER_TASK>
+- Identify the page's primary purpose and content type from <PAGE_CONTENT>
+- Note the domain, format, and any interactive elements present
 
-**KEY PRINCIPLE:** If content is about "being productive" rather than "doing the actual task," it's fake productivity. However, AI tools and helper applications actively assist with task completion.
+**Phase 2 - Relevance Classification:**
+Categorize the page's relationship to the task:
+- **DIRECTLY NECESSARY:** Content or tools immediately required to complete the task
+- **SUPPORTIVE INFRASTRUCTURE:** Login gates, CAPTCHAs, error pages, or helper tools enabling task completion
+- **TANGENTIALLY RELATED:** Content in similar domain but not addressing the specific task (treat as distraction)
+- **CLEARLY OFF-TASK:** Content from entirely different domains or pure entertainment
+- **FAKE PRODUCTIVITY:** Content about productivity, motivation, or general advice rather than actual task execution
 
-**CRITICAL: INSTANT NEUTRAL CLASSIFICATION**
-Before any analysis, immediately classify as NEUTRAL if the page contains ANY of these elements:
-- CAPTCHA challenges (reCAPTCHA, hCaptcha, Turnstile, image verification, audio challenges)
-- Security verifications (2FA, MFA, one-time codes, authentication codes)
-- Bot detection or human verification systems
-- Rate limiting or security challenge pages
-- Connection/security error pages
-- Cookie consent banners (standalone pages, not overlays)
-- Terms of service or privacy policy acceptance pages
-- System maintenance or downtime notices
-- Network connectivity issues
-- SSL certificate warnings
-- Access denied or permission required pages
-- AI helper tools and LLM interfaces (ChatGPT, Claude, Gemini, Copilot, Bard, etc.)
-- Code assistants and development helpers (GitHub Copilot, CodeWhisperer, Tabnine, etc.)
-- Note Taking apps/Task Management (Clickup, Todo)
-- Or similiar
+**Phase 3 - Decision Logic:**
+- If content is DIRECTLY NECESSARY or SUPPORTIVE INFRASTRUCTURE → **ALLOW**
+- If content is TANGENTIALLY RELATED, CLEARLY OFF-TASK, or FAKE PRODUCTIVITY → **BLOCK_ALL**
+- When blocking, identify specific distracting elements via CSS selectors (class names, IDs, semantic tags)
 
-These pages are essential infrastructure or productive helper tools that users cannot bypass and are never distractions, regardless of the user's task. AI tools specifically help users accomplish their tasks more efficiently.
+**Phase 4 - Output Construction:**
+- Generate a single-sentence reason explaining the decision
+- List CSS selectors for any distracting elements detected (empty array if none)
+- Validate that output matches schema exactly: {"decision": string, "reason": string, "selectors": string[]}
 
-Your final output MUST be a single, valid JSON object. Do not include any explanatory text, markdown formatting, or apologies before or after the JSON object. Your entire output must be parseable and adhere to the following schema.
-</INSTRUCTIONS>
+**CRITICAL: FAKE PRODUCTIVITY DETECTION**
+Be highly vigilant for content that appears work-related but does not advance the *current specific task*:
+- Generic productivity advice, time management tips, motivational content
+- Broad "how to be better at X" articles when task is "do specific Y"
+- General industry news or trends not directly applicable to immediate work
+- Aspirational content about skills or careers when task requires focused execution
+- Tutorial content for different tools/languages than what task requires
+
+If content discusses "working better" rather than "doing the work," classify as BLOCK_ALL.
+
+**ABSOLUTE EXCEPTIONS - ALWAYS ALLOW:**
+These are never distractions regardless of task. Immediately return ALLOW decision if page is:
+- **AI Assistants:** ChatGPT, Claude, Gemini, Copilot, Perplexity, any conversational AI
+- **Translation Services:** Google Translate, DeepL, Reverso, language dictionaries
+- **Developer Resources:** Stack Overflow, GitHub, official documentation, MDN, API references
+- **Productivity Tools:** Notion, Obsidian, Todoist, ClickUp, Evernote, calendar apps, task managers
+- **Authentication & Security:** Login pages, CAPTCHA challenges, 2FA verification, OAuth screens
+- **Infrastructure:** Cookie consent banners, error pages (404, 500), loading screens, network interstitials
+
+**CSS SELECTOR EXTRACTION:**
+When identifying distracting elements:
+- Examine class attributes, ID attributes, and semantic HTML tags in <PAGE_CONTENT>
+- Target specific components (feeds, sidebars, recommendation widgets, comment sections)
+- Use precise selectors like "#news-feed", ".recommended-articles", "aside.promotions"
+- Return empty array if entire page should be blocked (BLOCK_ALL with no element-level filtering)
+
+**OUTPUT REQUIREMENTS:**
+- Produce ONLY a valid JSON object - no markdown, no preamble, no apologies, no explanation outside JSON
+- Exact schema: {"decision": "ALLOW" or "BLOCK_ALL", "reason": "string", "selectors": ["string", ...]}
+- Maintain strict field order: decision, then reason, then selectors
+- After internal generation, verify schema compliance before output
+</CORE_INSTRUCTIONS>
 
 <JSON_SCHEMA>
+Your output must conform precisely to this structure:
 \`\`\`json
 {
-  "classification": "string", // Must be one of: PRODUCTIVE, NEUTRAL, OBVIOUS_DISTRACTION, FAKE_PRODUCTIVITY, TANGENTIAL_DISTRACTION
-  "reason": "string", // A concise, one-sentence explanation for the decision.
-  "selectors": "string" // An array of CSS selectors (id or class) for distracting elements.
+  "decision": "string", // Exactly "ALLOW" or "BLOCK_ALL" - no other values permitted
+  "reason": "string", // Single sentence explaining the decision with reference to task relevance
+  "selectors": ["string"] // Array of CSS selectors for distracting elements; empty if none identified
 }
 \`\`\`
 </JSON_SCHEMA>
@@ -124,7 +139,7 @@ A blog post titled "Advanced Database Sharding Techniques for Petabyte-Scale Sys
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "FAKE_PRODUCTIVITY",
+  "decision": "BLOCK_ALL",
   "reason": "This page discusses advanced backend optimization, which is not relevant to the current frontend development task.",
   "selectors": []
 }
@@ -140,7 +155,7 @@ An Instagram feed with photos of friends, sponsored posts for clothing, and shor
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "OBVIOUS_DISTRACTION",
+  "decision": "BLOCK_ALL",
   "reason": "Social media is unrelated to the academic research task.",
   "selectors": ["#main-feed", ".stories-tray"]
 }
@@ -156,7 +171,7 @@ The official documentation page for React Hooks on the react.dev website. It exp
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "PRODUCTIVE",
+  "decision": "ALLOW",
   "reason": "The page provides essential documentation for React, the library Next.js is built upon.",
   "selectors": []
 }
@@ -172,7 +187,7 @@ A standard login page for Google accounts, asking for an email and password.
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "NEUTRAL",
+  "decision": "ALLOW",
   "reason": "This is a neutral login page, likely required to access work-related tools.",
   "selectors": []
 }
@@ -188,7 +203,7 @@ A CAPTCHA challenge page with reCAPTCHA widget asking the user to verify they ar
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "NEUTRAL",
+  "decision": "ALLOW",
   "reason": "This is a CAPTCHA verification page, which is essential infrastructure that cannot be bypassed.",
   "selectors": []
 }
@@ -204,7 +219,7 @@ A Medium article titled "How to Become the Most Productive Effective Version of 
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "FAKE_PRODUCTIVITY",
+  "decision": "BLOCK_ALL",
   "reason": "This is general productivity advice unrelated to building an n8n pipeline - classic fake productivity.",
   "selectors": []
 }
@@ -220,7 +235,7 @@ Google Gemini interface with chat input and conversation history. The page shows
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "NEUTRAL",
+  "decision": "ALLOW",
   "reason": "This is an AI helper tool that assists users in accomplishing their tasks more efficiently.",
   "selectors": []
 }
@@ -236,7 +251,7 @@ Stack Overflow page with programming questions and answers about React hooks and
 </PAGE_CONTENT>
 <OUTPUT>
 {
-  "classification": "NEUTRAL",
+  "decision": "ALLOW",
   "reason": "This is a documentation and reference site that provides essential technical help for the current task.",
   "selectors": []
 }
@@ -351,7 +366,7 @@ ${pageContent}
  * @param url - Page URL
  * @param provider - AI provider (default: "gemini")
  * @param alwaysRemove - CSS selectors to always remove
- * @returns Decision: BLOCK_ALL, REMOVE_ELEMENTS, or ALLOW
+ * @returns Decision: BLOCK_ALL or ALLOW
  */
 export const analyzePageContent = async (
   apiKey: string,
@@ -383,34 +398,16 @@ export const analyzePageContent = async (
       schema: NewAnalysisResultSchema,
       prompt: userPrompt,
       system: systemPrompt,
-      temperature: 0.2, // Lower temperature for more deterministic, rule-based output
+      temperature: 0.2,
       mode: "json",
     });
 
-    // Type the object as NewAnalysisResult to access classification property
-    const newResult = object as NewAnalysisResult;
+    const { decision, reason, selectors } = object;
 
-    // The original code returned a different structure for REMOVE_ELEMENTS.
-    // To maintain compatibility, we will adapt the new output to the old decision types.
-    // This logic can be simplified if you update the consuming code.
-    const decision =
-      newResult.classification === "PRODUCTIVE" ||
-      newResult.classification === "NEUTRAL"
-        ? "ALLOW"
-        : newResult.classification === "OBVIOUS_DISTRACTION" ||
-            newResult.classification === "FAKE_PRODUCTIVITY" ||
-            newResult.classification === "TANGENTIAL_DISTRACTION"
-          ? "BLOCK_ALL"
-          : newResult.selectors && newResult.selectors.length > 0
-            ? "REMOVE_ELEMENTS"
-            : "ALLOW";
-
-    // The original code expected a different final JSON structure.
-    // This part is adapted to return a structure that matches the original function's intent.
     return {
-      decision: decision,
-      reason: newResult.reason,
-      selectors: newResult.selectors || [],
+      decision,
+      reason,
+      selectors: selectors || [],
     };
   } catch (error: unknown) {
     // Fallback in case of an API or parsing error

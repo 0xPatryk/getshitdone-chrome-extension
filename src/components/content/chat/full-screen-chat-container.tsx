@@ -5,11 +5,11 @@
  */
 
 import { Card } from "@/components/ui/card";
+import { useEffect } from "react";
 import { ChatHeader } from "./chat-header";
 import { ChatInputForm } from "./chat-input-form";
 import { ChatMessagesList } from "./chat-messages-list";
 import { ChatProvider } from "./chat-provider";
-import { useEffect } from "react";
 
 /**
  * Props for FullScreenChatContainer component
@@ -47,7 +47,10 @@ export const FullScreenChatContainer = ({
     console.log("DEBUG: FullScreenChatContainer mounted");
     console.log("DEBUG: Viewport height:", window.innerHeight);
     console.log("DEBUG: 85vh in pixels:", window.innerHeight * 0.85);
-    console.log("DEBUG: Available container height:", document.documentElement.clientHeight);
+    console.log(
+      "DEBUG: Available container height:",
+      document.documentElement.clientHeight,
+    );
   }, []);
 
   return (
