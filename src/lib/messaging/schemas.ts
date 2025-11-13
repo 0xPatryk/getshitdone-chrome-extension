@@ -28,6 +28,11 @@ export const AnalysisResultSchema = z.object({
    * CSS selectors for elements to remove (if applicable)
    */
   selectors: z.array(z.string()).optional(),
+
+  /**
+   * The prompt used for the AI analysis (for debugging)
+   */
+  prompt: z.string().optional(),
 });
 
 /**

@@ -391,6 +391,9 @@ export const analyzePageContent = async (
     chatContexts,
   );
 
+  // Combine prompts for logging
+  const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
+
   try {
     // The `generateObject` function from your SDK handles the JSON parsing
     const { object } = await generateObject({
@@ -408,6 +411,7 @@ export const analyzePageContent = async (
       decision,
       reason,
       selectors: selectors || [],
+      prompt: fullPrompt,
     };
   } catch (error: unknown) {
     // Fallback in case of an API or parsing error
@@ -415,6 +419,7 @@ export const analyzePageContent = async (
       decision: "ALLOW",
       reason: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
       selectors: [],
+      prompt: fullPrompt,
     };
   }
 };

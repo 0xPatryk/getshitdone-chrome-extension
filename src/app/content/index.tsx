@@ -76,7 +76,7 @@ const ContentScriptUI = ({
   alwaysRemove: string | null;
   onShouldBlock?: (reason: string) => void;
 }) => {
-  // Query for page analysis (background handles caching)
+  // Query for page analysis
   const { data: analysisResult, isLoading: isAnalysisLoading } =
     usePageAnalysis(url, task, alwaysRemove, true);
 
@@ -88,6 +88,10 @@ const ContentScriptUI = ({
   useEffect(() => {
     const decision = analysisResult;
     if (!decision) return;
+
+    console.log(
+      `Returned Page decision with decision: ${decision.decision}, reason ${decision.reason}, prompt: ${decision.prompt}, `,
+    );
 
     switch (decision.decision) {
       case "BLOCK_ALL":

@@ -70,6 +70,11 @@ export type AnalysisResult = {
    * CSS selectors for elements to remove (if applicable)
    */
   selectors?: string[];
+
+  /**
+   * The prompt used for the AI analysis (for debugging)
+   */
+  prompt?: string;
 };
 
 /**

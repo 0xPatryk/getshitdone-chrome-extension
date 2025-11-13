@@ -122,7 +122,7 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       analysisResult.reason,
     );
 
-    // Validate and return the result
+    // Validate and return the result (including the prompt)
     const validatedResult = AnalysisResultSchema.parse(analysisResult);
     return validatedResult;
   } catch (error) {
