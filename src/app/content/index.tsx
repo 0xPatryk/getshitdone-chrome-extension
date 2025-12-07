@@ -248,10 +248,6 @@ export default defineContentScript({
           return false;
         }
 
-        // Get current configuration
-        const currentTask = await storage[StorageKey.CURRENT_TASK].getValue();
-        const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
-
         // Always create UI since background handles caching logic
         return true;
       } catch (error) {
