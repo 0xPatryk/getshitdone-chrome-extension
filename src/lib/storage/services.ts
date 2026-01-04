@@ -207,12 +207,12 @@ export const useStorage = <K extends StorageKeyType>(key: K) => {
     })();
   }, [item.getValue]);
 
-  const remove = () => {
-    void item.removeValue();
+  const remove = async () => {
+    await item.removeValue();
   };
 
-  const set = (value: Value<K>) => {
-    void item.setValue(value);
+  const set = async (value: Value<K>) => {
+    await item.setValue(value);
   };
 
   return { data: value ?? item.fallback, remove, set };

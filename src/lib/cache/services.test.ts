@@ -25,9 +25,13 @@ import { CACHE_TTL } from "./types";
 import { generateCacheKey } from "./utils";
 
 describe("Cache Services", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     // Reset fakeBrowser state between tests
     fakeBrowser.reset();
+    // Explicitly remove cache keys to ensure no pollution
+    await storage[StorageKey.DECISION_CACHE].removeValue();
+    await storage[StorageKey.CACHE_LAST_CLEANUP].removeValue();
+    await storage[StorageKey.ALWAYS_REMOVE].removeValue();
   });
 
   describe("getCachedDecision", () => {

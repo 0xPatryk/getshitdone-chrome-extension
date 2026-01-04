@@ -161,14 +161,14 @@ describe("extractMainContent", () => {
     });
 
     it("should truncate content when over token limit", () => {
-      const longContent = "<p>" + "word ".repeat(1000) + "</p>";
+      const longContent = `<p>${"word ".repeat(1000)}</p>`;
       const result = extractMainContent(longContent, 100);
       // Result should be shorter than original
       expect(result.length).toBeLessThan(longContent.length);
     });
 
     it("should convert to plain text for very large content", () => {
-      const veryLong = "<p>" + "sentence. ".repeat(10000) + "</p>";
+      const veryLong = `<p>${"sentence. ".repeat(10000)}</p>`;
       const result = extractMainContent(veryLong, 500);
       // Should be truncated significantly
       expect(result.length).toBeLessThan(veryLong.length);
