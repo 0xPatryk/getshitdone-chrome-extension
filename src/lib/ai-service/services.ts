@@ -402,7 +402,6 @@ export const analyzePageContent = async (
       prompt: userPrompt,
       system: systemPrompt,
       temperature: 0.2,
-      mode: "json",
     });
 
     const { decision, reason, selectors } = object;
@@ -511,7 +510,7 @@ When <ACTIVE_GRANTS_CONTEXT> exists, use it to be consistent:
 
 <DURATION_GUIDELINES>
 - Quick lookup/auth: 5-15min
-- Specific debugging/docs: 20-30min  
+- Specific debugging/docs: 20-30min
 - Learning new concept: 30-40min
 - Break time: 5-10min
 - Match duration to specificity—vague need = shorter time
@@ -716,7 +715,6 @@ Respond naturally and conversationally. If the request is vague and this is earl
       schema: ChatProcessResultSchema,
       prompt: `${systemPrompt}\n\n${examples}\n\n${prompt}`,
       temperature: 0.5, // Higher for more natural conversation
-      mode: "json",
     });
 
     const accessGranted = object.decision === "GRANT";

@@ -13,11 +13,23 @@ import type { AIProvider } from "./types";
 
 // Singleton instances for AI providers to avoid repeated initialization
 let googleProvider: ReturnType<typeof createGoogleGenerativeAI> | null = null;
+let lastGoogleKey: string | null = null;
+
 let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
+let lastOpenAIKey: string | null = null;
+
+// Internal utility for testing
+export const resetProviders = () => {
+  googleProvider = null;
+  lastGoogleKey = null;
+  openaiProvider = null;
+  lastOpenAIKey = null;
+};
 
 /**
  * Gets or creates a Google Generative AI provider instance.
- * Implements singleton pattern to avoid multiple provider instances.
+ * Implements singleton pattern to avoid multiple provider instances,
+ * but recreates if the API key changes.
  *
  * @param apiKey - The API key for Google Generative AI
  * @returns A Google Generative AI provider instance
@@ -29,15 +41,17 @@ let openaiProvider: ReturnType<typeof createOpenAI> | null = null;
  * ```
  */
 export const getGoogleProvider = (apiKey: string) => {
-  if (!googleProvider) {
+  if (!googleProvider || lastGoogleKey !== apiKey) {
     googleProvider = createGoogleGenerativeAI({ apiKey });
+    lastGoogleKey = apiKey;
   }
   return googleProvider;
 };
 
 /**
  * Gets or creates an OpenAI provider instance.
- * Implements singleton pattern to avoid multiple provider instances.
+ * Implements singleton pattern to avoid multiple provider instances,
+ * but recreates if the API key changes.
  *
  * @param apiKey - The API key for OpenAI
  * @returns An OpenAI provider instance
@@ -49,8 +63,9 @@ export const getGoogleProvider = (apiKey: string) => {
  * ```
  */
 export const getOpenAIProvider = (apiKey: string) => {
-  if (!openaiProvider) {
+  if (!openaiProvider || lastOpenAIKey !== apiKey) {
     openaiProvider = createOpenAI({ apiKey });
+    lastOpenAIKey = apiKey;
   }
   return openaiProvider;
 };
@@ -256,8 +271,9 @@ export const extractMainContent = (
     return truncateContent(cleanedHTML, maxTokens);
   } catch (error) {
     // 7. Fallback to simple regex-based extraction with token counting
-    console.log(
-      `[AI Service] Error processing HTML, using fallback extraction: ${error}`,
+    console.error(
+      "[AI Service] Error processing HTML, using fallback extraction:",
+      error,
     );
     const fallbackTokens = countTokens(content);
 
