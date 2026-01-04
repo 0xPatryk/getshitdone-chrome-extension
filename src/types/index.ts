@@ -39,22 +39,3 @@ export const NodeEnv = {
  * ```
  */
 export type NodeEnv = (typeof NodeEnv)[keyof typeof NodeEnv];
-
-/**
- * Union type representing all available environment modes.
- *
- * This type is derived from the NodeEnv constant object and represents
- * all possible environment values that the application can run in.
- * It provides type safety when working with environment-specific code.
- *
- * @example
- * ```typescript
- * function isProduction(env: NodeEnv): boolean {
- *   return env === NodeEnv.PRODUCTION;
- * }
- *
- * isProduction(NodeEnv.PRODUCTION); // Returns true
- * isProduction(NodeEnv.DEVELOPMENT); // Returns false
- * ```
- */
-export type NodeEnv = (typeof NodeEnv)[keyof typeof NodeEnv];

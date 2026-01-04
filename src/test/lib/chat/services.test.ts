@@ -48,7 +48,8 @@ describe("Chat Services - useChatSession", () => {
     const sessions = await storage[StorageKey.CHAT_SESSIONS].getValue();
     expect(sessions).toBeDefined();
     expect(sessions?.[session.id]).toBeDefined();
-    expect(sessions?.[session.id].status).toBe("active");
+    if (!session) throw new Error("Session is undefined");
+    expect(sessions?.[session.id]?.status).toBe("active");
   });
 
   it("addMessage should update session messages", async () => {
@@ -84,8 +85,9 @@ describe("Chat Services - useChatSession", () => {
     if (!sessions) throw new Error("Sessions not found");
     const updatedSession = sessions[sessionId];
 
-    expect(updatedSession.messages).toHaveLength(1);
-    expect(updatedSession.messages[0].content).toBe("hello");
+    expect(updatedSession).toBeDefined();
+    expect(updatedSession?.messages).toHaveLength(1);
+    expect(updatedSession?.messages?.[0]?.content).toBe("hello");
   });
 
   it("endSession should complete the session and clear active session", async () => {
@@ -116,7 +118,7 @@ describe("Chat Services - useChatSession", () => {
     // Check status update in storage
     const sessions = await storage[StorageKey.CHAT_SESSIONS].getValue();
     if (!sessions) throw new Error("Sessions not found");
-    expect(sessions[sessionId].status).toBe("completed");
+    expect(sessions[sessionId]?.status).toBe("completed");
 
     // Check active session cleared in storage
     const activeId = await storage[StorageKey.ACTIVE_CHAT_SESSION].getValue();

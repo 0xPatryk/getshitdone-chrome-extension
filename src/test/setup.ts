@@ -23,5 +23,7 @@ mock.module("#imports", () => {
 });
 
 // Polyfill chrome/browser extension APIs
-global.chrome = wxtImports.fakeBrowser;
-global.browser = wxtImports.fakeBrowser;
+// biome-ignore lint/suspicious/noExplicitAny: needed for global mock
+(global as any).chrome = wxtImports.fakeBrowser;
+// biome-ignore lint/suspicious/noExplicitAny: needed for global mock
+(global as any).browser = wxtImports.fakeBrowser;

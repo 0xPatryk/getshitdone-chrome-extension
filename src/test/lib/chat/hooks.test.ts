@@ -19,9 +19,9 @@ describe("Chat Hooks", () => {
         }),
       );
       expect(result.current.messages).toHaveLength(2); // AI + User
-      expect(result.current.messages[0].role).toBe("assistant");
-      expect(result.current.messages[1].role).toBe("user");
-      expect(result.current.messages[1].content).toBe("Hello");
+      expect(result.current.messages[0]?.role).toBe("assistant");
+      expect(result.current.messages[1]?.role).toBe("user");
+      expect(result.current.messages[1]?.content).toBe("Hello");
     });
 
     it("should add messages correctly", () => {
@@ -32,7 +32,7 @@ describe("Chat Hooks", () => {
         result.current.addUserMessage("User test");
       });
       expect(result.current.messages).toHaveLength(1);
-      expect(result.current.messages[0].content).toBe("User test");
+      expect(result.current.messages[0]?.content).toBe("User test");
     });
   });
 

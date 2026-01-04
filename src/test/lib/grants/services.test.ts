@@ -7,6 +7,7 @@ import {
   removeAccessGrant,
   setAccessGrant,
 } from "~/lib/grants/services";
+import type { AccessGrant } from "~/lib/grants/types";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 

@@ -21,7 +21,10 @@ import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 
 // Mock messaging only
-const mockSendMessage = mock(async () => ({ decision: "ALLOW" }));
+const mockSendMessage = mock(async () => ({
+  decision: "ALLOW" as const,
+  reason: "Mock reason",
+}));
 const mockReload = mock(() => {});
 
 mock.module("~/lib/messaging", () => ({
@@ -94,7 +97,10 @@ describe("Cache Hooks", () => {
       );
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-      expect(result.current.data).toEqual({ decision: "ALLOW" });
+      expect(result.current.data).toEqual({
+        decision: "ALLOW",
+        reason: "Mock reason",
+      });
       expect(mockSendMessage).toHaveBeenCalled();
     });
 
