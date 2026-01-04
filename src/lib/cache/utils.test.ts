@@ -96,8 +96,8 @@ describe("generateCacheKey", () => {
         "Write research paper",
         ".ads,.sidebar",
       );
-      expect(key).toHaveLength(16);
-      expect(key).toMatch(/^[0-9a-f]+$/);
+      expect(key).toHaveLength(50); // 16 + 1 + 16 + 1 + 16
+      expect(key).toMatch(/^[0-9a-f]{16}:[0-9a-f]{16}:[0-9a-f]{16}$/);
     });
 
     it("should produce deterministic keys for the same inputs", () => {
@@ -128,8 +128,8 @@ describe("generateCacheKey", () => {
   describe("null alwaysRemove handling", () => {
     it("should handle null alwaysRemove", () => {
       const key = generateCacheKey("https://example.com", "task", null);
-      expect(key).toHaveLength(16);
-      expect(key).toMatch(/^[0-9a-f]+$/);
+      expect(key).toHaveLength(50);
+      expect(key).toMatch(/^[0-9a-f]{16}:[0-9a-f]{16}:[0-9a-f]{16}$/);
     });
 
     it("should differentiate between null and empty string alwaysRemove", () => {
@@ -156,7 +156,7 @@ describe("generateCacheKey", () => {
         "task",
         null,
       );
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle URLs with fragments", () => {
@@ -165,24 +165,24 @@ describe("generateCacheKey", () => {
         "task",
         null,
       );
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle empty strings for URL and task", () => {
       const key = generateCacheKey("", "", null);
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle very long URLs", () => {
       const longUrl = `https://example.com/${"path/".repeat(200)}`;
       const key = generateCacheKey(longUrl, "task", null);
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle very long tasks", () => {
       const longTask = "a".repeat(1000);
       const key = generateCacheKey("https://example.com", longTask, null);
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle complex alwaysRemove selectors", () => {
@@ -193,7 +193,7 @@ describe("generateCacheKey", () => {
         "task",
         complexSelectors,
       );
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
 
     it("should handle special characters in task", () => {
@@ -202,7 +202,7 @@ describe("generateCacheKey", () => {
         "Write report about AI & ML (with examples)",
         null,
       );
-      expect(key).toHaveLength(16);
+      expect(key).toHaveLength(50);
     });
   });
 

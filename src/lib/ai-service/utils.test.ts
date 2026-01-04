@@ -4,13 +4,13 @@
  * Tests for token counting, content extraction, provider factories, and model selection.
  * These test pure functions and singleton patterns.
  *
- * Note: extractMainContent uses DOMParser which is not available in bun's test environment.
- * The function has a fallback mechanism for this case, so tests reflect fallback behavior.
+ * Note: Tests run in bun environment with happy-dom polyfill for DOMParser.
  *
  * @module ai-service/utils.test
  */
 
 import { beforeEach, describe, expect, it } from "bun:test";
+
 import {
   countTokens,
   extractMainContent,
@@ -107,15 +107,12 @@ describe("countTokens", () => {
 });
 
 describe("extractMainContent", () => {
-  // Note: DOMParser is not available in bun test environment.
-  // The function uses a fallback mechanism that returns content as-is
-  // or does basic regex-based processing when DOMParser fails.
-
-  describe("fallback behavior (no DOMParser)", () => {
+  describe("extraction behavior", () => {
+    // Tests behavior with DOMParser available via valid environment
     it("should return content when under token limit", () => {
       const html = "<p>Hello World</p>";
       const result = extractMainContent(html);
-      // In fallback mode, content is returned as-is or with basic processing
+      // Content is returned cleaned or as-is
       expect(result).toContain("Hello");
       expect(result).toContain("World");
     });
@@ -156,7 +153,7 @@ describe("extractMainContent", () => {
     });
   });
 
-  describe("token limiting with fallback", () => {
+  describe("token limiting", () => {
     it("should return content as-is when under token limit", () => {
       const html = "<p>Short content</p>";
       const result = extractMainContent(html, 1000);

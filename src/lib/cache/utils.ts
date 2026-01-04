@@ -56,8 +56,9 @@ export const generateCacheKey = (
   task: string,
   alwaysRemove: string | null,
 ): string => {
-  const content = `${url}:${task}:${alwaysRemove}`;
-  const key = createSecureHash(content);
+  const urlHash = createSecureHash(url);
+  const taskHash = createSecureHash(task);
+  const arHash = createSecureHash(String(alwaysRemove));
 
-  return key;
+  return `${urlHash}:${taskHash}:${arHash}`;
 };

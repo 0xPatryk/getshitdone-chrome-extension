@@ -20,7 +20,6 @@ export default defineConfig({
   entrypointsDir: "app",
   outDir: "build",
   modules: ["@wxt-dev/module-react", "@wxt-dev/auto-icons"],
-  imports: false,
   vite: () =>
     ({
       plugins: [svgr(), tailwindcss()],
