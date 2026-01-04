@@ -16,6 +16,7 @@ const mockGrant: AccessGrant = {
   expiresAt: Date.now() + 60000, // Expires in 60s
   grantedAt: Date.now(),
   durationMinutes: 1,
+  reason: "Testing access grant",
 };
 
 describe("Grants Services", () => {

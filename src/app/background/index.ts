@@ -262,6 +262,8 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         expiresAt,
         grantedAt: now,
         durationMinutes: aiResponse.durationMinutes,
+        // Use the explicit grant reason if available, otherwise fallback to message content
+        reason: aiResponse.grantReason || aiResponse.message.content,
       });
 
       // Cache the unblocking decision

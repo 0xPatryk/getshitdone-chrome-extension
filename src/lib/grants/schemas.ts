@@ -33,4 +33,9 @@ export const AccessGrantSchema = z.object({
    * Duration of the grant in minutes
    */
   durationMinutes: z.number(),
+
+  /**
+   * The reason for the access grant
+   */
+  reason: z.string().optional(),
 });

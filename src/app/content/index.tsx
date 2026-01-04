@@ -141,7 +141,9 @@ const ContentScriptUI = ({
   console.log("ContentScript: Rendering BlockOverlay with reason:", reason);
   console.log("ContentScript: About to render BlockOverlay component");
 
-  return <BlockOverlay reason={reason} onUnblock={handleUnblock} />;
+  return (
+    <BlockOverlay sessionId={url} reason={reason} onUnblock={handleUnblock} />
+  );
 };
 
 export default defineContentScript({

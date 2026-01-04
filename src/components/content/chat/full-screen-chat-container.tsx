@@ -15,6 +15,8 @@ import { ChatProvider } from "./chat-provider";
  * Props for FullScreenChatContainer component
  */
 interface FullScreenChatContainerProps {
+  /** Optional session ID to use for the chat */
+  readonly sessionId?: string;
   /** Optional initial message to send when component mounts */
   readonly initialMessage?: string;
   /** Optional initial AI message to display as the reason for blocking */
@@ -31,12 +33,14 @@ interface FullScreenChatContainerProps {
  * Follows popup component patterns with consistent spacing and styling.
  *
  * @param props - Component props
+ * @param props.sessionId - Optional session ID to use
  * @param props.initialMessage - Optional initial message to send automatically
  * @param props.onUnblock - Callback for when access is granted
  * @param props.onAccessDenied - Callback for when access is denied
  * @returns A React element containing the full-screen chat container
  */
 export const FullScreenChatContainer = ({
+  sessionId,
   initialMessage,
   initialAiMessage,
   onUnblock,
@@ -55,6 +59,7 @@ export const FullScreenChatContainer = ({
 
   return (
     <ChatProvider
+      sessionId={sessionId}
       initialMessage={initialMessage}
       initialAiMessage={initialAiMessage}
       onUnblock={onUnblock}

@@ -164,6 +164,11 @@ export const ChatProcessResultSchema = z.object({
    * Duration in minutes if access is granted (optional)
    */
   durationMinutes: z.number().optional(),
+
+  /**
+   * Concise reason for the grant (context summary)
+   */
+  grantReason: z.string().optional(),
 });
 
 /**

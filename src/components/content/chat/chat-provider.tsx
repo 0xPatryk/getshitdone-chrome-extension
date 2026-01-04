@@ -63,6 +63,8 @@ export const useChatContext = (): ChatContextType => {
  * Props for ChatProvider component
  */
 interface ChatProviderProps {
+  /** Optional session ID to use (defaults to generated ID) */
+  readonly sessionId?: string;
   /** Optional initial message to send when component mounts */
   readonly initialMessage?: string;
   /** Optional initial AI message to display as the reason for blocking */
@@ -81,6 +83,7 @@ interface ChatProviderProps {
  * state management, and AI communication.
  *
  * @param props - Component props
+ * @param props.sessionId - Optional session ID (defaults to generated unique ID)
  * @param props.initialMessage - Optional initial message to send automatically
  * @param props.onUnblock - Callback for when access is granted
  * @param props.onAccessDenied - Callback for when access is denied
@@ -88,6 +91,7 @@ interface ChatProviderProps {
  * @returns A React element containing the chat provider
  */
 export const ChatProvider = ({
+  sessionId: propsSessionId,
   initialMessage,
   initialAiMessage,
   onUnblock,
@@ -95,7 +99,10 @@ export const ChatProvider = ({
   children,
 }: ChatProviderProps) => {
   const [inputMessage, setInputMessage] = useState("");
-  const [sessionId] = useState(() => `session_${Date.now()}`);
+  // Use provided sessionId or generate one
+  const [internalSessionId] = useState(() => `session_${Date.now()}`);
+  const sessionId = propsSessionId || internalSessionId;
+
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 

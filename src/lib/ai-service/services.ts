@@ -285,7 +285,12 @@ const formatGrantsContext = (
     );
 
     let contextInfo = "";
-    if (chatContext && chatContext.messages.length > 0) {
+
+    // Prefer the explicit reason if available
+    if (grant.reason) {
+      contextInfo = `\n  Reason: "${grant.reason}"`;
+    } else if (chatContext && chatContext.messages.length > 0) {
+      // Fallback to chat context for backward compatibility
       const userMessages = chatContext.messages
         .filter((msg) => msg.role === "user")
         .map((msg) => msg.content)
@@ -520,7 +525,8 @@ Return only valid JSON (no markdown, no preamble):
 {
   "response": "Brief, conversational message (2-4 sentences)",
   "decision": "GRANT" | "DENY",
-  "durationMinutes": 20 // Only if GRANT, omit if DENY
+  "durationMinutes": 20, // Only if GRANT, omit if DENY
+  "grantReason": "Concise summary of user context in 3 or 4 sentences" // Only if GRANT
 }
 </OUTPUT_FORMAT>`;
 
@@ -728,6 +734,7 @@ Respond naturally and conversationally. If the request is vague and this is earl
       },
       accessGranted,
       durationMinutes: object.durationMinutes,
+      grantReason: object.grantReason,
     };
   } catch (error: unknown) {
     return {

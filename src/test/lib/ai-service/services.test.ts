@@ -93,6 +93,27 @@ describe("AI Services", () => {
       expect(result.message.role).toBe("assistant");
     });
 
+    it("should return grantReason when provided by AI", async () => {
+      mockGenerateObject.mockResolvedValueOnce({
+        object: {
+          response: "Access granted.",
+          decision: "GRANT",
+          durationMinutes: 15,
+          grantReason: "User researching React hooks",
+        },
+      });
+
+      const result = await processChatMessage(
+        "api-key",
+        "task",
+        "Can I check reddit?",
+        [],
+      );
+
+      expect(result.accessGranted).toBe(true);
+      expect(result.grantReason).toBe("User researching React hooks");
+    });
+
     it("should return deny decision properly", async () => {
       mockGenerateObject.mockResolvedValueOnce({
         object: {

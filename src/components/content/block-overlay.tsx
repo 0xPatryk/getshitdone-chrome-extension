@@ -15,6 +15,8 @@ import { TimerDisplay } from "./timer-display";
  * Props for the BlockOverlay component
  */
 interface BlockOverlayProps {
+  /** The session ID to use for the chat (typically the URL) */
+  readonly sessionId: string;
   /** The reason why the page is being blocked */
   readonly reason: string;
   /** Callback function triggered when user is granted temporary access */
@@ -36,6 +38,7 @@ interface BlockOverlayProps {
  * @example
  * ```tsx
  * <BlockOverlay
+ *   sessionId="https://example.com"
  *   reason="This is a social media site that may distract from your current task"
  *   onUnblock={(minutes) => console.log(`Unblocked for ${minutes} minutes`)}
  *   accessExpiresAt={Date.now() + 5 * 60 * 1000}
@@ -45,6 +48,7 @@ interface BlockOverlayProps {
  * ```
  *
  * @param props - Component props
+ * @param props.sessionId - The session ID for the chat (URL)
  * @param props.reason - The reason for blocking the page
  * @param props.onUnblock - Callback function for when access is granted
  * @param props.accessExpiresAt - Optional timestamp when access expires
@@ -53,6 +57,7 @@ interface BlockOverlayProps {
  * @returns A React element containing the block overlay interface
  */
 export const BlockOverlay = ({
+  sessionId,
   reason,
   onUnblock,
   accessExpiresAt,
@@ -68,7 +73,7 @@ export const BlockOverlay = ({
             <Card className="shadow-sm border-destructive/20 bg-destructive/5">
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="flex-shrink-0">
+                  <div className="shrink-0">
                     <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
                   </div>
                   <div className="flex-1">
@@ -83,7 +88,7 @@ export const BlockOverlay = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => window.history.back()}
-                    className="h-6 w-6 p-0 rounded hover:bg-muted/50 transition-colors duration-200 flex-shrink-0"
+                    className="h-6 w-6 p-0 rounded hover:bg-muted/50 transition-colors duration-200 shrink-0"
                     aria-label="Go back"
                   >
                     <ArrowLeft className="h-3 w-3" />
@@ -108,6 +113,7 @@ export const BlockOverlay = ({
             {/* Full-screen chat container */}
             <div className="flex-1 min-h-0">
               <FullScreenChatContainer
+                sessionId={sessionId}
                 initialMessage="I need access to this page. Can you help me understand why it's blocked?"
                 initialAiMessage={reason}
                 onUnblock={onUnblock}
