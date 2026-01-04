@@ -13,6 +13,9 @@
  */
 
 import { Settings } from "lucide-react";
+import { ApiKeySettings } from "~/components/options/api-key-settings";
+import { AlwaysRemoveInput } from "~/components/popup/always-remove-input";
+import { TaskInput } from "~/components/popup/task-input";
 import {
   Card,
   CardContent,
@@ -20,11 +23,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Separator } from "~/components/ui/separator";
 import { Switch } from "~/components/ui/switch";
-import { Textarea } from "~/components/ui/textarea";
 import { useStorage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 
@@ -39,18 +40,6 @@ import { StorageKey } from "~/lib/storage/types";
  */
 export const SettingsTab = () => {
   // Storage hooks for all settings values
-  const { data: geminiApiKey, set: setGeminiApiKey } = useStorage(
-    StorageKey.GEMINI_API_KEY,
-  );
-  const { data: openaiApiKey, set: setOpenaiApiKey } = useStorage(
-    StorageKey.OPENAI_API_KEY,
-  );
-  const { data: aiProvider, set: setAiProvider } = useStorage(
-    StorageKey.AI_PROVIDER,
-  );
-  const { data: currentTask, set: setCurrentTask } = useStorage(
-    StorageKey.CURRENT_TASK,
-  );
   const { data: extensionEnabled, set: setExtensionEnabled } = useStorage(
     StorageKey.EXTENSION_ENABLED,
   );
@@ -70,82 +59,35 @@ export const SettingsTab = () => {
 
       <Separator />
 
-      {/* Extension status and AI provider settings in a 2-column grid */}
-      <div className="grid gap-8 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Extension Status</CardTitle>
-            <CardDescription>
-              Enable or disable the focus mode extension
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="extension-enabled">Focus Mode</Label>
-              <Switch
-                id="extension-enabled"
-                checked={extensionEnabled}
-                onCheckedChange={setExtensionEnabled}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>AI Provider</CardTitle>
-            <CardDescription>Choose your preferred AI provider</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="ai-provider">Use OpenAI</Label>
-              <Switch
-                id="ai-provider"
-                checked={aiProvider === "openai"}
-                onCheckedChange={(checked) =>
-                  setAiProvider(checked ? "openai" : "gemini")
-                }
-              />
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Current provider:{" "}
-              <span className="font-medium">
-                {aiProvider === "openai" ? "OpenAI" : "Google Gemini"}
-              </span>
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* API keys configuration section */}
       <Card>
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
+          <CardTitle>Extension Status</CardTitle>
           <CardDescription>
-            Configure your API keys for AI services
+            Enable or disable the focus mode extension
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="gemini-key">Google Gemini API Key</Label>
-            <Input
-              id="gemini-key"
-              type="password"
-              placeholder="Enter your Gemini API key"
-              value={geminiApiKey || ""}
-              onChange={(e) => setGeminiApiKey(e.target.value)}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="extension-enabled">Focus Mode</Label>
+            <Switch
+              id="extension-enabled"
+              checked={extensionEnabled}
+              onCheckedChange={setExtensionEnabled}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="openai-key">OpenAI API Key</Label>
-            <Input
-              id="openai-key"
-              type="password"
-              placeholder="Enter your OpenAI API key"
-              value={openaiApiKey || ""}
-              onChange={(e) => setOpenaiApiKey(e.target.value)}
-            />
-          </div>
+        </CardContent>
+      </Card>
+
+      {/* AI provider and API keys configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>AI Configuration</CardTitle>
+          <CardDescription>
+            Manage your AI provider and API credentials
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ApiKeySettings hideHeader />
         </CardContent>
       </Card>
 
@@ -155,17 +97,21 @@ export const SettingsTab = () => {
           <CardTitle>Focus Task</CardTitle>
           <CardDescription>Define what you want to focus on</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="current-task">Current Task</Label>
-            <Textarea
-              id="current-task"
-              placeholder="Describe what you're working on..."
-              value={currentTask || ""}
-              onChange={(e) => setCurrentTask(e.target.value)}
-              rows={3}
-            />
-          </div>
+        <CardContent>
+          <TaskInput />
+        </CardContent>
+      </Card>
+
+      {/* Always remove configuration section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Always Remove</CardTitle>
+          <CardDescription>
+            Manage elements that are always removed
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AlwaysRemoveInput />
         </CardContent>
       </Card>
     </div>

@@ -24,6 +24,8 @@ import { StatusDisplay } from "~/components/popup/status-display";
 import { TaskInput } from "~/components/popup/task-input";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
+import { useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 /**
  * Extension Popup Component
@@ -35,6 +37,8 @@ import { Separator } from "~/components/ui/separator";
  * @returns The popup interface UI
  */
 const Popup = () => {
+  const { data: currentTask } = useStorage(StorageKey.CURRENT_TASK);
+
   return (
     <div className="w-[23rem] p-4 space-y-6">
       <div className="space-y-4">
@@ -43,6 +47,13 @@ const Popup = () => {
           <p className="text-sm text-muted-foreground">
             AI-powered distraction blocking for better productivity
           </p>
+          {currentTask && (
+            <div className="rounded-md bg-green-50 p-2 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+              <p className="text-xs font-medium text-green-800 dark:text-green-200">
+                Running: {currentTask}
+              </p>
+            </div>
+          )}
         </div>
 
         <Separator />

@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Message, sendMessage } from "@/lib/messaging";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useStorage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
@@ -32,6 +32,13 @@ export const TaskInput = () => {
     StorageKey.CURRENT_TASK,
   );
   const [inputValue, setInputValue] = useState(currentTask || "");
+
+  // Update input value when storage data loads
+  useEffect(() => {
+    if (currentTask !== null && currentTask !== undefined) {
+      setInputValue(currentTask);
+    }
+  }, [currentTask]);
   const queryClient = useQueryClient();
 
   // Mutation for setting/updating task

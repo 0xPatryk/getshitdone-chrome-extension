@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Message, sendMessage } from "@/lib/messaging";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useStorage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
@@ -32,6 +32,13 @@ export const AlwaysRemoveInput = () => {
     StorageKey.ALWAYS_REMOVE,
   );
   const [inputValue, setInputValue] = useState(alwaysRemove || "");
+
+  // Update input value when storage data loads
+  useEffect(() => {
+    if (alwaysRemove !== null && alwaysRemove !== undefined) {
+      setInputValue(alwaysRemove);
+    }
+  }, [alwaysRemove]);
   const queryClient = useQueryClient();
 
   // Mutation for setting/updating always remove list
@@ -127,7 +134,7 @@ export const AlwaysRemoveInput = () => {
           size="sm"
           className="flex-1"
         >
-          {isSaving ? "Saving..." : "Save List"}
+          {isSaving ? "Saving..." : "Save Element"}
         </Button>
         {alwaysRemove && (
           <Button
@@ -143,8 +150,11 @@ export const AlwaysRemoveInput = () => {
 
       {alwaysRemove && (
         <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
-          <p className="text-xs text-blue-800 dark:text-blue-200">
-            ✓ Always remove list is active
+          <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-1">
+            ✓ Always remove element active:
+          </p>
+          <p className="text-xs text-blue-700 dark:text-blue-300 italic">
+            {alwaysRemove}
           </p>
         </div>
       )}
