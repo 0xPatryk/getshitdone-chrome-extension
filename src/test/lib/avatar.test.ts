@@ -15,7 +15,7 @@ import {
   generateAiAvatar,
   generateCustomAvatar,
   generateUserAvatar,
-} from "./avatar";
+} from "~/lib/avatar";
 
 describe("Avatar Utilities", () => {
   it("generateAiAvatar should use correct configuration", () => {

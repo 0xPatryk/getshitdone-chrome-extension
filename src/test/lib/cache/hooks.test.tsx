@@ -10,15 +10,15 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { storage } from "~/lib/storage/services";
-import { StorageKey } from "~/lib/storage/types";
 import {
   useCacheInvalidation,
   useCachedDecision,
   useChatAccess,
   usePageAnalysis,
-} from "./hooks";
-import { setCachedDecision } from "./services";
+} from "~/lib/cache/hooks";
+import { setCachedDecision } from "~/lib/cache/services";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 // Mock messaging only
 const mockSendMessage = mock(async () => ({ decision: "ALLOW" }));

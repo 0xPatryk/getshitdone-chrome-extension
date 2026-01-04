@@ -9,8 +9,6 @@
 
 import { beforeEach, describe, expect, it } from "bun:test";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { storage } from "~/lib/storage/services";
-import { StorageKey } from "~/lib/storage/types";
 import {
   cleanupExpiredCacheEntries,
   clearDecisionCache,
@@ -20,9 +18,11 @@ import {
   invalidateCacheForTaskChange,
   removeCachedDecision,
   setCachedDecision,
-} from "./services";
-import { CACHE_TTL } from "./types";
-import { generateCacheKey } from "./utils";
+} from "~/lib/cache/services";
+import { CACHE_TTL } from "~/lib/cache/types";
+import { generateCacheKey } from "~/lib/cache/utils";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 describe("Cache Services", () => {
   beforeEach(async () => {

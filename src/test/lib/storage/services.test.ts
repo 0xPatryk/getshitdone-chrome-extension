@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { storage, useStorage } from "./services";
-import { StorageKey } from "./types";
+import { storage, useStorage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 describe("Storage Services", () => {
   beforeEach(() => {

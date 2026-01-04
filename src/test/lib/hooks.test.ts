@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { renderHook } from "@testing-library/react";
 import { createRef } from "react";
-import { useAutoScroll } from "./hooks";
+import { useAutoScroll } from "~/lib/hooks";
 
 describe("Hooks", () => {
   describe("useAutoScroll", () => {

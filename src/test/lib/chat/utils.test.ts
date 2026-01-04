@@ -13,7 +13,7 @@ import {
   generateMessageId,
   generateSessionId,
   getCurrentTimestamp,
-} from "./utils";
+} from "~/lib/chat/utils";
 
 describe("generateSessionId", () => {
   afterEach(() => {

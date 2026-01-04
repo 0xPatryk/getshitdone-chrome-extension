@@ -6,7 +6,10 @@ mock.module("ai", () => ({
   generateObject: mockGenerateObject,
 }));
 
-import { analyzePageContent, processChatMessage } from "./services";
+import {
+  analyzePageContent,
+  processChatMessage,
+} from "~/lib/ai-service/services";
 
 describe("AI Services", () => {
   describe("analyzePageContent", () => {

@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { storage } from "../storage/services";
-import { StorageKey } from "../storage/types";
 import {
   cleanupExpiredGrants,
   getActiveAccessGrant,
   getAllActiveAccessGrants,
   removeAccessGrant,
   setAccessGrant,
-} from "./services";
+} from "~/lib/grants/services";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
 
 const mockGrant: AccessGrant = {
   url: "https://example.com/blocked",

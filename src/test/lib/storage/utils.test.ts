@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it } from "bun:test";
 import { fakeBrowser } from "wxt/testing/fake-browser";
-import { storage } from "./services";
-import { StorageKey } from "./types";
-import { getStorage, getStorageValue, setStorageValue } from "./utils";
+import { storage } from "~/lib/storage/services";
+import { StorageKey } from "~/lib/storage/types";
+import {
+  getStorage,
+  getStorageValue,
+  setStorageValue,
+} from "~/lib/storage/utils";
 
 describe("Storage Utils", () => {
   beforeEach(() => {

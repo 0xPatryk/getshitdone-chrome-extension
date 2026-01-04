@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { createSecureHash, generateCacheKey } from "./utils";
+import { createSecureHash, generateCacheKey } from "~/lib/cache/utils";
 
 describe("createSecureHash", () => {
   describe("basic functionality", () => {

@@ -18,7 +18,7 @@ import {
   getModel,
   getOpenAIProvider,
   resetProviders,
-} from "./utils";
+} from "~/lib/ai-service/utils";
 
 describe("countTokens", () => {
   describe("basic functionality", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { cn } from "./utils";
+import { cn } from "~/lib/utils";
 
 describe("Utils", () => {
   describe("cn", () => {

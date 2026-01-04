@@ -15,10 +15,10 @@ mock.module("@openpanel/web", () => {
 });
 
 describe("Analytics Services", () => {
-  let services: typeof import("./services");
+  let services: typeof import("~/lib/analytics/services");
 
   beforeAll(async () => {
-    services = await import("./services");
+    services = await import("~/lib/analytics/services");
   });
 
   describe("analytics instance", () => {

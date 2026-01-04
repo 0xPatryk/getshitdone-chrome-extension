@@ -1,6 +1,6 @@
 import { describe, expect, it, jest } from "bun:test";
 import { act, renderHook } from "@testing-library/react";
-import { useAccessState, useChatMessages } from "./hooks";
+import { useAccessState, useChatMessages } from "~/lib/chat/hooks";
 
 describe("Chat Hooks", () => {
   describe("useChatMessages", () => {
