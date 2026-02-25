@@ -1,266 +1,282 @@
-<div align="center">
- <br />
-  <br />
+# GetShitDone — An AI Bodyguard for Your Brain
 
-<picture>
-    <source media="(prefers-color-scheme: dark)" width="700" srcset="https://github.com/user-attachments/assets/09cf4bfb-36a5-4eda-a892-4ba737d6a531" />
-    <source media="(prefers-color-scheme: light)" width="700" srcset="https://github.com/user-attachments/assets/7ccbabbf-5ddd-4cf0-9e44-cfbc5ba72e06" />
-    <img alt="Logo" width="700" src="https://github.com/user-attachments/assets/09cf4bfb-36a5-4eda-a892-4ba737d6a531" />
-</picture>
+## My Story: Built for Focus, Not Willpower
 
-<br />
-<br />
-<br />
+I have strong willpower. I get shit done. But even the most disciplined among us have those days where you sit down to ship a feature, blink, and somehow you're 12 tabs deep comparing JavaScript frameworks your app definitely doesn't need yet.
 
-![](https://img.shields.io/badge/Bun-000000?style=flat-square&logo=bun&logoColor=white)
-![](https://img.shields.io/badge/React-61DAFB?style=flat-square&logo=react&logoColor=black)
-![](https://img.shields.io/badge/Typescript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![](https://img.shields.io/badge/AI-FF6B6B?style=flat-square&logo=openai&logoColor=white)
+**You know the drill:**
 
-![GitHub license](https://img.shields.io/github/license/turbostarter/extro)
-<a href="https://discord.gg/KjpK2uk3JP" target="_blank"><img src="https://discord.com/api/guilds/1280456871693779006/widget.png"/></a>
+You're building something. You need to check a quick docs reference. Next thing you know, you're reading about some new AI model, then a database optimization technique (for your 0-user app), then suddenly it's 3 PM and you've written 5 lines of actual code.
 
-<!-- Product Hunt Launch Placeholder -->
-<a href="https://www.producthunt.com/posts/getshitdone?utm_source=badge-featured&utm_medium=badge&utm_souce=badge-getshitdone" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=000&theme=light" alt="GetShitDone - AI-powered distraction blocking that understands your work | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" /></a>
+It's not a lack of discipline. It's that **modern work requires using the same tools that are designed to distract us.** You need Twitter for market research, YouTube for tutorials, Reddit for debugging. Traditional blockers are too blunt — they ban the tools you actually need.
 
-<!-- Kickstarter Campaign Placeholder -->
-<a href="https://www.kickstarter.com/projects/getshitdone/getshitdone-extension" target="_blank"><img src="https://ksr-ugc.imgix.net/assets/038/123/456/7890abc1234567890abcdef123456789-original.png?ixlib=rb-4.0.2&w=80&h=80&fit=crop&v=1664380163&auto=format&frame=1&q=92&s=1234567890abcdef" alt="Back us on Kickstarter" style="width: 80px; height: 80px;" width="80" height="80" /></a>
+And the worst part? The distractions don't look like distractions. They look like *learning*. Like *research*. Like *staying current*. You tell yourself you're being productive while your actual project sits untouched.
 
-</div>
+**I built this because I was tired of my own brain's excuses.**
 
-# GetShitDone - Free AI-Powered Productivity Extension
+This extension doesn't replace your willpower — it **removes the need to use it** on every single click. You decide your goal once. The AI enforces it. You save your decision-making energy for the actual work.
 
-### Motivation
-I'm ending my days frustrated with how easily I get distracted, not by the obvious time-wasters like TikTok and Instagram (those are easy to block), but by the "fake productivity" that tricks my brain into thinking I'm being productive when I'm actually procrastinating.
+---
 
-For instance, I've been working on a Rust project and suddenly find myself deep diving into the next JS framework (nobody actually needs) or end up reading about database optimization techniques when your app has 0 users. These were moments where I convinced myself I was being productive, but I wasn't.
+## What Is GetShitDone?
 
-Other example: There are also these weird tasks, like when you're doing market fit research on X.com and end up reading Peter Level's comment with some starting a new discussion, or some news about a new AI model that will replace humanity, or some 17-year-old flexing their Rolex while faking their MRR.
+GetShitDone is an AI-powered browser extension that acts as a **context-aware gatekeeper** for your attention. Unlike dumb blockers that ban entire sites, it **reads and understands** what you're looking at, compares it to your stated goal, and makes intelligent decisions about whether it belongs in your brain right now.
 
-**Here's how it works in 3 simple steps:**
-1. **Input your current task** (e.g., "I'm coding a Rust project for a client")
-2. **Set elements to always remove** (e.g., Instagram reels, YouTube recommendations)
-3. **Let the AI do the rest** - it analyzes content in real-time and blocks (or removes) what's irrelevant to your task. The extension can either block entire pages or selectively remove distracting elements while preserving useful content, like removing YouTube recommendations while keeping the tutorial video you're watching.
+### The "Fake Productivity" Problem
 
-### What is GetShitDone?
+The most insidious distractions aren't cat videos — they're **work-adjacent content that tricks your brain**:
 
-GetShitDone is an intelligent browser extension that uses AI to help you stay focused by understanding the context of your work and making smart decisions about what content is relevant to your current task.
+| What You Tell Yourself | What Actually Happens |
+|------------------------|----------------------|
+| "I'm researching competitors on Twitter" | 2 hours of political rabbit holes |
+| "I'm learning about database optimization" | Avoiding the actual feature you need to build |
+| "I'm staying current on AI trends" | Reading the 47th article about the same LLM release |
+| "I'm finding inspiration on Dribbble" | 3 hours of scrolling, zero designs started |
 
-> Unlike traditional focus apps that rely on static blocklists, this extension analyzes content in real-time and can even negotiate with you when you need access to distracting sites.
+GetShitDone catches these. It knows the difference between "watching a Rust tutorial because you're building a Rust project" and "watching a Rust tutorial to avoid working on your JavaScript project."
+
+---
+
+## How It Works (3 Steps)
+
+### 1. Tell It Your Mission
+
+Open the popup and describe what you're actually trying to accomplish:
+
+> *"Building a React component for user authentication"*
 >
-> **Free and Open Source** - Simply add your own OpenAI or Google Gemini API key to get started!
+> *"Writing a Rust CLI tool that processes CSV files"*
+>
+> *"Researching competitor pricing for my SaaS"*
 
-## ✨ What Makes It Special
+The AI uses this as its north star for every decision.
 
-### 💰 Free & Open Source
-- **No Subscription Fees**: Completely free to use with your own API key
-- **Privacy Focused**: Your data stays private, only API calls are made to your chosen AI provider
-- **Transparent**: Open source code you can inspect and modify
+### 2. Set Your "Always Remove" List
+
+Some things are never relevant. Tell it once, it removes them everywhere:
+
+> *"YouTube recommendations, Instagram reels, Twitter trending, news sidebars"*
+
+THIS FEATURE BURNS A LOT OF TOKENS!
+
+The AI extracts CSS selectors automatically. No technical knowledge needed.
+
+### 3. Browse Normally (The AI Handles the Rest)
+
+Every page you visit gets analyzed in real-time:
+
+- **Relevant content?** → Full access, distracting elements removed
+- **Irrelevant but work-adjacent?** → Blocked with explanation
+- **Obvious time-waster?** → Blocked immediately
+- **Need it anyway?** → Chat with the AI to negotiate temporary access
+
+---
+
+## Key Features
 
 ### 🤖 AI-Powered Content Analysis
-- **Context-Aware Blocking**: Analyzes actual content rather than just blocking domains
-- **Intelligent Element Removal**: Selectively removes distractions while preserving useful content
+
+Uses Google Gemini or OpenAI to actually **read and understand** page content:
+
+- Analyzes the actual text, not just the URL
+- Detects "fake productivity" that looks like work but isn't
+- Understands context (a Rust tutorial is relevant when you're learning Rust, distracting when you're writing Python)
+- Extracts specific CSS selectors to surgically remove distractions while keeping useful content
 
 ### 💬 Conversational Access Control
-- **Chat-Based Negotiation**: When content is blocked, chat with an AI assistant to request temporary access
-- **Contextual Decisions**: AI evaluates requests based on your current task
-- **Educational Feedback**: Learn why content was blocked and understand your distraction patterns
 
-### 🎯 Task-Driven Filtering
-- **Dynamic Adaptation**: Blocking decisions adapt based on your stated goals
-- **Flexible Blocking Levels**: Supports full page blocking or selective element removal
-- **Automatic Re-blocking**: Time-limited access with automatic re-blocking when timer expires
+When something gets blocked, you don't just hit a wall — you talk to an AI Focus Coach:
 
-## 🚀 Quick Start
+**You**: "I need to access this Twitter thread for market research"
+
+**AI**: "I see you're working on 'Building a React auth component.' This thread appears to be about startup funding. Is this directly relevant to your authentication work, or is this a general research task that could be scheduled separately?"
+
+**You**: "It's about auth best practices from a security researcher"
+
+**AI**: "Granted — 15 minutes of access. I'll remind you when time's up."
+
+No more all-or-nothing blocking. **Negotiate like an adult with your own brain.**
+
+### 🎯 Task-Driven Intelligence
+
+The AI adapts to your current goal:
+
+- **Task**: "Learning Python" → Python tutorials allowed, JavaScript framework announcements blocked
+- **Task**: "Debugging production issue" → Stack Overflow, GitHub issues, docs allowed, everything else scrutinized
+- **Task**: "Writing blog post" → Research allowed, but Twitter "research" gets flagged
+
+Change your task → Cache invalidates → New rules apply immediately
+
+### 🧠 Caching for Speed & Cost
+
+- Smart caching reduces API calls (saves you money)
+- Cache invalidates automatically when you change tasks
+- No lag — decisions happen in milliseconds for cached content
+
+### 🔒 Privacy First
+
+- Your API keys stay in your browser (local storage only)
+- No data sent to any third party except your chosen AI provider
+- No tracking, no analytics, no "phone home"
+- Open source — verify the code yourself
+
+---
+
+## Quick Start
 
 ### Prerequisites
-- [Bun](https://bun.sh/) package manager
-- API key for OpenAI or Google Gemini
+
+- [Bun](https://bun.sh/) installed
+- API key from [Google AI Studio](https://aistudio.google.com/app/apikey) (free tier available) or [OpenAI](https://platform.openai.com/api-keys)
 
 ### Installation
 
-1. Clone the repository
 ```bash
-git clone [repository-url]
-cd getshitdone
-```
+# Clone the repository
+git clone https://github.com/0xPatryk/getshitdone-extension.git
+cd getshitdone-extension
 
-2. Install dependencies
-```bash
+# Install dependencies
 bun install
-```
 
-3. Configure environment variables
-```bash
+# Copy and configure environment
 cp .env.example .env
-# Edit .env with your API keys
+# Edit .env with your API key
+
+# Start development
+bun dev:chrome    # or bun dev:firefox
 ```
 
-4. Start development server
-```bash
-# For Chrome
-bun dev:chrome
+The extension auto-loads in your browser. No manual installation needed during development.
 
-# For Firefox
-bun dev:firefox
-```
-5. (Optional, Should not be necessary, since it's auto loaded )Load extension in browser:
-   - **Chrome**: Go to `chrome://extensions`, enable Developer mode, click "Load unpacked", select `build/chrome-mv3`
-   - **Firefox**: Go to `about:debugging#/runtime/this-firefox`, click "Load Temporary Add-on", select `build/firefox-mv2/manifest.json`
-
-## ⚡ Speed Up Development with Environment Variables
-
-To speed up your development workflow, you can configure all extension settings directly in your `.env` file. This is particularly useful because:
-
-- Extension settings reset every time you restart with `bun dev:chrome`
-- No need to manually configure settings through the UI after each restart
-- Pre-configure your preferred AI provider, API keys, and focus task
-
-### Available Environment Variables
-
-| Variable | Description | Default | Example |
-|----------|-------------|---------|---------|
-| `VITE_OPEN_PANEL_KEY` | OpenPanel analytics key | - | `your-analytics-key` |
-| `VITE_GEMINI_API_KEY` | Google Gemini API key | - | `your-gemini-key` |
-| `VITE_OPENAI_API_KEY` | OpenAI API key | - | `your-openai-key` |
-| `VITE_AI_PROVIDER` | AI provider to use | `gemini` | `gemini` or `openai` |
-| `VITE_CURRENT_TASK` | Default focus task | - | `Working on React component` |
-| `VITE_EXTENSION_ENABLED` | Enable extension on startup | `false` | `true` or `false` |
-| `VITE_ALWAYS_REMOVE` | CSS selectors to always remove | - | `YT recommendations, Instagram reels` |
-
-### Example Development Configuration
+### Production Build
 
 ```bash
-# .env file for development
-# AI Configuration
-VITE_AI_PROVIDER="gemini"
-VITE_GEMINI_API_KEY="your-gemini-api-key"
-
-# Focus Settings
-VITE_CURRENT_TASK="Building a Chrome extension with WXT"
-VITE_EXTENSION_ENABLED="true"
-
-# Always Remove Elements
-VITE_ALWAYS_REMOVE="YT recommendations, Instagram reels"
+bun build:chrome   # Creates build/chrome-mv3/
+bun build:firefox  # Creates build/firefox-mv2/
 ```
 
-With this configuration, every time you restart the development server, the extension will:
-1. Use Gemini as the AI provider
-2. Pre-fill your current task
-3. Enable the extension automatically
-4. Always remove distracting elements
-
-## 📖 Usage
-
-1. **Set API Key**: In extension options, add your OpenAI or Google Gemini API key
-2. **Define Your Task**: In the popup, describe what you're working on
-3. **Stay Focused**: The AI will analyze content and block distractions intelligently
-4. **Chat for Access**: When blocked, explain why you need access to negotiate temporary access
-
-## 🏗️ Architecture
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Popup UI      │    │   Options Page  │    │   Side Panel    │
-│                 │    │                 │    │                 │
-│ - Quick toggle  │    │ - API keys      │    │ - Persistent    │
-│ - Task input    │    │ - Provider      │    │   interface     │
-│ - Status view   │    │   settings      │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-         ┌─────────────────────────┼─────────────────────────┐
-         │                      │                      │
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│ Background     │    │ Content Script │    │   Tabs Page     │
-│ Service       │    │                 │    │                 │
-│ Worker        │    │ - Page analysis│    │ - Settings      │
-│               │    │ - UI overlay   │    │ - Full page     │
-│ - AI analysis │    │ - Chat UI      │    │   interface     │
-│ - Cache mgmt  │    │ - Element      │    │                 │
-│ - Storage     │    │   removal      │    │                 │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🛠️ Tech Stack
-
-| Tech | Description |
-| ---- | ----------- |
-| [TypeScript](https://www.typescriptlang.org/) | Static type-checking |
-| [React](https://reactjs.org/) | UI library |
-| [WXT](https://wxt.dev/) | Web Extension Framework |
-| [Tailwind CSS](https://tailwindcss.com/) | Styling framework |
-| [AI SDK](https://sdk.vercel.ai/) | AI integration |
-| [Bun](https://bun.sh/) | Package manager & runtime |
-
-## 🤝 Contributing
-
-We welcome contributions of any kind! Here's how to get started:
-
-### Development Setup
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes
-4. Run tests: `bun test`
-5. Check code style: `bun lint`
-6. Commit your changes: `git commit -m 'feat: add amazing feature'`
-7. Push to the branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request
-
-### Code Style
-
-- Follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
-- Use Biome for formatting (configured in `biome.json`)
-- 2-space indentation, double quotes, trailing commas
-- Functional React components with Hooks
-- TypeScript strict mode with no implicit `any`
-
-### Project Structure
-
-```
-src/
-├── app/          # Entry points for extension parts
-├── components/   # Shared React components
-├── lib/         # Core functionality (AI, cache, storage)
-├── assets/      # Static assets
-└── types/       # TypeScript type definitions
-```
-
-### Testing
-
-- Use Bun test framework
-- Run with: `bun test`
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆚 Comparison with Traditional Focus Apps
-
-| Feature | Traditional Apps | This AI-Powered App |
-|---------|------------------|---------------------|
-| **Blocking Method** | Static blocklists | AI content analysis |
-| **Context Awareness** | None | Understands task relevance |
-| **Flexibility** | Rigid rules | Selective element removal |
-| **Access Control** | Manual overrides | Conversational negotiation |
-| **Authentication** | Often blocks auth | Smart auth detection |
-| **Adaptation** | Manual updates | Automatic adaptation |
-| **User Experience** | Disruptive | Educational feedback |
-
-## 🔮 Future Enhancements
-
-- Multi-task support
-- Usage analytics
-- Team collaboration
-- Advanced scheduling
-- Project management integrations
-
-## 🚀 Support Our Project
-
-- **Product Hunt**: Follow our launch and show your support with an upvote
-- **Kickstarter**: Back our campaign to help fund advanced features
-- **GitHub**: Star the repository and contribute to the codebase
+Then load the unpacked extension from the build directory.
 
 ---
+
+## Configuration
+
+### Environment Variables (Development)
+
+Speed up your workflow by pre-configuring settings:
+
+```bash
+# .env
+VITE_AI_PROVIDER="gemini"                    # or "openai"
+VITE_GEMINI_API_KEY="your-key-here"
+VITE_CURRENT_TASK="Building a Chrome extension"
+VITE_EXTENSION_ENABLED="true"
+VITE_ALWAYS_REMOVE="YouTube recommendations, Twitter trending"
+```
+
+These auto-load every time you restart development — no clicking through settings.
+
+### Runtime Settings
+
+- **Popup** (toolbar icon): Quick task entry, toggle on/off, always-remove settings
+- **Options Page**: API key configuration
+- **Full Settings Page**: Complete configuration interface
+
+---
+
+## Architecture
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   Popup UI      │     │  Content Script │     │  Background     │
+│                 │     │                 │     │  Service Worker │
+│ - Task input    │◄───►│ - Page analysis │◄───►│                 │
+│ - Quick toggle  │     │ - Chat overlay  │     │ - AI analysis   │
+│ - Status view   │     │ - Element removal│    │ - Grant mgmt    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘
+         │                                               │
+         └───────────────────┬───────────────────────────┘
+                             │
+                    ┌─────────────────┐
+                    │   AI Provider   │
+                    │ (Gemini/OpenAI) │
+                    └─────────────────┘
+```
+
+**Tech Stack**: TypeScript, React 19, WXT (Web Extension Framework), Tailwind CSS, Vercel AI SDK, Bun
+
+---
+
+## Why This Works
+
+### 1. Removes Decision Fatigue
+
+Your brain doesn't have to decide "is this worth my time?" on every link. The AI decides. You just react to its decision. Save your mental energy for the actual work.
+
+### 2. Catches "Fake Productivity"
+
+Traditional blockers miss the sneaky stuff — the tutorials, the "research," the "staying current" that feels like work but isn't moving your project forward. GetShitDone sees through it.
+
+### 3. Smart, Not Blunt
+
+You *need* Twitter for market research, YouTube for tutorials, Reddit for debugging. This doesn't ban tools — it judges content based on your current goal.
+
+### 4. Time-Boxed Exceptions
+
+Need to check something off-task? Fine. But it's 15 minutes, not "until you accidentally spend 2 hours."
+
+### 5. Systems > Willpower
+
+Willpower is a finite resource. This extension is a **system that works while you work**, so you don't have to constantly police yourself.
+
+---
+
+## Comparison
+
+| Feature | Traditional Blockers | GetShitDone |
+|---------|---------------------|-------------|
+| **Blocking Method** | Domain-based lists | AI content analysis |
+| **Context Awareness** | None | Full task context |
+| **Fake Productivity** | Misses it completely | Specifically targets it |
+| **Flexibility** | All-or-nothing | Negotiable access |
+| **Element Removal** | None | Surgical CSS extraction |
+| **Cost** | Often subscription | Free (bring your own API key) |
+| **Privacy** | Often tracks you | Fully local, open source |
+
+---
+
+## Contributing
+
+Built by someone who was tired of their own brain's excuses. Contributions welcome from fellow builders who value focus.
+
+```bash
+# Fork and clone
+git checkout -b feature/your-feature
+bun test
+bun lint
+git commit -m "feat: add your feature"
+git push origin feature/your-feature
+```
+
+Follow Conventional Commits, use Biome for formatting, write TypeScript with strict mode.
+
+---
+
+## License
+
+MIT — use it, fork it, make it yours.
+
+---
+
+## Final Note
+
+If you're reading this at 11 PM after a day of "research" that produced nothing, **I see you.** This tool won't fix everything, but it might give you back 2-3 hours a day. That's 10-15 hours a week. That's 500+ hours a year.
+
+**Imagine what you could build with 500 extra hours.**
+
+Install it. Try it. Get shit done.
+
+---
+
+*Built with ❤️ and a healthy dose of frustration.*
