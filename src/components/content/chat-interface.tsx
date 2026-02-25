@@ -1,17 +1,11 @@
-/**
- * Chat interface component for communicating with AI assistant.
- * This component provides a chat UI that allows users to interact with an AI
- * assistant to request access to blocked pages. It handles message sending,
- * displays conversation history, and processes AI responses that may grant
- * temporary access or deny requests.
- */
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
-import { useAccessState, useChatMessages, useChatMutation } from "~/lib/chat";
+import { useAccessState, useChatMessages } from "~/lib/chat";
 import { useAutoScroll } from "~/lib/hooks";
+import { type ChatResponse, Message, sendMessage } from "~/lib/messaging";
 import { ChatAccessStatus } from "./chat-access-status";
 import { ChatLoadingIndicator } from "./chat-loading-indicator";
 import { ChatMessage } from "./chat-message";
@@ -67,20 +61,61 @@ export const ChatInterface = ({
     initialMessage,
     sessionId,
     onInitialized: (sid, msg) => {
-      chatMutation.sendMessage(sid, msg);
+      // Store this for later use in mutation
+      return sendMessage(Message.SEND_CHAT_MESSAGE, {
+        sessionId: sid,
+        message: msg,
+      });
     },
   });
 
-  const chatMutation = useChatMutation({
-    onMessageReceived: addMessage,
-    onAccessGranted: (durationMinutes, message) => {
-      accessState.showGranted(message);
-      setTimeout(() => {
-        onUnblock?.(durationMinutes);
-      }, 2000);
+  // Chat mutation for sending messages to AI
+  const chatMutation = useMutation<
+    ChatResponse,
+    Error,
+    { sessionId: string; message: string }
+  >({
+    mutationFn: async ({ sessionId, message }) => {
+      const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
+        sessionId,
+        message,
+      });
+      return response;
     },
-    onAccessDenied: (reason) => {
-      accessState.showDenied(reason, onAccessDenied);
+    onSuccess: (response) => {
+      // Add AI response to messages
+      addMessage(response.message);
+
+      // Check for access granted
+      if (response.accessGranted && response.durationMinutes) {
+        const message = `Access granted for ${response.durationMinutes} minutes! Unblocking page...`;
+        accessState.showGranted(message);
+        setTimeout(() => {
+          if (response.durationMinutes) {
+            onUnblock?.(response.durationMinutes);
+          }
+        }, 2000);
+      } else if (response.message.content) {
+        // Extract reason from message
+        accessState.showDenied(response.message.content, onAccessDenied);
+      }
+    },
+    onError: (error) => {
+      // Add specific error message based on the error type
+      let errorMessageContent =
+        "Sorry, I'm having trouble responding right now. Please try again.";
+
+      if (error instanceof Error) {
+        errorMessageContent = error.message;
+      }
+
+      const errorMessage = {
+        content: errorMessageContent,
+        role: "assistant" as const,
+        id: `error_${Date.now()}`,
+        timestamp: Date.now(),
+      };
+      addMessage(errorMessage);
     },
   });
 
@@ -94,7 +129,7 @@ export const ChatInterface = ({
     }
   }, [chatMutation.isPending, accessState.isGranted]);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (
       !inputMessage.trim() ||
       chatMutation.isPending ||
@@ -105,8 +140,10 @@ export const ChatInterface = ({
 
     const message = inputMessage.trim();
     setInputMessage("");
-    addUserMessage(message);
-    chatMutation.sendMessage(sessionId, message);
+    const userMessage = addUserMessage(message);
+
+    // Use the mutation to send the message
+    await chatMutation.mutateAsync({ sessionId, message });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -119,9 +156,9 @@ export const ChatInterface = ({
   const isInputDisabled = chatMutation.isPending || accessState.isGranted;
 
   return (
-    <div className="flex flex-col h-full space-y-4">
-      <ScrollArea ref={scrollAreaRef} className="flex-1 pr-4">
-        <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-3">
+      <ScrollArea ref={scrollAreaRef} className="flex-1 pr-3">
+        <div className="space-y-3 pb-2">
           {messages.map((message) => (
             <ChatMessage key={message.id} message={message} />
           ))}
@@ -137,13 +174,13 @@ export const ChatInterface = ({
         </div>
       </ScrollArea>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2 border-t border-border">
         <Input
           ref={inputRef}
           value={inputMessage}
           onChange={(e) => setInputMessage(e.target.value)}
           onKeyDown={handleKeyPress}
-          placeholder="Type your message..."
+          placeholder="Explain why you need access..."
           disabled={isInputDisabled}
           className="flex-1"
         />

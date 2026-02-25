@@ -7,22 +7,6 @@
  */
 
 /**
- * Enumeration of available theme modes for the application.
- *
- * This constant object defines the supported theme options that users can select
- * from in the application. The values are used as string literals for storage
- * and comparison purposes.
- */
-export const Theme = {
-  /** Light theme mode with bright color scheme */
-  LIGHT: "light",
-  /** Dark theme mode with dark color scheme */
-  DARK: "dark",
-  /** System theme mode that follows the OS preference */
-  SYSTEM: "system",
-} as const;
-
-/**
  * Enumeration of available Node.js environment modes.
  *
  * This constant object defines the supported environment configurations
@@ -36,25 +20,6 @@ export const NodeEnv = {
   /** Production environment with optimizations enabled */
   PRODUCTION: "production",
 } as const;
-
-/**
- * Union type representing all available theme options.
- *
- * This type is derived from the Theme constant object and represents
- * all possible theme values that can be used throughout the application.
- * It provides type safety when working with theme-related functionality.
- *
- * @example
- * ```typescript
- * function setTheme(theme: Theme) {
- *   localStorage.setItem('theme', theme);
- * }
- *
- * setTheme(Theme.DARK); // Valid
- * setTheme('custom'); // TypeScript error
- * ```
- */
-export type Theme = (typeof Theme)[keyof typeof Theme];
 
 /**
  * Union type representing all available environment modes.

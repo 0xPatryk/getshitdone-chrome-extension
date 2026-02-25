@@ -13,13 +13,18 @@
  */
 
 import { analyzePageContent, processChatMessage } from "~/lib/ai-service";
+import { extractMainContent } from "~/lib/ai-service/utils";
 import { getCachedDecision, setCachedDecision } from "~/lib/cache";
 import {
   cleanupExpiredCacheEntries,
   invalidateCacheForAlwaysRemoveChange,
   invalidateCacheForTaskChange,
 } from "~/lib/cache";
-import { setAccessGrant } from "~/lib/grants";
+import {
+  getAllActiveAccessGrants,
+  getChatContextForGrants,
+  setAccessGrant,
+} from "~/lib/grants";
 import { Message, onMessage } from "~/lib/messaging";
 import { type AnalysisResult, AnalysisResultSchema } from "~/lib/messaging";
 import type { ChatMessage, ChatSession } from "~/lib/messaging";
@@ -86,14 +91,25 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       return cachedResult;
     }
 
-    // Analyze the page content using the AI service
+    // Get active grants and their chat context for enhanced AI analysis
+    const activeGrants = await getAllActiveAccessGrants();
+    const chatContexts = await getChatContextForGrants(
+      Object.keys(activeGrants),
+    );
+
+    // Extract the main content from the raw HTML before analysis
+    const extractedContent = extractMainContent(data.content);
+
+    // Analyze the page content using the AI service with grants context
     const analysisResult = await analyzePageContent(
       apiKey,
       currentTask,
-      data.content,
+      extractedContent,
       data.url,
       aiProvider,
       data.alwaysRemove,
+      activeGrants,
+      chatContexts,
     );
 
     // Cache the result
@@ -101,13 +117,12 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       data.url,
       currentTask || "",
       data.alwaysRemove || null,
-      analysisResult,
-      "ai_decision",
-      aiProvider,
-      false,
+      analysisResult.decision,
+      analysisResult.selectors || null,
+      analysisResult.reason,
     );
 
-    // Validate and return the result
+    // Validate and return the result (including the prompt)
     const validatedResult = AnalysisResultSchema.parse(analysisResult);
     return validatedResult;
   } catch (error) {
@@ -189,13 +204,37 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
     // Get chat history for AI context
     const chatHistory = session.messages;
 
-    // Process the chat message using the AI service
+    // Get active grants and their chat context for enhanced AI analysis
+    const activeGrants = await getAllActiveAccessGrants();
+    const chatContexts = await getChatContextForGrants(
+      Object.keys(activeGrants),
+    );
+
+    // Try to get page content from cache if available (sessionId is the URL)
+    const cachedResult = await getCachedDecision(
+      data.sessionId, // sessionId is the URL
+      currentTask || "",
+      null, // alwaysRemove not relevant for chat
+    );
+
+    let pageContent = "";
+    if (cachedResult?.reason) {
+      // Extract page content from cache if available
+      // Note: This is a simplified approach - in a real implementation,
+      // you might want to store page content separately in cache
+      pageContent = `Page content analysis: ${cachedResult.reason}`;
+    }
+
+    // Process the chat message using the AI service with enhanced context
     const aiResponse = await processChatMessage(
       apiKey,
       currentTask || "No task set",
       data.message,
       chatHistory,
       aiProvider,
+      pageContent,
+      activeGrants,
+      chatContexts,
     );
 
     // Add both user message and AI response to session
@@ -223,6 +262,8 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         expiresAt,
         grantedAt: now,
         durationMinutes: aiResponse.durationMinutes,
+        // Use the explicit grant reason if available, otherwise fallback to message content
+        reason: aiResponse.grantReason || aiResponse.message.content,
       });
 
       // Cache the unblocking decision
@@ -235,10 +276,10 @@ onMessage(Message.SEND_CHAT_MESSAGE, async (message) => {
         data.sessionId, // URL
         currentTask || "",
         null, // alwaysRemove not relevant for chat unblocks
-        allowResult,
-        "user_unblock",
-        aiProvider,
-        false,
+        allowResult.decision,
+        null, // no selectors for ALLOW
+        allowResult.reason,
+        aiResponse.durationMinutes * 60 * 1000, // custom TTL based on duration
       );
 
       // Mark session as completed and clear messages to free memory

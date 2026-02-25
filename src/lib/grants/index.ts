@@ -27,4 +27,6 @@ export {
   setAccessGrant,
   removeAccessGrant,
   cleanupExpiredGrants,
+  getAllActiveAccessGrants,
+  getChatContextForGrants,
 } from "./services";

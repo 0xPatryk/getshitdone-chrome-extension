@@ -5,7 +5,6 @@
  */
 
 import { Settings } from "lucide-react";
-import { ThemeSwitch } from "~/components/common/theme";
 import { buttonVariants } from "~/components/ui/button";
 import { cn } from "~/lib/utils";
 
@@ -40,7 +39,6 @@ export const Header = () => {
         <Settings className="size-5" />
         <span className="sr-only">Settings</span>
       </a>
-      <ThemeSwitch />
     </header>
   );
 };

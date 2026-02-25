@@ -8,9 +8,8 @@
  */
 
 import { useEffect, useState } from "react";
-import type { DecisionCacheEntry } from "~/lib/cache";
+import type { AnalysisResultCache } from "~/lib/cache";
 import type { ChatSession } from "~/lib/messaging";
-import { Theme } from "~/types";
 import { type WxtStorageItem, storage as browserStorage } from "#imports";
 import { StorageKey, type StorageKeyType } from "./types";
 
@@ -22,13 +21,6 @@ import { StorageKey, type StorageKeyType } from "./types";
  * @constant
  */
 export const storage = {
-  /**
-   * User theme preference with system default
-   */
-  [StorageKey.THEME]: browserStorage.defineItem<Theme>(StorageKey.THEME, {
-    fallback: Theme.SYSTEM,
-  }),
-
   /**
    * Gemini API key with environment variable initialization
    */
@@ -163,7 +155,7 @@ export const storage = {
    * Decision cache storage
    */
   [StorageKey.DECISION_CACHE]: browserStorage.defineItem<
-    Record<string, DecisionCacheEntry>
+    Record<string, AnalysisResultCache>
   >(StorageKey.DECISION_CACHE, {
     fallback: {},
   }),
@@ -215,12 +207,12 @@ export const useStorage = <K extends StorageKeyType>(key: K) => {
     })();
   }, [item.getValue]);
 
-  const remove = () => {
-    void item.removeValue();
+  const remove = async () => {
+    await item.removeValue();
   };
 
-  const set = (value: Value<K>) => {
-    void item.setValue(value);
+  const set = async (value: Value<K>) => {
+    await item.setValue(value);
   };
 
   return { data: value ?? item.fallback, remove, set };

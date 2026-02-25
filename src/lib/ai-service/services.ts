@@ -8,41 +8,370 @@
  */
 
 import { generateObject } from "ai";
+import { z } from "zod";
+import type { AccessGrant } from "~/lib/grants";
 import {
   type AnalysisResult,
-  AnalysisResultSchema,
   type ChatMessage,
   ChatProcessResultSchema,
+  type ChatSession,
 } from "~/lib/messaging";
 import type { AIProvider } from "./types";
 import { getModel } from "./utils";
 
+// Define the new schema for the AI response based on the new prompt
+const NewAnalysisResultSchema = z.object({
+  decision: z
+    .enum(["ALLOW", "BLOCK_ALL"])
+    .describe("The final decision based on the analysis."),
+  reason: z
+    .string()
+    .describe("A concise, one-sentence explanation for the decision."),
+  selectors: z
+    .array(z.string())
+    .describe("An array of CSS selectors for distracting elements, if any."),
+});
 /**
- * Analyzes web page content to determine if it's relevant to the user's task or a potential distraction.
- * Uses AI to make decisions about blocking the entire page, removing specific elements, or allowing access.
+ * Constructs the detailed system prompt for the AI, incorporating advanced
+ * prompt engineering techniques for higher accuracy and reliability.
+ * @returns The system prompt string.
+ */
+const constructSystemPrompt = (): string => {
+  // 1. Define the Persona and Core Instructions
+  const personaAndInstructions = `
+You are an Expert Web Content Analyzer specializing in distraction detection. Your purpose is to critically evaluate whether a web page supports or hinders a user's stated task by examining both obvious and subtle distractions across all content domains.
+
+<ANALYSIS_CHECKLIST>
+Before generating output, you must complete these steps:
+1. **CHECK ACTIVE GRANTS FIRST:** If <ACTIVE_GRANTS_CONTEXT> exists, verify if current URL or content matches granted access patterns
+2. Parse and internalize the user's task objective and the page's primary purpose
+3. Cross-reference page content against task requirements using domain knowledge
+4. Identify both explicit distractions (off-task) and implicit ones (fake productivity, tangential content)
+5. Detect distracting UI elements and extract their CSS selectors from page structure
+6. Apply exception rules for always-necessary content (auth flows, AI tools, documentation)
+7. Formulate decision (ALLOW or BLOCK_ALL) with supporting one-sentence justification
+8. Validate output against schema: decision field, reason field, selectors array in exact order
+</ANALYSIS_CHECKLIST>
+
+<CORE_INSTRUCTIONS>
+**REASONING FRAMEWORK:**
+Execute this four-phase analysis before producing output:
+
+**Phase 1 - Context Synthesis:**
+- **PRIORITY CHECK:** If <ACTIVE_GRANTS_CONTEXT> is present, examine it FIRST before other analysis
+- Extract the user's core objective from <USER_TASK>
+- Identify the page's primary purpose and content type from <PAGE_CONTENT>
+- Note the domain, format, and any interactive elements present
+
+**Phase 2 - Relevance Classification:**
+Categorize the page's relationship to the task:
+- **DIRECTLY NECESSARY:** Content or tools immediately required to complete the task
+- **SUPPORTIVE INFRASTRUCTURE:** Login gates, CAPTCHAs, error pages, or helper tools enabling task completion
+- **TANGENTIALLY RELATED:** Content in similar domain but not addressing the specific task (treat as distraction)
+- **CLEARLY OFF-TASK:** Content from entirely different domains or pure entertainment
+- **FAKE PRODUCTIVITY:** Content about productivity, motivation, or general advice rather than actual task execution
+
+**Phase 3 - Decision Logic:**
+- If content is DIRECTLY NECESSARY or SUPPORTIVE INFRASTRUCTURE → **ALLOW**
+- If content is TANGENTIALLY RELATED, CLEARLY OFF-TASK, or FAKE PRODUCTIVITY → **BLOCK_ALL**
+- When blocking, identify specific distracting elements via CSS selectors (class names, IDs, semantic tags)
+
+**Phase 4 - Output Construction:**
+- Generate a single-sentence reason explaining the decision
+- List CSS selectors for any distracting elements detected (empty array if none)
+- Validate that output matches schema exactly: {"decision": string, "reason": string, "selectors": string[]}
+
+**CRITICAL: FAKE PRODUCTIVITY DETECTION**
+Be highly vigilant for content that appears work-related but does not advance the *current specific task*:
+- Generic productivity advice, time management tips, motivational content
+- Broad "how to be better at X" articles when task is "do specific Y"
+- General industry news or trends not directly applicable to immediate work
+- Aspirational content about skills or careers when task requires focused execution
+- Tutorial content for different tools/languages than what task requires
+
+If content discusses "working better" rather than "doing the work," classify as BLOCK_ALL.
+
+**ABSOLUTE EXCEPTIONS - ALWAYS ALLOW:**
+These are never distractions regardless of task. Immediately return ALLOW decision if page is:
+- **AI Assistants:** ChatGPT, Claude, Gemini, Copilot, Perplexity, any conversational AI
+- **Translation Services:** Google Translate, DeepL, Reverso, language dictionaries
+- **Developer Resources:** Stack Overflow, GitHub, official documentation, MDN, API references
+- **Productivity Tools:** Notion, Obsidian, Todoist, ClickUp, Evernote, calendar apps, task managers
+- **Authentication & Security:** Login pages, CAPTCHA challenges, 2FA verification, OAuth screens
+- **Infrastructure:** Cookie consent banners, error pages (404, 500), loading screens, network interstitials
+
+**CSS SELECTOR EXTRACTION:**
+When identifying distracting elements:
+- Examine class attributes, ID attributes, and semantic HTML tags in <PAGE_CONTENT>
+- Target specific components (feeds, sidebars, recommendation widgets, comment sections)
+- Use precise selectors like "#news-feed", ".recommended-articles", "aside.promotions"
+- Return empty array if entire page should be blocked (BLOCK_ALL with no element-level filtering)
+
+**OUTPUT REQUIREMENTS:**
+- Produce ONLY a valid JSON object - no markdown, no preamble, no apologies, no explanation outside JSON
+- Exact schema: {"decision": "ALLOW" or "BLOCK_ALL", "reason": "string", "selectors": ["string", ...]}
+- Maintain strict field order: decision, then reason, then selectors
+- After internal generation, verify schema compliance before output
+</CORE_INSTRUCTIONS>
+
+<JSON_SCHEMA>
+Your output must conform precisely to this structure:
+\`\`\`json
+{
+  "decision": "string", // Exactly "ALLOW" or "BLOCK_ALL" - no other values permitted
+  "reason": "string", // Single sentence explaining the decision with reference to task relevance
+  "selectors": ["string"] // Array of CSS selectors for distracting elements; empty if none identified
+}
+\`\`\`
+</JSON_SCHEMA>
+`;
+
+  // 2. Define the Few-Shot Exemplars to guide the model's reasoning
+  const examples = `
+<EXAMPLES>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a Next.js frontend for a new e-commerce site. Focus on component structure.
+</USER_TASK>
+<PAGE_CONTENT>
+A blog post titled "Advanced Database Sharding Techniques for Petabyte-Scale Systems." The article discusses horizontal partitioning, replication, and CAP theorem trade-offs for large-scale data storage.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "BLOCK_ALL",
+  "reason": "This page discusses advanced backend optimization, which is not relevant to the current frontend development task.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Writing a research paper on the impact of Roman aqueducts on urban development.
+</USER_TASK>
+<PAGE_CONTENT>
+An Instagram feed with photos of friends, sponsored posts for clothing, and short video reels.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "BLOCK_ALL",
+  "reason": "Social media is unrelated to the academic research task.",
+  "selectors": ["#main-feed", ".stories-tray"]
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Develop a Next.js frontend for a new e-commerce site.
+</USER_TASK>
+<PAGE_CONTENT>
+The official documentation page for React Hooks on the react.dev website. It explains useState, useEffect, and custom hooks with code examples.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "ALLOW",
+  "reason": "The page provides essential documentation for React, the library Next.js is built upon.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create a social media marketing plan for a new brand of coffee.
+</USER_TASK>
+<PAGE_CONTENT>
+A standard login page for Google accounts, asking for an email and password.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "ALLOW",
+  "reason": "This is a neutral login page, likely required to access work-related tools.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create an n8n pipeline for outreach automation.
+</USER_TASK>
+<PAGE_CONTENT>
+A CAPTCHA challenge page with reCAPTCHA widget asking the user to verify they are human by selecting images containing traffic lights.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "ALLOW",
+  "reason": "This is a CAPTCHA verification page, which is essential infrastructure that cannot be bypassed.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Build an n8n pipeline for data processing.
+</USER_TASK>
+<PAGE_CONTENT>
+A Medium article titled "How to Become the Most Productive Effective Version of Yourself" with general productivity tips and time management advice.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "BLOCK_ALL",
+  "reason": "This is general productivity advice unrelated to building an n8n pipeline - classic fake productivity.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Create an n8n pipeline for outreach automation.
+</USER_TASK>
+<PAGE_CONTENT>
+Google Gemini interface with chat input and conversation history. The page shows a conversational AI interface where users can ask questions and get AI-generated responses.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "ALLOW",
+  "reason": "This is an AI helper tool that assists users in accomplishing their tasks more efficiently.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+<EXAMPLE>
+<USER_TASK>
+Debug a React component issue.
+</USER_TASK>
+<PAGE_CONTENT>
+Stack Overflow page with programming questions and answers about React hooks and state management.
+</PAGE_CONTENT>
+<OUTPUT>
+{
+  "decision": "ALLOW",
+  "reason": "This is a documentation and reference site that provides essential technical help for the current task.",
+  "selectors": []
+}
+</OUTPUT>
+</EXAMPLE>
+---
+</EXAMPLES>
+`;
+
+  return `${personaAndInstructions}\n${examples}`;
+};
+
+/**
+ * Formats grants and chat context for the AI prompt
+ * @param activeGrants - Record of active access grants
+ * @param chatContexts - Record of chat sessions for grant URLs
+ * @returns Formatted string containing grants context
+ */
+const formatGrantsContext = (
+  activeGrants: Record<string, AccessGrant>,
+  chatContexts: Record<string, ChatSession>,
+): string => {
+  if (Object.keys(activeGrants).length === 0) {
+    return "No active access grants.";
+  }
+
+  const grantsInfo = Object.entries(activeGrants).map(([url, grant]) => {
+    const chatContext = chatContexts[url];
+    const remainingMinutes = Math.ceil(
+      (grant.expiresAt - Date.now()) / (60 * 1000),
+    );
+
+    let contextInfo = "";
+
+    // Prefer the explicit reason if available
+    if (grant.reason) {
+      contextInfo = `\n  Reason: "${grant.reason}"`;
+    } else if (chatContext && chatContext.messages.length > 0) {
+      // Fallback to chat context for backward compatibility
+      const userMessages = chatContext.messages
+        .filter((msg) => msg.role === "user")
+        .map((msg) => msg.content)
+        .join(" | ");
+      contextInfo = `\n  Chat Context: "${userMessages}"`;
+    }
+
+    return `- ${url} (${remainingMinutes} minutes remaining)${contextInfo}`;
+  });
+
+  return `Active Access Grants:\n${grantsInfo.join("\n")}`;
+};
+
+/**
+ * Constructs the user-facing prompt containing the specific data for analysis.
+ * @param userTask - The user's current task.
+ * @param pageContent - The HTML content of the page.
+ * @param url - The URL of the page.
+ * @param alwaysRemove - Optional CSS selectors to always include for removal.
+ * @param activeGrants - Optional record of active access grants
+ * @param chatContexts - Optional record of chat sessions for grant URLs
+ * @returns The user prompt string.
+ */
+const constructUserPrompt = (
+  userTask: string,
+  pageContent: string,
+  url: string,
+  alwaysRemove?: string | null,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
+): string => {
+  const alwaysRemoveSection = alwaysRemove
+    ? `<ALWAYS_REMOVE_SELECTORS>
+You must identify this components and extract the CSS classes/IDs. The components:"${alwaysRemove}"
+</ALWAYS_REMOVE_SELECTORS>`
+    : "";
+
+  const grantsSection =
+    activeGrants && chatContexts
+      ? `<ACTIVE_GRANTS_CONTEXT>
+${formatGrantsContext(activeGrants, chatContexts)}
+
+CONSIDER THIS CONTEXT:
+- The user has been granted temporary access to specific URLs with chat context showing why
+- Use this context to understand the user's current work patterns and intentions
+- Similar requests or URLs should be evaluated in light of existing grants
+- The chat context reveals the user's stated needs and reasoning for access
+</ACTIVE_GRANTS_CONTEXTS>`
+      : "";
+
+  return `
+<ANALYSIS_TASK>
+Now, perform your analysis on the following user task and page content.
+<USER_TASK>
+${userTask}
+</USER_TASK>
+<URL>
+${url}
+</URL>
+${alwaysRemoveSection}
+${grantsSection}
+<PAGE_CONTENT>
+\`\`\`html
+${pageContent}
+\`\`\`
+</PAGE_CONTENT>
+<OUTPUT>
+`;
+};
+
+/**
+ * Analyzes if a web page is relevant to the user's current task or a distraction.
+ * Blocks fake productivity (work-adjacent but irrelevant content) and entertainment.
  *
- * @param apiKey - The API key for the specified AI provider
- * @param userTask - The current task the user is working on
- * @param pageContent - The text content of the web page to analyze
- * @param url - The URL of the page being analyzed
- * @param provider - The AI provider to use for analysis (default: "gemini")
- * @param alwaysRemove - Optional CSS selectors for elements that should always be removed
- * @returns A promise that resolves to an AnalysisResult containing the decision and reasoning
- *
- * @example
- * ```typescript
- * const result = await analyzePageContent(
- *   "api-key",
- *   "Write a research paper on climate change",
- *   "<html>Page content here</html>",
- *   "https://example.com",
- *   "gemini",
- *   ".ads,.sidebar"
- * );
- * console.log(result.decision); // "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW"
- * ```
- *
- * @see {@link AnalysisResult} for the structure of the returned object
+ * @param apiKey - AI provider API key
+ * @param userTask - User's current specific task
+ * @param pageContent - Web page HTML content
+ * @param url - Page URL
+ * @param provider - AI provider (default: "gemini")
+ * @param alwaysRemove - CSS selectors to always remove
+ * @returns Decision: BLOCK_ALL or ALLOW
  */
 export const analyzePageContent = async (
   apiKey: string,
@@ -51,146 +380,57 @@ export const analyzePageContent = async (
   url: string,
   provider: AIProvider = "gemini",
   alwaysRemove?: string | null,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
 ): Promise<AnalysisResult> => {
   const model = getModel(provider, apiKey);
 
-  const alwaysRemoveSection = alwaysRemove
-    ? `\n\n## ALWAYS REMOVE ELEMENTS\nThe user specified these elements to ALWAYS remove: "${alwaysRemove}"\nInclude these selectors in your response if they exist on the page.`
-    : "";
+  // Construct the two parts of the prompt
+  const systemPrompt = constructSystemPrompt();
+  const userPrompt = constructUserPrompt(
+    userTask,
+    pageContent,
+    url,
+    alwaysRemove,
+    activeGrants,
+    chatContexts,
+  );
 
-  const systemPrompt = `You are a Focus Assistant AI. Your task is to analyze web pages and determine if they help users complete their specific task or represent fake productivity.
-
-## TASK
-Produce a JSON analysis of whether a web page is relevant to the user's specific task or a distraction.
-
-## INPUT
-- User task: The specific work the user should be doing
-- Page URL: The website address being analyzed
-- Page content: HTML content of the page
-- Always remove selectors: CSS elements to always remove if present
-
-## ANALYSIS FRAMEWORK
-
-### Step 1: Critical Pages Check
-ALLOW immediately for:
-- Login/authentication pages
-- CAPTCHA or verification pages
-- Account/billing management
-- Terms of service or consent pages
-
-**IMPORTANT**: If you identify a CAPTCHA, verification, or login page, you MUST return ALLOW immediately without further analysis. These pages are essential for accessing any website.
-
-### Step 2: Task Clarity Check
-ALLOW immediately if user task is vague (e.g., "work", "research", "coding") without specific details.
-
-### Step 3: Relevance Analysis
-Compare page content to the SPECIFIC user task:
-
-**Directly Relevant:** Content that directly helps complete the stated task
-**Productivity Tools:** Tools needed for the task (IDEs, docs, repositories)
-**Fake Productivity:** Work-related content UNRELATED to current task
-**Distractions:** Entertainment, social media, news, gaming, etc.
-
-### Step 4: Decision Logic
-- BLOCK_ALL for fake productivity or clear distractions
-- ALLOW for directly relevant content with no distractions
-- REMOVE_ELEMENTS for relevant content with distractions
-
-## OUTPUT FORMAT
-Return exactly this JSON structure:
-\`\`\`json
-{
-  "decision": "ALLOW" | "BLOCK_ALL" | "REMOVE_ELEMENTS",
-  "reason": "Brief explanation of decision",
-  "selectors": ["css.selector.one", "css.selector.two"]
-}
-\`\`\`
-
-## EXAMPLES
-
-**Example 1 - Fake Productivity:**
-Task: "Build React frontend" | Page: Database optimization tutorial
-Decision: BLOCK_ALL
-Reason: "Fake productivity - database optimization unrelated to frontend development"
-
-**Example 2 - Relevant with Distractions:**
-Task: "Research machine learning" | Page: ML article with ads and sidebar
-Decision: REMOVE_ELEMENTS
-Reason: "Relevant content with distracting elements"
-Selectors: [".ads", "#sidebar"]
-
-**Example 3 - Critical CAPTCHA Page:**
-Task: "Write code" | Page: "I'm not a robot" CAPTCHA verification
-Decision: ALLOW
-Reason: "Critical CAPTCHA verification page - must allow access"
-
-**Example 4 - Critical Login Page:**
-Task: "Write code" | Page: GitHub login
-Decision: ALLOW
-Reason: "Critical authentication page - must allow access"
-
-## EVALUATION CRITERIA
-Before responding, confirm you will:
-1. Analyze only the provided inputs
-2. Focus on detecting fake productivity
-3. Return valid JSON matching the schema
-4. Apply the decision logic consistently - if content is identified as a distraction or fake productivity, use BLOCK_ALL regardless of uncertainty
-5. Only default to ALLOW when the content genuinely doesn't fit any distraction category and you cannot make a clear determination`;
-
-  const prompt = `${alwaysRemoveSection}
-
-## User Task
-${userTask}
-
-## Page URL
-${url}
-
-## Page Content (HTML)
-${pageContent}`;
+  // Combine prompts for logging
+  const fullPrompt = `${systemPrompt}\n\n${userPrompt}`;
 
   try {
+    // The `generateObject` function from your SDK handles the JSON parsing
     const { object } = await generateObject({
       model,
-      schema: AnalysisResultSchema,
-      prompt,
+      schema: NewAnalysisResultSchema,
+      prompt: userPrompt,
       system: systemPrompt,
-      temperature: 0.1,
-      mode: "json",
+      temperature: 0.2,
     });
 
-    return object;
+    const { decision, reason, selectors } = object;
+
+    return {
+      decision,
+      reason,
+      selectors: selectors || [],
+      prompt: fullPrompt,
+    };
   } catch (error: unknown) {
+    // Fallback in case of an API or parsing error
     return {
       decision: "ALLOW",
-      reason: `AI analysis failed. Page allowed as fallback. Reason: ${error}`,
+      reason: `Analysis failed: ${error instanceof Error ? error.message : String(error)}`,
+      selectors: [],
+      prompt: fullPrompt,
     };
   }
 };
 
 /**
- * Processes a chat message from the user and determines if access should be granted.
- * The AI evaluates whether the user's request aligns with their current task and provides
- * a response with either granted access (with duration) or a denial with reason.
- *
- * @param apiKey - The API key for the specified AI provider
- * @param userTask - The current task the user is working on
- * @param message - The user's chat message requesting access
- * @param chatHistory - Previous messages in the chat session for context
- * @param provider - The AI provider to use for processing (default: "gemini")
- * @returns A promise that resolves to an object containing the AI response, access decision, and duration
- *
- * @example
- * ```typescript
- * const response = await processChatMessage(
- *   "api-key",
- *   "Write a research paper",
- *   "I need to check social media for 5 minutes",
- *   [{ id: "1", content: "Hello", role: "user", timestamp: Date.now() }],
- *   "gemini"
- * );
- * console.log(response.accessGranted); // boolean
- * console.log(response.durationMinutes); // number if granted
- * ```
+ * Processes user requests to access blocked content. AI evaluates if the request
+ * aligns with the current task and grants/denies access with time limits.
  */
 export const processChatMessage = async (
   apiKey: string,
@@ -198,6 +438,9 @@ export const processChatMessage = async (
   message: string,
   chatHistory: ChatMessage[],
   provider: AIProvider = "gemini",
+  pageContent?: string,
+  activeGrants?: Record<string, AccessGrant>,
+  chatContexts?: Record<string, ChatSession>,
 ): Promise<{
   message: ChatMessage;
   accessGranted: boolean;
@@ -205,114 +448,279 @@ export const processChatMessage = async (
 }> => {
   const model = getModel(provider, apiKey);
 
-  // Build conversation history for context
   const historyContext = chatHistory
     .map((msg) => `${msg.role}: ${msg.content}`)
     .join("\n");
 
-  const systemPrompt = `You are a Focus Assistant AI. Your task is to help users stay productive while negotiating reasonable access to content.
+  const grantsSection =
+    activeGrants && chatContexts
+      ? `<ACTIVE_GRANTS_CONTEXT>
+${formatGrantsContext(activeGrants, chatContexts)}
+</ACTIVE_GRANTS_CONTEXT>`
+      : "";
 
-## TASK
-Produce a JSON response that either grants or denies user requests with clear reasoning and negotiation.
-
-## INPUT
-- User task: The specific work user should be doing
-- User request: What user wants to access or do
-- Conversation history: Previous messages for context
-
-## ANALYSIS FRAMEWORK
-
-### Step 1: Context Assessment
-- Review the user's current task
-- Understand the specific request
-- Consider conversation history
-
-### Step 2: Request Classification
-**Task-Relevant:** Directly helps complete the current task
-**Productivity Support:** Indirectly supports task completion
-**Well-being:** Supports mental/physical health
-**Distraction:** Unrelated entertainment or time-wasting
-**Negotiable:** Could be reasonable with limits
-
-### Step 3: Decision Logic
-**GRANT** for:
-- Task-relevant content (15-60 minutes)
-- Productivity support with justification (10-30 minutes)
-- Well-being needs (5-20 minutes)
-- Short reasonable breaks (5-15 minutes)
-
-**NEGOTIATE** for:
-- Partially relevant requests with time limits
-- Longer breaks with task completion conditions
-- Mixed content with selective access
-
-**DENY** for:
-- Clear distractions without justification
-- Excessive time requests
-- Harmful or inappropriate content
-
-### Step 4: Response Strategy
-- Acknowledge the user's request
-- Explain your reasoning clearly
-- Offer alternatives when denying
-- Set reasonable time limits
-- Maintain supportive, collaborative tone
-
-## OUTPUT FORMAT
-Return exactly this JSON structure:
-\`\`\`json
-{
-  "response": "Your conversational response to the user",
-  "decision": "GRANT" | "DENY",
-  "durationMinutes": number (only include if decision is GRANT)
-}
+  const pageContentSection = pageContent
+    ? `<PAGE_CONTENT>
+\`\`\`html
+${pageContent}
 \`\`\`
+</PAGE_CONTENT>`
+    : "";
 
-## EXAMPLES
+  const systemPrompt = `You are a supportive Focus Coach having a natural conversation about website access. Help users make mindful decisions while respecting their autonomy.
 
-**Example 1 - Task-Relevant Grant:**
-Task: "Write React documentation" | Request: "Check React docs for 25 minutes"
-Response: "Access granted to React documentation. This directly supports your documentation writing task."
-Decision: GRANT | Duration: 25
+<CONVERSATION_STYLE>
+- Be warm, conversational, and brief (2-4 sentences max)
+- Ask clarifying questions when requests are vague instead of immediately denying
+- Engage in back-and-forth dialogue—you're negotiating, not judging
+- Show you understand their perspective before offering guidance
+- Vary your language—don't repeat the same phrases
+- Trust users to self-regulate with gentle guidance
+</CONVERSATION_STYLE>
 
-**Example 2 - Negotiation:**
-Task: "Complete project proposal" | Request: "Browse social media for 30 minutes"
-Response: "I understand you need a break, but 30 minutes on social media might disrupt your focus. How about a 15-minute break to stretch and grab a coffee, then we can tackle that proposal with fresh energy?"
-Decision: DENY
+<DECISION_PROCESS>
+**Quick checks (do these mentally, don't explain every step):**
+1. Check active grants—if similar content was granted, be consistent
+2. Is request specific or vague? If vague, ask what they need
+3. Does it advance their current task or is it tangential?
+4. Are they explaining why they need it, or just asking?
 
-**Example 3 - Well-being Grant:**
-Task: "Debug code issue" | Request: "Take a 10-minute walk to clear my head"
-Response: "Taking a walk is a great way to solve coding problems! Fresh air often helps with debugging. Enjoy your 10-minute break."
-Decision: GRANT | Duration: 10
+**Grant when:**
+- Clear connection to current task
+- Official docs, dev tools, AI assistants, auth pages
+- Well-being breaks (user asks for time to rest)
+- Builds on existing granted content logically
+- User explains reasonable need after you ask
 
-## EVALUATION CRITERIA
-Before responding, confirm you will:
-1. Provide helpful, conversational responses
-2. Negotiate reasonable alternatives when denying
-3. Set appropriate time limits based on request type
-4. Maintain supportive, collaborative tone
-5. Focus on long-term productivity over short-term satisfaction`;
+**Consider denying when:**
+- Pure entertainment/social media unrelated to task
+- Generic "productivity content" instead of doing work
+- Very vague with no willingness to clarify
+- Pattern of scattered, unfocused requests
 
-  const prompt = `Analyze the following user request based on the system rules.
+**Negotiation approach:**
+- First vague request → Ask what specifically they need
+- User explains better → Grant if reasonable
+- Still vague after asking → Suggest alternatives, soft deny
+- Clear need from start → Grant directly
+</DECISION_PROCESS>
 
-## User Task
-${userTask}
+<ACTIVE_GRANTS_AWARENESS>
+When <ACTIVE_GRANTS_CONTEXT> exists, use it to be consistent:
+- If they got Python docs and now want Python Stack Overflow → same topic, grant
+- If they got React docs and now want Angular → different tech, ask why they switched
+- If multiple focused grants in one area → they're working productively, be permissive
+- If scattered unrelated grants → they're distracted, be more inquisitive
+</ACTIVE_GRANTS_AWARENESS>
 
-## Previous Conversation
-${historyContext}
+<DURATION_GUIDELINES>
+- Quick lookup/auth: 5-15min
+- Specific debugging/docs: 20-30min
+- Learning new concept: 30-40min
+- Break time: 5-10min
+- Match duration to specificity—vague need = shorter time
 
-## User's Request
-${message}
-`;
+<OUTPUT_FORMAT>
+Return only valid JSON (no markdown, no preamble):
+{
+  "response": "Brief, conversational message (2-4 sentences)",
+  "decision": "GRANT" | "DENY",
+  "durationMinutes": 20, // Only if GRANT, omit if DENY
+  "grantReason": "Concise summary of user context in 3 or 4 sentences" // Only if GRANT
+}
+</OUTPUT_FORMAT>`;
+
+  const examples = `
+<EXAMPLES>
+
+<EXAMPLE>
+<USER_TASK>Build Next.js e-commerce site</USER_TASK>
+<USER_REQUEST>Need to check Reddit for component ideas</USER_REQUEST>
+<HISTORY>First message</HISTORY>
+<OUTPUT>
+{
+  "response": "What specific component are you trying to build? Reddit can be pretty distracting—I want to make sure you find what you need without getting sidetracked.",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Build Next.js e-commerce site</USER_TASK>
+<USER_REQUEST>I'm stuck on how to structure a product card component with image, title, price, and add-to-cart</USER_REQUEST>
+<HISTORY>
+user: Need to check Reddit for component ideas
+assistant: What specific component are you trying to build?
+</HISTORY>
+<OUTPUT>
+{
+  "response": "That's a clear need! For product card patterns, check out the Next.js commerce examples or shadcn/ui components—they have solid e-commerce patterns. I'll give you 25 minutes for focused research.",
+  "decision": "GRANT",
+  "durationMinutes": 25
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Debug React useState issue</USER_TASK>
+<USER_REQUEST>Stack Overflow for useState not updating immediately</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Perfect, Stack Overflow is great for this specific bug. You've got 25 minutes to find and implement a fix. Look for posts about async state updates.",
+  "decision": "GRANT",
+  "durationMinutes": 25
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Write research paper on Roman aqueducts</USER_TASK>
+<USER_REQUEST>Need a 5 minute break, my eyes are tired</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Absolutely! Taking breaks helps you focus better when you return. Go stretch and rest your eyes.",
+  "decision": "GRANT",
+  "durationMinutes": 5
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Build n8n data pipeline</USER_TASK>
+<USER_REQUEST>Want to watch a YouTube video on productivity</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Hmm, that sounds like procrastination disguised as productivity. What's actually blocking you on the n8n pipeline? Maybe I can help with that instead.",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Social media marketing plan for coffee brand</USER_TASK>
+<USER_REQUEST>Need Instagram to research competitor strategies</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Makes sense—competitor research is part of your task. I'll give you 30 minutes. Try to analyze 5-7 coffee brands systematically rather than browsing randomly.",
+  "decision": "GRANT",
+  "durationMinutes": 30
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Debug Python pandas script</USER_TASK>
+<USER_REQUEST>ChatGPT to understand KeyError 'column_name'</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Great use of AI for debugging! You've got 20 minutes to work through that error with ChatGPT.",
+  "decision": "GRANT",
+  "durationMinutes": 20
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Write API documentation</USER_TASK>
+<USER_REQUEST>Check Twitter for tech news</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Twitter's pretty distracting when you're writing docs. How about scheduling news reading for after you finish this section? Or need a quick 5-minute break instead?",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Build React Native app</USER_TASK>
+<USER_REQUEST>React Navigation docs for implementing navigation</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "Official docs are exactly what you need. I'll grant 35 minutes to study navigation patterns and get it implemented.",
+  "decision": "GRANT",
+  "durationMinutes": 35
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Python ETL pipeline</USER_TASK>
+<USER_REQUEST>Medium articles on data engineering best practices</USER_REQUEST>
+<ACTIVE_GRANTS>
+- python.org/asyncio (20min left) - "async patterns"
+- stackoverflow.com (15min ago) - "pandas merge bug"
+</ACTIVE_GRANTS>
+<OUTPUT>
+{
+  "response": "You've got Python docs and Stack Overflow already—those cover most best practices. What specific pipeline problem are you trying to solve? Maybe I can point you somewhere more focused.",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>JWT authentication system</USER_TASK>
+<USER_REQUEST>Auth0 docs for implementation patterns</USER_REQUEST>
+<ACTIVE_GRANTS>
+- jwt.io (30min left) - "JWT structure and signing"
+</ACTIVE_GRANTS>
+<OUTPUT>
+{
+  "response": "Nice progression from JWT basics to Auth0 implementation! This pairs well with what you're already learning. Here's 30 minutes for the Auth0 docs.",
+  "decision": "GRANT",
+  "durationMinutes": 30
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Frontend development</USER_TASK>
+<USER_REQUEST>Need to look something up</USER_REQUEST>
+<OUTPUT>
+{
+  "response": "What are you trying to look up? The more specific you are, the better I can help you find the right resource.",
+  "decision": "DENY"
+}
+</OUTPUT>
+</EXAMPLE>
+
+<EXAMPLE>
+<USER_TASK>Frontend development</USER_TASK>
+<USER_REQUEST>CSS Grid layout patterns for responsive design</USER_REQUEST>
+<HISTORY>
+user: Need to look something up
+assistant: What are you trying to look up?
+</HISTORY>
+<OUTPUT>
+{
+  "response": "Perfect! CSS Tricks or MDN would be great for Grid patterns. You've got 20 minutes to find what you need.",
+  "decision": "GRANT",
+  "durationMinutes": 20
+}
+</OUTPUT>
+</EXAMPLE>
+
+</EXAMPLES>`;
+
+  const prompt = `<USER_TASK>${userTask}</USER_TASK>
+
+<CONVERSATION_HISTORY>
+${historyContext || "First message"}
+</CONVERSATION_HISTORY>
+
+<USER_REQUEST>${message}</USER_REQUEST>
+
+${grantsSection}
+${pageContentSection}
+
+Respond naturally and conversationally. If the request is vague and this is early in the conversation, ask what they specifically need instead of denying immediately.`;
 
   try {
     const { object } = await generateObject({
       model,
       schema: ChatProcessResultSchema,
-      prompt,
-      temperature: 0.1,
-      mode: "json",
-      system: systemPrompt,
+      prompt: `${systemPrompt}\n\n${examples}\n\n${prompt}`,
+      temperature: 0.5, // Higher for more natural conversation
     });
 
     const accessGranted = object.decision === "GRANT";
@@ -326,64 +734,17 @@ ${message}
       },
       accessGranted,
       durationMinutes: object.durationMinutes,
+      grantReason: object.grantReason,
     };
   } catch (error: unknown) {
-    console.error("Chat message processing failed:", {
-      error: error instanceof Error ? error.message : String(error),
-      timestamp: new Date().toISOString(),
-      context: "AI service chat processing",
-    });
-    // Fallback response
     return {
       message: {
         id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        content:
-          "I'm having trouble processing your request right now. Please try again.",
+        content: "Sorry, something went wrong. Can you try asking again?",
         role: "assistant",
         timestamp: Date.now(),
       },
       accessGranted: false,
     };
   }
-};
-
-/**
- * Utility function to extract main text content from a page
- * @param content - The raw HTML content
- * @returns Cleaned text content with scripts, styles, and tags removed
- */
-export const extractMainContent = (content: string): string => {
-  return (
-    content
-      // Remove head section (contains meta tags, title, styles, scripts, etc.)
-      .replace(/<head\b[^>]*>[\s\S]*?<\/head>/gi, "")
-      // Handle malformed head tags - remove any remaining head content up to body tag
-      .replace(/<head\b[^>]*>[\s\S]*?(?=<body)/gi, "")
-      // Remove script tags and their content
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-      // Remove style tags and their content
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
-      // Remove comments
-      .replace(/<!--[\s\S]*?-->/g, "")
-      // Remove CDATA sections
-      .replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, "")
-      // Remove inline style attributes
-      .replace(/\s+style\s*=\s*(['"])[\s\S]*?\1/gi, "")
-      // Remove common non-content elements (nav, header, footer, aside, etc.)
-      .replace(
-        /<(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)\b[^>]*>[\s\S]*?<\/(?:nav|header|footer|aside|svg|iframe|embed|object|video|audio|canvas|picture|source|track|map|area)>/gi,
-        "",
-      )
-      // Remove self-closing non-content elements
-      .replace(
-        /<(?:img|br|hr|input|meta|link|base|col|command|embed|keygen|param|source|track|wbr)\b[^>]*>/gi,
-        " ",
-      )
-      // Remove all remaining HTML tags, preserving the text content
-      .replace(/<[^>]+>/g, " ")
-      // Normalize whitespace (replace multiple spaces, tabs, and newlines with a single space)
-      .replace(/\s+/g, " ")
-      // Trim leading and trailing whitespace
-      .trim()
-  );
 };

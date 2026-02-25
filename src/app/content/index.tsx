@@ -6,7 +6,7 @@
  * - UI overlay creation for blocked content
  * - Element removal based on AI analysis
  * - Chat interface integration
- * - Access timer management
+ * - Cache-based decision management
  * - Message passing with background script
  *
  * The script uses Shadow DOM to isolate its UI from the page content
@@ -14,21 +14,10 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { BlockOverlay } from "~/components/content/block-overlay";
-import {
-  type AccessGrant,
-  getActiveAccessGrant,
-  removeAccessGrant,
-  setAccessGrant,
-} from "~/lib/grants";
-import {
-  type AnalysisResult,
-  Message,
-  onMessage,
-  sendMessage,
-} from "~/lib/messaging";
+import { useChatAccess, usePageAnalysis } from "~/lib/cache";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 import { createShadowRootUi, defineContentScript } from "#imports";
@@ -72,176 +61,88 @@ const removeElements = (selectors: string[]) => {
  * This component is rendered inside a Shadow DOM to prevent conflicts
  * with the page's styles and scripts.
  *
- * @param initialBlockResult - Optional initial analysis result to apply
- * @param originalContent - The original page HTML content before blocking
+ * @param url - The current page URL
+ * @param task - The current user task
+ * @param alwaysRemove - The always-remove configuration
  */
 const ContentScriptUI = ({
-  initialBlockResult,
-  originalContent,
+  url,
+  task,
+  alwaysRemove,
+  onShouldBlock,
 }: {
-  initialBlockResult?: AnalysisResult | null;
-  originalContent?: string;
+  url: string;
+  task: string;
+  alwaysRemove: string | null;
+  onShouldBlock?: (reason: string) => void;
 }) => {
-  const [blockState, setBlockState] = useState<{
-    blockResult: AnalysisResult | null;
-    isBlocked: boolean;
-  }>({
-    blockResult: initialBlockResult || null,
-    isBlocked: initialBlockResult?.decision === "BLOCK_ALL" || false,
-  });
+  // Query for page analysis
+  const { data: analysisResult, isLoading: isAnalysisLoading } =
+    usePageAnalysis(url, task, alwaysRemove, true);
 
-  const [activeGrant, setActiveGrant] = useState<AccessGrant | null>(null);
+  // Mutation for overwriting cache with chat access
+  const chatAccessMutation = useChatAccess(url, task, alwaysRemove);
 
+  // Apply decision to page
+  // biome-ignore lint/correctness/useExhaustiveDependencies: It needs to update when always remove updates
   useEffect(() => {
-    // Check for active access grant on mount
-    getActiveAccessGrant(window.location.href).then(setActiveGrant);
+    const decision = analysisResult;
+    if (!decision) return;
 
-    // Listen for block results from background script
-    const blockResultListener = onMessage(Message.BLOCK_RESULT, (message) => {
-      handleBlockResult(message.data);
-    });
+    console.log(
+      `Returned Page decision with decision: ${decision.decision}, reason ${decision.reason}, prompt: ${decision.prompt}, `,
+    );
 
-    return () => {
-      blockResultListener();
-    };
-  }, []);
+    switch (decision.decision) {
+      case "BLOCK_ALL":
+        console.log("ContentScript: Page should be blocked - showing overlay");
+        // Remove distracting elements before showing the overlay
 
-  /**
-   * Handles analysis results from the background script
-   *
-   * Processes different types of blocking decisions:
-   * - BLOCK_ALL: Shows the blocking overlay
-   * - REMOVE_ELEMENTS: Removes specific elements from the page
-   * - ALLOW: Removes always-remove elements if specified
-   *
-   * @param result - The analysis result containing the decision
-   */
-  const handleBlockResult = (result: AnalysisResult) => {
-    setBlockState({
-      blockResult: result,
-      isBlocked: result.decision === "BLOCK_ALL",
-    });
+        if (onShouldBlock) {
+          onShouldBlock(decision.reason);
+        } else if (decision.selectors) {
+          removeElements(decision.selectors);
+        }
 
-    // Handle element removal for non-blocking decisions
-    if (result.decision === "REMOVE_ELEMENTS" && result.selectors) {
-      removeElements(result.selectors);
-    } else if (result.decision === "ALLOW" && result.selectors) {
-      removeElements(result.selectors);
+        // Block overlay will be rendered below
+        break;
+      case "ALLOW":
+        console.log(
+          "ContentScript: Page allowed - removing always-remove elements if any",
+        );
+        // Remove always-remove elements if any
+        if (decision.selectors) {
+          removeElements(decision.selectors);
+        }
+        break;
     }
-  };
+  }, [analysisResult, alwaysRemove, onShouldBlock]);
 
-  /**
-   * Handles temporary unblocking of the current page
-   *
-   * Creates an access grant for the specified duration.
-   * Timer management is handled by the TimerDisplay component.
-   *
-   * @param durationMinutes - Number of minutes to grant access
-   */
-  const handleUnblock = useCallback(async (durationMinutes: number) => {
-    const now = Date.now();
-    const expiresAt = now + durationMinutes * 60 * 1000;
-
-    // Save access grant to storage
-    await setAccessGrant({
-      url: window.location.href,
-      expiresAt,
-      grantedAt: now,
-      durationMinutes,
-    });
-
-    // Update local grant state for timer display
-    setActiveGrant({
-      url: window.location.href,
-      expiresAt,
-      grantedAt: now,
-      durationMinutes,
-    });
-
-    // Hide overlay
-    setBlockState((prev) => ({ ...prev, isBlocked: false }));
-  }, []);
-
-  /**
-   * Handles the expiration of temporary access
-   *
-   * Called when the access timer expires to re-block the page
-   * and clean up the access grant.
-   */
-  const handleTimerExpire = useCallback(async () => {
-    // Remove access grant from storage
-    await removeAccessGrant(window.location.href);
-    setActiveGrant(null);
-
-    // Re-block the page
-    setBlockState({
-      blockResult: {
-        decision: "BLOCK_ALL",
-        reason:
-          "Your temporary access has expired. Request access again if needed.",
-      },
-      isBlocked: true,
-    });
-  }, []);
-
-  /**
-   * Sends chat messages to the background script for processing
-   *
-   * This function is made available globally for the ChatInterface
-   * component to use. It handles communication with the background
-   * script and error logging.
-   *
-   * @param sessionId - The chat session ID (typically the page URL)
-   * @param message - The user's chat message
-   * @returns Promise resolving to the AI response
-   * @throws Error when message sending fails
-   */
-  const sendChatMessage = useCallback(
-    async (sessionId: string, message: string) => {
-      try {
-        const response = await sendMessage(Message.SEND_CHAT_MESSAGE, {
-          sessionId,
-          message,
-        });
-        return response;
-      } catch (error) {
-        console.error("ContentScriptUI: Failed to send chat message:", {
-          error: error instanceof Error ? error.message : String(error),
-          timestamp: new Date().toISOString(),
-          context: "content script chat message sending",
-        });
-        throw error;
-      }
+  // Handle chat access grant
+  const handleUnblock = useCallback(
+    async (durationMinutes: number) => {
+      chatAccessMutation.mutate(durationMinutes);
     },
-    [],
+    [chatAccessMutation],
   );
 
-  // Make the sendChatMessage function available globally for the ChatInterface component
-  useEffect(() => {
-    (
-      window as Window & { sendChatMessage?: typeof sendChatMessage }
-    ).sendChatMessage = sendChatMessage;
-
-    return () => {
-      (
-        window as Window & { sendChatMessage?: typeof sendChatMessage }
-      ).sendChatMessage = undefined;
-    };
-  }, [sendChatMessage]);
-
-  // If not blocked, don't render anything
-  if (!blockState.isBlocked || !blockState.blockResult) {
+  // Don't render anything if still loading, no analysis result, or not blocking
+  if (
+    isAnalysisLoading ||
+    !analysisResult ||
+    analysisResult.decision !== "BLOCK_ALL"
+  ) {
     return null;
   }
 
+  // Get reason from decision
+  const reason = analysisResult.reason;
+
+  console.log("ContentScript: Rendering BlockOverlay with reason:", reason);
+  console.log("ContentScript: About to render BlockOverlay component");
+
   return (
-    <BlockOverlay
-      reason={blockState.blockResult.reason}
-      onUnblock={handleUnblock}
-      accessExpiresAt={activeGrant?.expiresAt}
-      durationMinutes={activeGrant?.durationMinutes}
-      onTimerExpire={handleTimerExpire}
-    />
+    <BlockOverlay sessionId={url} reason={reason} onUnblock={handleUnblock} />
   );
 };
 
@@ -260,76 +161,78 @@ export default defineContentScript({
    * @param ctx - The content script execution context
    */
   async main(ctx) {
-    // Store the original page content globally so it can be restored when unblocked
-    let storedOriginalContent: string | null = null;
     let currentUI: Awaited<ReturnType<typeof createShadowRootUi>> | null = null;
 
     /**
      * Creates and mounts the ShadowRoot UI for blocking
      *
-     * Uses WXT's createShadowRootUi to create an isolated DOM
-     * environment for the blocking overlay, preventing conflicts
-     * with the page's styles and scripts.
-     *
-     * @param blockResult - The analysis result requiring blocking
+     * @param currentTask - The current user task
+     * @param alwaysRemove - The always-remove configuration
      * @returns Promise resolving to the UI instance
      */
-    const createBlockUI = async (blockResult: AnalysisResult) => {
-      // Store the original page content before replacing it
-      storedOriginalContent = document.documentElement.outerHTML;
+    const createBlockUI = async (
+      currentTask: string,
+      alwaysRemove: string | null,
+    ) => {
+      console.log(
+        "ContentScript: Creating ShadowRoot UI with task:",
+        currentTask,
+      );
 
       const ui = await createShadowRootUi(ctx, {
         name: "focus-block-ui",
-        position: "inline",
+        position: "overlay",
         anchor: "body",
-        append: "replace",
+        append: "last",
+        inheritStyles: true,
         onMount: (container) => {
           const app = document.createElement("div");
-          app.className = "w-full h-full";
+          app.className = "w-full h-full overflow-hidden";
+          app.style.position = "fixed";
+          app.style.top = "0";
+          app.style.left = "0";
+          app.style.right = "0";
+          app.style.bottom = "0";
+          app.style.zIndex = "9999";
+          app.style.overscrollBehavior = "none";
+          app.style.touchAction = "none";
           container.append(app);
+
+          // Prevent background page scrolling when overlay is active
+          document.body.style.overflow = "hidden";
+          document.documentElement.style.overflow = "hidden";
 
           const root = ReactDOM.createRoot(app);
           root.render(
             <QueryClientProvider client={queryClient}>
               <ContentScriptUI
-                initialBlockResult={blockResult}
-                originalContent={storedOriginalContent || undefined}
+                url={window.location.href}
+                task={currentTask}
+                alwaysRemove={alwaysRemove}
               />
             </QueryClientProvider>,
           );
           return root;
         },
         onRemove: (root) => {
+          console.log("ContentScript: ShadowRoot UI being removed");
           root?.unmount();
-          // Restore original content when UI is removed
-          if (storedOriginalContent) {
-            document.documentElement.innerHTML = storedOriginalContent;
-            // Re-run scripts that were in the original content
-            for (const script of Array.from(
-              document.querySelectorAll("script"),
-            )) {
-              const newScript = document.createElement("script");
-              for (const attr of Array.from(script.attributes)) {
-                newScript.setAttribute(attr.name, attr.value);
-              }
-              if (script.innerHTML) {
-                newScript.innerHTML = script.innerHTML;
-              } else if (script.src) {
-                newScript.src = script.src;
-              }
-              script.parentNode?.replaceChild(newScript, script);
-            }
-          }
+          // Restore background page scrolling when overlay is removed
+          document.body.style.overflow = "";
+          document.documentElement.style.overflow = "";
         },
       });
 
       currentUI = ui;
       ui.mount();
+      console.log("ContentScript: ShadowRoot UI mounted successfully");
       return ui;
     };
 
-    // Function to analyze the current page
-    const analyzeCurrentPage = async () => {
+    /**
+     * Check if we should create UI immediately
+     */
+    const shouldCreateUI = async () => {
       try {
         // Skip chrome:// pages and other special URLs
         if (
@@ -337,63 +240,70 @@ export default defineContentScript({
           window.location.href.startsWith("moz-extension://") ||
           window.location.href.startsWith("chrome-extension://")
         ) {
-          return;
+          return false;
         }
 
         // Check if extension is enabled
         const extensionEnabled =
           await storage[StorageKey.EXTENSION_ENABLED].getValue();
         if (!extensionEnabled) {
-          return;
+          return false;
         }
 
-        // Get always remove list from storage
-        const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
-
-        // Send page content to background script for analysis
-        const response = await sendMessage(Message.ANALYZE_PAGE, {
-          url: window.location.href,
-          content: document.documentElement.outerHTML,
-          alwaysRemove,
-        });
-
-        // Log the analysis response for debugging
-        console.log("Focus App: Page analysis response received", {
-          url: window.location.href,
-          decision: response.decision,
-          reason: response.reason,
-          selectors: response.selectors,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Only create UI if we need to block the page
-        if (response.decision === "BLOCK_ALL") {
-          await createBlockUI(response);
-        } else {
-          // For REMOVE_ELEMENTS and ALLOW, we don't need to create a UI that replaces the body
-          // Just handle the element removal directly without creating a ShadowRoot
-          if (response.decision === "REMOVE_ELEMENTS" && response.selectors) {
-            removeElements(response.selectors);
-          } else if (response.decision === "ALLOW" && response.selectors) {
-            removeElements(response.selectors);
-          }
-        }
+        // Always create UI since background handles caching logic
+        return true;
       } catch (error) {
-        console.error("Error analyzing page:", {
-          error: error instanceof Error ? error.message : String(error),
-          url: window.location.href,
-          timestamp: new Date().toISOString(),
-          context: "page analysis",
-        });
+        console.error("Error checking if UI should be created:", error);
+        return false;
       }
     };
 
-    // Analyze the page when the content script loads
-    analyzeCurrentPage();
+    /**
+     * Main setup function
+     */
+    const setupUI = async () => {
+      // Get current configuration
+      const currentTask =
+        (await storage[StorageKey.CURRENT_TASK].getValue()) || "";
+      const alwaysRemove = await storage[StorageKey.ALWAYS_REMOVE].getValue();
+
+      if (await shouldCreateUI()) {
+        // Create a temporary div to mount ContentScriptUI component
+        // This component will handle the analysis and only create overlay if needed
+        const tempContainer = document.createElement("div");
+        tempContainer.style.display = "none";
+        document.body.appendChild(tempContainer);
+
+        const tempRoot = ReactDOM.createRoot(tempContainer);
+        tempRoot.render(
+          <QueryClientProvider client={queryClient}>
+            <ContentScriptUI
+              url={window.location.href}
+              task={currentTask}
+              alwaysRemove={alwaysRemove}
+              onShouldBlock={async (reason) => {
+                // Create the actual blocking UI
+                await createBlockUI(currentTask, alwaysRemove);
+              }}
+            />
+          </QueryClientProvider>,
+        );
+      }
+    };
+
+    // Initial setup
+    setupUI();
 
     // Listen for location changes (for SPAs)
-    ctx.addEventListener(window, "wxt:locationchange", () => {
-      analyzeCurrentPage();
+    ctx.addEventListener(window, "wxt:locationchange", async () => {
+      // Remove existing UI
+      if (currentUI) {
+        currentUI.remove();
+        currentUI = null;
+      }
+
+      // Setup UI again
+      await setupUI();
     });
   },
 });

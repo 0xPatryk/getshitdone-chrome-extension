@@ -21,7 +21,6 @@ export type { AIProvider } from "./types";
 export {
   analyzePageContent,
   processChatMessage,
-  extractMainContent,
 } from "./services";
 
 // Export utility functions
@@ -29,4 +28,5 @@ export {
   getGoogleProvider,
   getOpenAIProvider,
   getModel,
+  extractMainContent,
 } from "./utils";

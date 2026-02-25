@@ -33,8 +33,6 @@ export const CacheSettings = () => {
   const { data: cache, set: setCache } = useStorage(StorageKey.DECISION_CACHE);
   const [stats, setStats] = useState({
     totalEntries: 0,
-    aiDecisionEntries: 0,
-    userUnblockEntries: 0,
     expiredEntries: 0,
   });
 
@@ -79,18 +77,10 @@ export const CacheSettings = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold">{stats.totalEntries}</div>
             <div className="text-sm text-muted-foreground">Total Entries</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{stats.aiDecisionEntries}</div>
-            <div className="text-sm text-muted-foreground">AI Decisions</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold">{stats.userUnblockEntries}</div>
-            <div className="text-sm text-muted-foreground">User Unblocks</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
@@ -112,8 +102,10 @@ export const CacheSettings = () => {
         <div className="space-y-2">
           <h4 className="font-medium">Cache Information</h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p>• AI decisions are cached for 24 hours</p>
-            <p>• User unblocks are cached for 1 hour</p>
+            <p>• All decisions are cached for 1 week by default</p>
+            <p>
+              • Chat access grants use custom duration based on user selection
+            </p>
             <p>• Cache is automatically cleaned every hour</p>
             <p>
               • Cache is invalidated when task or alwaysRemove settings change

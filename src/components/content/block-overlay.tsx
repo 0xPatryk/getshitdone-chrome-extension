@@ -6,13 +6,17 @@
  */
 
 import { Button } from "@/components/ui/button";
-import { ChatInterface } from "./chat-interface";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Lock } from "lucide-react";
+import { FullScreenChatContainer } from "./chat/full-screen-chat-container";
 import { TimerDisplay } from "./timer-display";
 
 /**
  * Props for the BlockOverlay component
  */
 interface BlockOverlayProps {
+  /** The session ID to use for the chat (typically the URL) */
+  readonly sessionId: string;
   /** The reason why the page is being blocked */
   readonly reason: string;
   /** Callback function triggered when user is granted temporary access */
@@ -27,13 +31,14 @@ interface BlockOverlayProps {
 
 /**
  * Block overlay component that displays when a page is identified as a distraction.
- * Shows a blocking screen with the reason, provides a chat interface to request
- * access, optionally displays a countdown timer for temporary access, and includes
+ * Shows a minimal blocking screen with the AI assistant as the primary focus,
+ * optionally displays a countdown timer for temporary access, and includes
  * navigation controls to go back to the previous page.
  *
  * @example
  * ```tsx
  * <BlockOverlay
+ *   sessionId="https://example.com"
  *   reason="This is a social media site that may distract from your current task"
  *   onUnblock={(minutes) => console.log(`Unblocked for ${minutes} minutes`)}
  *   accessExpiresAt={Date.now() + 5 * 60 * 1000}
@@ -43,6 +48,7 @@ interface BlockOverlayProps {
  * ```
  *
  * @param props - Component props
+ * @param props.sessionId - The session ID for the chat (URL)
  * @param props.reason - The reason for blocking the page
  * @param props.onUnblock - Callback function for when access is granted
  * @param props.accessExpiresAt - Optional timestamp when access expires
@@ -51,6 +57,7 @@ interface BlockOverlayProps {
  * @returns A React element containing the block overlay interface
  */
 export const BlockOverlay = ({
+  sessionId,
   reason,
   onUnblock,
   accessExpiresAt,
@@ -58,57 +65,71 @@ export const BlockOverlay = ({
   onTimerExpire,
 }: BlockOverlayProps) => {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl mx-auto space-y-6">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
-              🚫 Access Blocked
-            </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
-              This page has been identified as a distraction from your current
-              task.
-            </p>
-          </div>
+    <div className="h-screen w-screen bg-background flex flex-col">
+      <div className="flex-1 overflow-hidden">
+        <div className="w-full h-full p-2 sm:p-3 md:p-4 flex justify-end">
+          <div className="h-full w-full flex flex-col gap-3 sm:gap-4">
+            {/* Access Restricted Header */}
+            <Card className="shadow-sm border-destructive/20 bg-destructive/5">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="shrink-0">
+                    <Lock className="h-6 w-6 sm:h-8 sm:w-8 text-destructive" />
+                  </div>
+                  <div className="flex-1">
+                    <h1 className="text-sm sm:text-base font-bold text-destructive">
+                      Access Restricted
+                    </h1>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This page has been blocked to help you stay focused
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.history.back()}
+                    className="h-6 w-6 p-0 rounded hover:bg-muted/50 transition-colors duration-200 shrink-0"
+                    aria-label="Go back"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
-            <p className="text-lg font-medium text-red-800 dark:text-red-200">
-              Reason: {reason}
-            </p>
-          </div>
+            {/* Timer display if temporary access is granted */}
+            {accessExpiresAt && durationMinutes && onTimerExpire && (
+              <Card className="shadow-sm">
+                <CardContent className="p-3 sm:p-4">
+                  <TimerDisplay
+                    expiresAt={accessExpiresAt}
+                    durationMinutes={durationMinutes}
+                    onExpire={onTimerExpire}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
-          {accessExpiresAt && durationMinutes && onTimerExpire && (
-            <TimerDisplay
-              expiresAt={accessExpiresAt}
-              durationMinutes={durationMinutes}
-              onExpire={onTimerExpire}
-            />
-          )}
-
-          <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 min-h-[400px]">
-            <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Chat with Assistant
-            </h2>
-            <ChatInterface
-              initialMessage="I need access to this page. Can you help me understand why it's blocked?"
-              onUnblock={onUnblock}
-              onAccessDenied={(deniedReason) => {
-                // Access denied callback - no logging needed
-              }}
-            />
+            {/* Full-screen chat container */}
+            <div className="flex-1 min-h-0">
+              <FullScreenChatContainer
+                sessionId={sessionId}
+                initialMessage="I need access to this page. Can you help me understand why it's blocked?"
+                initialAiMessage={reason}
+                onUnblock={onUnblock}
+                onAccessDenied={(deniedReason: string) => {
+                  // Access denied callback - no logging needed
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-        <div className="max-w-4xl mx-auto flex gap-4">
-          <Button
-            variant="outline"
-            onClick={() => window.history.back()}
-            className="flex-1"
-          >
-            Go Back
-          </Button>
+      {/* Minimal footer */}
+      <div className="border-t border-border bg-card/50 p-1 sm:p-2 flex justify-center">
+        <div className="text-xs text-muted-foreground">
+          Focus Mode Extension
         </div>
       </div>
     </div>

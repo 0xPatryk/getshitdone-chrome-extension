@@ -3,6 +3,7 @@
  * Renders a single chat message with appropriate styling based on role.
  */
 
+import { generateAiAvatar, generateUserAvatar } from "~/lib/avatar";
 import type { ChatMessage as ChatMessageType } from "~/lib/messaging";
 import { cn } from "~/lib/utils";
 
@@ -59,27 +60,54 @@ const formatTime = (timestamp: number) => {
  */
 export const ChatMessage = ({ message }: ChatMessageProps) => {
   const isUser = message.role === "user";
+  const avatarSrc = isUser ? generateUserAvatar() : generateAiAvatar();
 
   return (
-    <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
+    <div
+      className={cn(
+        "flex gap-2 sm:gap-3 w-full",
+        isUser ? "justify-end" : "justify-start",
+      )}
+    >
+      {!isUser && (
+        <img
+          src={avatarSrc}
+          alt="AI Assistant"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex-shrink-0 mt-1"
+        />
+      )}
       <div
         className={cn(
-          "max-w-[80%] rounded-lg px-4 py-2",
+          "max-w-[70%] sm:max-w-[75%] lg:max-w-[80%] rounded-2xl sm:rounded-3xl px-4 py-2 sm:px-5 sm:py-3 shadow-sm",
           isUser
-            ? "bg-blue-500 text-white"
-            : "bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100",
+            ? "bg-primary text-primary-foreground rounded-br-sm"
+            : "bg-muted text-muted-foreground rounded-bl-sm",
         )}
       >
-        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
         <p
           className={cn(
-            "text-xs mt-1",
-            isUser ? "text-blue-100" : "text-gray-500 dark:text-gray-400",
+            "text-sm sm:text-base whitespace-pre-wrap break-words leading-relaxed",
+            isUser ? "text-primary-foreground" : "text-foreground",
+          )}
+        >
+          {message.content}
+        </p>
+        <p
+          className={cn(
+            "text-xs mt-1 opacity-70",
+            isUser ? "text-primary-foreground/70" : "text-muted-foreground",
           )}
         >
           {formatTime(message.timestamp)}
         </p>
       </div>
+      {isUser && (
+        <img
+          src={avatarSrc}
+          alt="You"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex-shrink-0 mt-1"
+        />
+      )}
     </div>
   );
 };

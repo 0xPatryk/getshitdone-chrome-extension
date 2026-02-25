@@ -17,7 +17,7 @@ export const AnalysisResultSchema = z.object({
   /**
    * The decision about what to do with the page
    */
-  decision: z.enum(["BLOCK_ALL", "REMOVE_ELEMENTS", "ALLOW"]),
+  decision: z.enum(["BLOCK_ALL", "ALLOW"]),
 
   /**
    * Explanation for the decision
@@ -28,6 +28,11 @@ export const AnalysisResultSchema = z.object({
    * CSS selectors for elements to remove (if applicable)
    */
   selectors: z.array(z.string()).optional(),
+
+  /**
+   * The prompt used for the AI analysis (for debugging)
+   */
+  prompt: z.string().optional(),
 });
 
 /**
@@ -159,6 +164,11 @@ export const ChatProcessResultSchema = z.object({
    * Duration in minutes if access is granted (optional)
    */
   durationMinutes: z.number().optional(),
+
+  /**
+   * Concise reason for the grant (context summary)
+   */
+  grantReason: z.string().optional(),
 });
 
 /**

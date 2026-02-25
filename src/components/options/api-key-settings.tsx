@@ -26,7 +26,15 @@ import { StorageKey } from "~/lib/storage/types";
  *
  * @returns A React element containing the API key settings interface
  */
-export const ApiKeySettings = () => {
+interface ApiKeySettingsProps {
+  hideHeader?: boolean;
+  title?: string;
+}
+
+export const ApiKeySettings = ({
+  hideHeader = false,
+  title = "AI Provider Settings",
+}: ApiKeySettingsProps) => {
   const { data: selectedProvider, set: setProvider } = useStorage(
     StorageKey.AI_PROVIDER,
   );
@@ -138,13 +146,15 @@ export const ApiKeySettings = () => {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h2 className="text-2xl font-bold">AI Provider Settings</h2>
-        <p className="text-muted-foreground">
-          Configure your AI provider and API key to enable AI-powered content
-          analysis.
-        </p>
-      </div>
+      {!hideHeader && (
+        <div className="space-y-2">
+          <h2 className="text-2xl font-bold">{title}</h2>
+          <p className="text-muted-foreground">
+            Configure your AI provider and API key to enable AI-powered content
+            analysis.
+          </p>
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="space-y-2">
@@ -210,14 +220,34 @@ export const ApiKeySettings = () => {
           </h3>
           {selectedProvider === "gemini" ? (
             <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
-              <li>Go to Google AI Studio</li>
+              <li>
+                Go to{" "}
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-blue-600 font-medium"
+                >
+                  Google AI Studio
+                </a>
+              </li>
               <li>Sign in with your Google account</li>
               <li>Create a new API key or use an existing one</li>
               <li>Copy the key and paste it above</li>
             </ol>
           ) : (
             <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
-              <li>Go to OpenAI Platform</li>
+              <li>
+                Go to{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-blue-600 font-medium"
+                >
+                  OpenAI Platform
+                </a>
+              </li>
               <li>Sign in with your OpenAI account</li>
               <li>Navigate to API Keys section</li>
               <li>Create a new API key and copy it</li>

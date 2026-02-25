@@ -59,7 +59,7 @@ export type AnalysisResult = {
   /**
    * The decision about what to do with the page
    */
-  decision: "BLOCK_ALL" | "REMOVE_ELEMENTS" | "ALLOW";
+  decision: "BLOCK_ALL" | "ALLOW";
 
   /**
    * Explanation for the decision
@@ -70,6 +70,11 @@ export type AnalysisResult = {
    * CSS selectors for elements to remove (if applicable)
    */
   selectors?: string[];
+
+  /**
+   * The prompt used for the AI analysis (for debugging)
+   */
+  prompt?: string;
 };
 
 /**

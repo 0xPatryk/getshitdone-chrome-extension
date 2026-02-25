@@ -33,4 +33,9 @@ export interface AccessGrant {
    * Duration of the grant in minutes
    */
   durationMinutes: number;
+
+  /**
+   * The reason for the access grant (e.g., chat response)
+   */
+  reason?: string;
 }

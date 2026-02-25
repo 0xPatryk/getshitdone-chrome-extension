@@ -7,6 +7,7 @@
  * @module grants/services
  */
 
+import type { ChatSession } from "~/lib/messaging";
 import { storage } from "~/lib/storage/services";
 import { StorageKey } from "~/lib/storage/types";
 import type { AccessGrant } from "./types";
@@ -94,4 +95,61 @@ export const cleanupExpiredGrants = async (): Promise<void> => {
   );
 
   await grantsStorage.setValue(validGrants);
+};
+
+/**
+ * Gets all active access grants from storage
+ *
+ * @returns Record of all active access grants keyed by URL
+ */
+export const getAllActiveAccessGrants = async (): Promise<
+  Record<string, AccessGrant>
+> => {
+  const grants = (await storage[StorageKey.ACCESS_GRANTS].getValue()) as Record<
+    string,
+    AccessGrant
+  >;
+  const now = Date.now();
+
+  // Filter out expired grants
+  const activeGrants = Object.entries(grants).reduce(
+    (acc, [url, grant]) => {
+      if (now < grant.expiresAt) {
+        acc[url] = grant;
+      }
+      return acc;
+    },
+    {} as Record<string, AccessGrant>,
+  );
+
+  return activeGrants;
+};
+
+/**
+ * Gets chat histories for the specified grant URLs
+ *
+ * @param grantUrls - Array of URLs that have active grants
+ * @returns Record of chat sessions keyed by URL
+ */
+export const getChatContextForGrants = async (
+  grantUrls: string[],
+): Promise<Record<string, ChatSession>> => {
+  const chatSessionsStorage = storage[StorageKey.CHAT_SESSIONS];
+  const allSessions = (await chatSessionsStorage.getValue()) as Record<
+    string,
+    ChatSession
+  >;
+
+  // Filter sessions for the grant URLs
+  const relevantSessions = Object.entries(allSessions).reduce(
+    (acc, [sessionId, session]) => {
+      if (grantUrls.includes(sessionId)) {
+        acc[sessionId] = session;
+      }
+      return acc;
+    },
+    {} as Record<string, ChatSession>,
+  );
+
+  return relevantSessions;
 };
