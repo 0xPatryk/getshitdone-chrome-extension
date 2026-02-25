@@ -27,9 +27,7 @@ describe("countTokens", () => {
     });
 
     it("should return 0 for null-ish values", () => {
-      // @ts-expect-error - testing edge case
       expect(countTokens(null)).toBe(0);
-      // @ts-expect-error - testing edge case
       expect(countTokens(undefined)).toBe(0);
     });
 

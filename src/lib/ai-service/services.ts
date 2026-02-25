@@ -445,6 +445,7 @@ export const processChatMessage = async (
   message: ChatMessage;
   accessGranted: boolean;
   durationMinutes?: number;
+  grantReason?: string;
 }> => {
   const model = getModel(provider, apiKey);
 
