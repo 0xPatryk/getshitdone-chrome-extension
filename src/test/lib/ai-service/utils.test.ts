@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it } from "bun:test";
 
 import {
   countTokens,
+  extractCleanHtml,
   extractMainContent,
   getGoogleProvider,
   getModel,
@@ -154,20 +155,20 @@ describe("extractMainContent", () => {
   describe("token limiting", () => {
     it("should return content as-is when under token limit", () => {
       const html = "<p>Short content</p>";
-      const result = extractMainContent(html, 1000);
+      const result = extractMainContent(html, { limit: 1000 });
       expect(result).toContain("Short content");
     });
 
     it("should truncate content when over token limit", () => {
       const longContent = `<p>${"word ".repeat(1000)}</p>`;
-      const result = extractMainContent(longContent, 100);
+      const result = extractMainContent(longContent, { limit: 100 });
       // Result should be shorter than original
       expect(result.length).toBeLessThan(longContent.length);
     });
 
     it("should convert to plain text for very large content", () => {
       const veryLong = `<p>${"sentence. ".repeat(10000)}</p>`;
-      const result = extractMainContent(veryLong, 500);
+      const result = extractMainContent(veryLong, { limit: 500 });
       // Should be truncated significantly
       expect(result.length).toBeLessThan(veryLong.length);
     });
@@ -310,5 +311,178 @@ describe("resetProviders", () => {
     // After reset, new instances should be created
     expect(googleAfter).not.toBe(googleBefore);
     expect(openaiAfter).not.toBe(openaiBefore);
+  });
+});
+
+describe("extractCleanHtml", () => {
+  describe("basic functionality", () => {
+    it("should return empty string for empty input", () => {
+      expect(extractCleanHtml("")).toBe("");
+      expect(extractCleanHtml(null as unknown as string)).toBe("");
+      expect(extractCleanHtml(undefined as unknown as string)).toBe("");
+    });
+
+    it("should preserve HTML structure", () => {
+      const html = "<div><p>Hello World</p></div>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("<p>");
+      expect(result).toContain("Hello World");
+    });
+
+    it("should remove script tags", () => {
+      const html = "<div>Content</div><script>alert('xss')</script>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("<script>");
+      expect(result).not.toContain("alert");
+    });
+
+    it("should remove style tags", () => {
+      const html = "<style>.red{color:red}</style><div>Content</div>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("<style>");
+      expect(result).not.toContain(".red");
+    });
+
+    it("should remove img tags", () => {
+      const html = "<div><img src='test.jpg'/><p>Text</p></div>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("<p>Text</p>");
+      expect(result).not.toContain("<img");
+    });
+
+    it("should remove svg tags", () => {
+      const html = "<div><svg><circle/></svg><p>Text</p></div>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("<p>Text</p>");
+      expect(result).not.toContain("<svg");
+    });
+
+    it("should remove event handler attributes", () => {
+      const html = '<div onclick="alert(1)" onload="init()">Content</div>';
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("onclick");
+      expect(result).not.toContain("onload");
+    });
+
+    it("should remove style attributes", () => {
+      const html = '<div style="color:red; font-size:12px">Content</div>';
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("style=");
+    });
+
+    it("should remove data attributes", () => {
+      const html = '<div data-id="123" data-user="john">Content</div>';
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).toContain("Content");
+      expect(result).not.toContain("data-id");
+      expect(result).not.toContain("data-user");
+    });
+
+    it("should preserve class and id attributes", () => {
+      const html = '<div class="container" id="main">Content</div>';
+      const result = extractCleanHtml(html);
+      expect(result).toContain('class="container"');
+      expect(result).toContain('id="main"');
+      expect(result).toContain("Content");
+    });
+
+    it("should remove HTML comments", () => {
+      const html = "<!-- comment --><div>Content</div>";
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<div>");
+      expect(result).not.toContain("<!--");
+      expect(result).not.toContain("comment");
+    });
+
+    it("should handle complex nested HTML", () => {
+      const html = `
+        <html>
+          <head><script>alert('xss')</script></head>
+          <body>
+            <header>Header</header>
+            <main class="content" id="main">
+              <article>
+                <h1>Title</h1>
+                <p>Paragraph with <strong>bold</strong> text.</p>
+              </article>
+            </main>
+            <footer>Footer</footer>
+          </body>
+        </html>
+      `;
+      const result = extractCleanHtml(html);
+      expect(result).toContain("<header>");
+      expect(result).toContain("<main");
+      expect(result).toContain('class="content"');
+      expect(result).toContain('id="main"');
+      expect(result).toContain("<article>");
+      expect(result).toContain("<h1>Title</h1>");
+      expect(result).toContain("<strong>bold</strong>");
+      expect(result).not.toContain("<script>");
+      expect(result).not.toContain("alert");
+    });
+  });
+
+  describe("extractMainContent with preserveHtml", () => {
+    it("should return plain text by default", () => {
+      const html = "<div><p>Hello World</p></div>";
+      const result = extractMainContent(html);
+      expect(result).toBe("Hello World");
+      expect(result).not.toContain("<div>");
+      expect(result).not.toContain("<p>");
+    });
+
+    it("should return clean HTML when preserveHtml is true", () => {
+      const html = "<div><p>Hello World</p><script>alert(1)</script></div>";
+      const result = extractMainContent(html, { preserveHtml: true });
+      expect(result).toContain("<div>");
+      expect(result).toContain("<p>Hello World</p>");
+      expect(result).not.toContain("<script>");
+    });
+
+    it("should respect token limit with preserveHtml", () => {
+      const longContent = `<p>${"word ".repeat(1000)}</p>`;
+      const result = extractMainContent(longContent, {
+        preserveHtml: true,
+        limit: 100,
+      });
+      // Should be truncated
+      expect(result.length).toBeLessThan(longContent.length);
+      expect(result.endsWith("...")).toBe(true);
+    });
+
+    it("should handle complex page with preserveHtml", () => {
+      const html = `
+        <div class="page">
+          <nav class="sidebar">Navigation</nav>
+          <main class="content">
+            <article>
+              <h1>Article Title</h1>
+              <p>Article content</p>
+            </article>
+          </main>
+          <img src="ad.jpg" />
+        </div>
+      `;
+      const result = extractMainContent(html, { preserveHtml: true });
+      expect(result).toContain('class="page"');
+      expect(result).toContain('class="sidebar"');
+      expect(result).toContain('class="content"');
+      expect(result).toContain("<article>");
+      expect(result).toContain("<h1>Article Title</h1>");
+      expect(result).not.toContain("<img");
+    });
   });
 });
