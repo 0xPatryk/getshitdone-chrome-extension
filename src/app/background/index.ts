@@ -97,8 +97,14 @@ onMessage(Message.ANALYZE_PAGE, async (message) => {
       Object.keys(activeGrants),
     );
 
+    // Determine if we should preserve HTML structure
+    // When alwaysRemove is provided, preserve HTML so AI can extract CSS selectors
+    const hasAlwaysRemove = Boolean(data.alwaysRemove?.trim());
+
     // Extract the main content from the raw HTML before analysis
-    const extractedContent = extractMainContent(data.content);
+    const extractedContent = extractMainContent(data.content, {
+      preserveHtml: hasAlwaysRemove,
+    });
 
     // Analyze the page content using the AI service with grants context
     const analysisResult = await analyzePageContent(

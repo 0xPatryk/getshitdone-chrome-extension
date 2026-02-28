@@ -16,6 +16,7 @@
 
 // Export types
 export type { AIProvider } from "./types";
+export type { ExtractMainContentOptions } from "./utils";
 
 // Export service functions
 export {
@@ -29,4 +30,5 @@ export {
   getOpenAIProvider,
   getModel,
   extractMainContent,
+  extractCleanHtml,
 } from "./utils";
