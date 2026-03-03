@@ -83,7 +83,7 @@ export const CacheSettings = () => {
             <div className="text-sm text-muted-foreground">Total Entries</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-destructive">
               {stats.expiredEntries}
             </div>
             <div className="text-sm text-muted-foreground">Expired</div>
@@ -115,7 +115,7 @@ export const CacheSettings = () => {
 
         {stats.expiredEntries > 0 && (
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="text-orange-600">
+            <Badge variant="outline" className="text-destructive border-destructive/30">
               {stats.expiredEntries} expired entries
             </Badge>
             <Button onClick={handleCleanupExpired} variant="ghost" size="sm">

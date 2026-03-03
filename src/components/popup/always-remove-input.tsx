@@ -125,6 +125,10 @@ export const AlwaysRemoveInput = () => {
           These elements will be automatically removed from all pages,
           regardless of your current task.
         </p>
+        <p className="text-xs text-destructive font-medium">
+          ⚠️ Warning: When enabled, HTML content is sent with each request which
+          may increase token usage and API costs.
+        </p>
       </div>
 
       <div className="flex gap-2">
@@ -149,11 +153,11 @@ export const AlwaysRemoveInput = () => {
       </div>
 
       {alwaysRemove && (
-        <div className="rounded-md bg-blue-50 p-3 dark:bg-blue-900/20">
-          <p className="text-xs text-blue-800 dark:text-blue-200 font-medium mb-1">
+        <div className="rounded-md bg-muted p-3 border border-border">
+          <p className="text-xs text-foreground font-medium mb-1">
             ✓ Always remove element active:
           </p>
-          <p className="text-xs text-blue-700 dark:text-blue-300 italic">
+          <p className="text-xs text-muted-foreground italic">
             {alwaysRemove}
           </p>
         </div>

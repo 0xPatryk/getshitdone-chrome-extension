@@ -157,8 +157,8 @@ export const TaskInput = () => {
       </div>
 
       {currentTask && (
-        <div className="rounded-md bg-green-50 p-3 dark:bg-green-900/20">
-          <p className="text-xs text-green-800 dark:text-green-200">
+        <div className="rounded-md bg-primary/10 p-3 dark:bg-primary/20 border border-primary/20">
+          <p className="text-xs text-primary dark:text-primary">
             ✓ Current task: {currentTask}
           </p>
         </div>

@@ -48,8 +48,8 @@ const Popup = () => {
             AI-powered distraction blocking for better productivity
           </p>
           {currentTask && (
-            <div className="rounded-md bg-green-50 p-2 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-              <p className="text-xs font-medium text-green-800 dark:text-green-200">
+            <div className="rounded-md bg-primary/10 p-2 dark:bg-primary/20 border border-primary/30 dark:border-primary/30">
+              <p className="text-xs font-medium text-primary dark:text-primary">
                 Running: {currentTask}
               </p>
             </div>

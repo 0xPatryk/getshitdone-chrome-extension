@@ -163,7 +163,7 @@ export const ApiKeySettings = ({
             id="provider"
             value={selectedProvider}
             onChange={(e) => handleProviderChange(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md bg-white dark:bg-gray-800 dark:border-gray-600"
+            className="w-full p-2 border border-input rounded-md bg-background text-foreground"
           >
             <option value="gemini">Gemini (Google)</option>
             <option value="openai">OpenAI</option>
@@ -206,27 +206,27 @@ export const ApiKeySettings = ({
         </div>
 
         {currentApiKey && (
-          <div className="rounded-md bg-green-50 p-4 dark:bg-green-900/20">
-            <p className="text-sm text-green-800 dark:text-green-200">
+          <div className="rounded-md bg-primary/10 p-4 dark:bg-primary/20 border border-primary/20">
+            <p className="text-sm text-primary">
               ✓ {selectedProvider === "openai" ? "OpenAI" : "Gemini"} API key is
               configured and ready to use
             </p>
           </div>
         )}
 
-        <div className="rounded-md bg-blue-50 p-4 dark:bg-blue-900/20">
-          <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+        <div className="rounded-md bg-muted p-4 border border-border">
+          <h3 className="text-sm font-medium text-foreground mb-2">
             How to get your API key:
           </h3>
           {selectedProvider === "gemini" ? (
-            <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
               <li>
                 Go to{" "}
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline hover:text-blue-600 font-medium"
+                  className="underline hover:text-primary font-medium"
                 >
                   Google AI Studio
                 </a>
@@ -236,14 +236,14 @@ export const ApiKeySettings = ({
               <li>Copy the key and paste it above</li>
             </ol>
           ) : (
-            <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 list-decimal list-inside">
+            <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
               <li>
                 Go to{" "}
                 <a
                   href="https://platform.openai.com/api-keys"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="underline hover:text-blue-600 font-medium"
+                  className="underline hover:text-primary font-medium"
                 >
                   OpenAI Platform
                 </a>
